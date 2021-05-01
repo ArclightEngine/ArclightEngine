@@ -13,8 +13,13 @@ cpp_files = [
     'src/Main.cpp',
     'src/ResourceManager.cpp',
 
-    'src/Rendering/RendererBackend.cpp',
-    'src/Rendering/Vulkan/VulkanRenderer.cpp',
+    'src/Graphics/Rendering/Pipeline.cpp',
+    'src/Graphics/Rendering/RendererBackend.cpp',
+    'src/Graphics/Rendering/ShaderBase.cpp',
+    'src/Graphics/Rendering/Vulkan/VulkanMemory.cpp',
+    'src/Graphics/Rendering/Vulkan/VulkanPipeline.cpp',
+    'src/Graphics/Rendering/Vulkan/VulkanRenderer.cpp',
+    'src/Graphics/Rendering/Vulkan/VulkanShader.cpp',
 
     'src/Window/WindowContext.cpp',
 ]

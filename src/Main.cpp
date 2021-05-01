@@ -5,10 +5,22 @@
 
 #include <assert.h>
 
-#include "Rendering/Vulkan.h"
+#include "Graphics/Rendering/Vulkan.h"
 #include "Window/WindowContext.h"
 
 #include <vector>
+
+using namespace Arclight;
+
+bool isRunning = true;
+void* RenderThread(void*){
+	while(isRunning){
+		Rendering::Renderer::Instance()->Draw();
+		Rendering::Renderer::Instance()->WaitDeviceIdle();
+	}
+
+	return nullptr;
+}
 
 int main(){
 	assert(!SDL_Init(SDL_INIT_EVERYTHING));
@@ -23,8 +35,11 @@ int main(){
 		return 1;
 	}
 
-	bool isRunning = true;
+	pthread_t tid;
+	pthread_create(&tid, nullptr, RenderThread, nullptr);
+
 	while(isRunning){
+
 		SDL_Event event;
 		while(SDL_PollEvent(&event)){
 			switch(event.type){
@@ -37,5 +52,6 @@ int main(){
 		}
 	}
 
+	pthread_join(tid, nullptr);
 	return 0;
 }

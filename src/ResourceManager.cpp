@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cassert>
 
-namespace ResourceManager {
+namespace Arclight::ResourceManager {
 
 void Initialize(){
 
@@ -27,4 +27,4 @@ int LoadResource(const std::string& name, std::vector<uint8_t>& data){
     return 0;
 }
 
-} // namespace ResourceManager
+} // namespace Arclight::ResourceManager

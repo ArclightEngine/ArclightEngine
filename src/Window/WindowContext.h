@@ -4,6 +4,9 @@
 #include <SDL2/SDL_vulkan.h>
 
 #include "Vector.h"
+#include "Colour.h"
+
+namespace Arclight {
 
 class WindowContext final {
 public:
@@ -29,6 +32,11 @@ public:
 
 		return ret;
 	}
+
+	Colour backgroundColour = { 0, 0, 0, 255 };
+
 private:
 	SDL_Window* m_window;
 };
+
+} // namespace Arclight

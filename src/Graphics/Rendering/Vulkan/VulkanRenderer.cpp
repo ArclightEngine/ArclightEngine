@@ -1,13 +1,32 @@
 #include "VulkanRenderer.h"
 
+#include "ResourceManager.h"
+
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>
 
 #include <stdexcept>
 
-namespace Rendering {
+namespace Arclight::Rendering {
 
 VulkanRenderer::~VulkanRenderer(){
+	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
+		vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+		vkDestroyFence(m_device, m_frameFences[i], nullptr);
+	}
+
+	vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+	for(VkFramebuffer& fb : m_framebuffers){
+		vkDestroyFramebuffer(m_device, fb, nullptr);
+	}
+
+	if(m_pipeline){
+		delete m_pipeline;
+	}
+	vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
 	for(VkImageView v : m_imageViews){
 		vkDestroyImageView(m_device, v, nullptr);
 	}
@@ -167,8 +186,218 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		}
 	}
 
+	VkAttachmentDescription colourAttachment = {
+		.flags = 0,
+		.format = m_swapImageFormat,
+		.samples = VK_SAMPLE_COUNT_1_BIT, // No multisampling
+		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE, // Clear screen on load
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // Present to surface
+	};
+
+	VkAttachmentReference attachmentReference {
+		.attachment = 0,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+
+	VkSubpassDescription subpass = {
+		.flags = 0,
+		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.inputAttachmentCount = 0,
+		.pInputAttachments = nullptr,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &attachmentReference,
+		.pResolveAttachments = nullptr,
+		.pDepthStencilAttachment = nullptr,
+		.preserveAttachmentCount = 0,
+		.pPreserveAttachments = nullptr,
+	};
+
+	VkSubpassDependency dep = {
+		.srcSubpass = VK_SUBPASS_EXTERNAL,
+		.dstSubpass = 0,
+		.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		.srcAccessMask = 0,
+		.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.dependencyFlags = 0,
+	};
+
+	VkRenderPassCreateInfo renderPassCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.attachmentCount = 1,
+		.pAttachments = &colourAttachment,
+		.subpassCount = 1,
+		.pSubpasses = &subpass,
+		.dependencyCount = 1,
+		.pDependencies = &dep,
+	};
+
+	if(vkCreateRenderPass(m_device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS){
+		throw std::runtime_error("VulkanRenderer::Initialize: Failed to create Vulkan render pass!");
+		return -11;
+	}
+
+	m_framebuffers.resize(m_imageViews.size());
+	for(unsigned i = 0; i < m_imageViews.size(); i++){
+		VkFramebufferCreateInfo framebufferInfo = {
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.renderPass = m_renderPass,
+			.attachmentCount = 1,
+			.pAttachments = &m_imageViews[i],
+			.width = m_swapExtent.width,
+			.height = m_swapExtent.height,
+			.layers = 1,
+		};
+
+		if(vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_framebuffers[i]) != VK_SUCCESS){
+			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create Vulkan framebuffer!");
+			return -13;
+		}
+	}
+
+	{
+		std::vector<uint8_t> vertData;
+		std::vector<uint8_t> fragData;
+
+		ResourceManager::LoadResource("shaders/vert.spv", vertData);
+		ResourceManager::LoadResource("shaders/frag.spv", fragData);
+
+		VulkanShader vertShader(Shader::VertexShader, std::move(vertData));
+		VulkanShader fragShader(Shader::FragmentShader, std::move(fragData));
+
+		m_pipeline = new VulkanPipeline(*this, &vertShader, &fragShader);
+	}
+
+	CreateCommandPool();
+
+	VkClearValue clearColour = {
+		1.f / m_windowContext->backgroundColour.r,
+		1.f / m_windowContext->backgroundColour.g,
+		1.f / m_windowContext->backgroundColour.b,
+		1.f / m_windowContext->backgroundColour.a,
+	};
+
+	for(unsigned i = 0; i < m_framebuffers.size(); i++){
+		VkCommandBufferBeginInfo beginInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.pInheritanceInfo = nullptr,
+		};
+
+		if(vkBeginCommandBuffer(m_commandBuffers[i], &beginInfo) != VK_SUCCESS){
+			throw std::runtime_error("VulkanRenderer::Initialize: Failed to begin command buffer!");
+		}
+
+		VkRenderPassBeginInfo renderPassInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			.pNext = nullptr,
+			.renderPass = m_renderPass,
+			.framebuffer = m_framebuffers[i],
+			.renderArea = { // Render area
+				{0, 0},
+				m_swapExtent,
+			},
+			.clearValueCount = 1,
+			.pClearValues = &clearColour, // Get our clear colour from the WindowContext
+		};
+
+		// The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.
+		vkCmdBeginRenderPass(m_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineHandle());
+		vkCmdDraw(m_commandBuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(m_commandBuffers[i]);
+
+		if(vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS){
+			throw std::runtime_error("VulkanRenderer::Initialize: Failed to end command buffer!");
+		}
+	}
+
+	VkSemaphoreCreateInfo semaphoreInfo = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags =  0,
+	};
+	
+	VkFenceCreateInfo fenceInfo = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags =  VK_FENCE_CREATE_SIGNALED_BIT,
+	};
+
+	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
+		if(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS){
+			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create semaphores!");
+		}
+
+		if(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS){
+			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create semaphores!");
+		}
+		
+		if(vkCreateFence(m_device, &fenceInfo, nullptr, &m_frameFences[i]) != VK_SUCCESS){
+			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create fences!");
+		}
+	}
+
 	s_rendererInstance = this;
 	return 0;
+}
+
+void VulkanRenderer::Draw(){
+	vkWaitForFences(m_device, 1, &m_frameFences[currentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(m_device, 1, &m_frameFences[currentFrame]);
+
+	uint32_t imageIndex = 0;
+	int result = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	assert(result == VK_SUCCESS);
+
+	VkPipelineStageFlags waitStages[] = {
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+	};
+
+	VkSubmitInfo submitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = nullptr,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &m_imageAvailableSemaphores[currentFrame],
+		.pWaitDstStageMask = waitStages,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &m_commandBuffers[imageIndex],
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &m_renderFinishedSemaphores[currentFrame],
+	};
+
+	if(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[currentFrame]) != VK_SUCCESS){
+		throw std::runtime_error("VulkanRenderer::Draw: Failed to submit command!");
+	}
+
+	VkPresentInfoKHR presentInfo = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.pNext = nullptr,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &m_renderFinishedSemaphores[currentFrame],
+		.swapchainCount = 1,
+		.pSwapchains = &m_swapchain,
+		.pImageIndices = &imageIndex,
+		.pResults = nullptr,
+	};
+
+	vkQueuePresentKHR(m_graphicsQueue, &presentInfo);
+	currentFrame = (currentFrame + 1) % RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT;
+}
+
+void VulkanRenderer::WaitDeviceIdle() const {
+	vkDeviceWaitIdle(m_device);
 }
 
 int VulkanRenderer::LoadExtensions(){
@@ -363,4 +592,30 @@ int VulkanRenderer::CreateLogicalDevice(){
 	return 0;
 }
 
-} // namespace Rendering
+void VulkanRenderer::CreateCommandPool(){
+	VkCommandPoolCreateInfo poolInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.queueFamilyIndex = m_graphicsQueueFamily,
+	};
+
+	if(vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS){
+		throw std::runtime_error("VulkanRenderer::CreateCommandPool: Failed to create a command pool!");
+	}
+
+	m_commandBuffers.resize(m_framebuffers.size());
+	VkCommandBufferAllocateInfo allocInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.commandPool = m_commandPool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size()),
+	};
+
+	if(vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()) != VK_SUCCESS){
+		throw std::runtime_error("VulkanRenderer::CreateCommandPool: Failed to create command buffers!");
+	}
+}
+
+} // namespace Arclight::Rendering
