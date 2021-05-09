@@ -3,11 +3,11 @@
 #include "Vector.h"
 #include "Colour.h"
 
-namespace Arclight::Graphics {
+namespace Arclight {
 
 struct Vertex {
-	Vector2i position;
-	Colour colour;
+	Vector2f position;
+	Vector4f colour; // Unfortunately vulkan forces us to use 32-bit values in Vertex buffer
 };
 
-} // namespace Graphics
+} // namespace Arclight

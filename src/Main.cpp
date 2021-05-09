@@ -13,14 +13,6 @@
 using namespace Arclight;
 
 bool isRunning = true;
-void* RenderThread(void*){
-	while(isRunning){
-		Rendering::Renderer::Instance()->Draw();
-		Rendering::Renderer::Instance()->WaitDeviceIdle();
-	}
-
-	return nullptr;
-}
 
 int main(){
 	assert(!SDL_Init(SDL_INIT_EVERYTHING));
@@ -35,10 +27,19 @@ int main(){
 		return 1;
 	}
 
-	pthread_t tid;
-	pthread_create(&tid, nullptr, RenderThread, nullptr);
+	Vertex vertices[] = {
+		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.f}},
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.f}},
+		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f, 1.f}},
+		{{0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.f}},
+	};
+
+	vkRenderer.Draw(vertices, 4);
+	vkRenderer.Render();
 
 	while(isRunning){
+		vkRenderer.Draw(vertices, 4);
+		vkRenderer.Render();
 
 		SDL_Event event;
 		while(SDL_PollEvent(&event)){
@@ -46,12 +47,14 @@ int main(){
 				case SDL_QUIT:
 					isRunning = false;
 					break;
+				case SDL_KEYDOWN:
+					break;
 				default:
 					break;
 			}
 		}
 	}
 
-	pthread_join(tid, nullptr);
+	SDL_DestroyWindow(win);
 	return 0;
 }

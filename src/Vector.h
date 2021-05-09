@@ -61,9 +61,22 @@ inline bool operator!=(const Vector3<T>& l, const Vector3<T>& r){
 	return l.x != r.x || l.y != r.y || l.z != r.z;
 }
 
+template <typename T>
+struct Vector4 {
+	T x;
+	T y;
+	T z;
+	T w;
+};
+
+using Vector2f = Vector2<float>;
 using Vector2i = Vector2<int>;
 using Vector2u = Vector2<unsigned int>;
+using Vector3f = Vector3<float>;
 using Vector3i = Vector3<int>;
 using Vector3u = Vector3<unsigned int>;
+using Vector4f = Vector4<float>;
+using Vector4i = Vector4<int>;
+using Vector4u = Vector4<unsigned int>;
 
 } // namespace Arclight

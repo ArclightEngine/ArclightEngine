@@ -1,31 +1,47 @@
 #include "VulkanRenderer.h"
+#include "VulkanPrivate.h"
 
 #include "ResourceManager.h"
 
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>
 
+#include "vk_mem_alloc.h"
+
 #include <stdexcept>
 
 namespace Arclight::Rendering {
 
 VulkanRenderer::~VulkanRenderer(){
+	EndRenderPass();
+
+	vkQueueWaitIdle(m_graphicsQueue);
+
 	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
+		vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
+		vkDestroyCommandPool(m_device, m_commandPools[i], nullptr);
+
+		vmaDestroyBuffer(m_alloc, m_vertexBuffers[i].buffer, m_vertexBuffers[i].allocation);
+
 		vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
 		vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
 		vkDestroyFence(m_device, m_frameFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+	vmaDestroyAllocator(m_alloc);
 
 	for(VkFramebuffer& fb : m_framebuffers){
 		vkDestroyFramebuffer(m_device, fb, nullptr);
 	}
 
-	if(m_pipeline){
-		delete m_pipeline;
+	for(VulkanPipeline* pipeline : m_pipelines){
+		delete pipeline;
 	}
 	vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
+	if(m_defaultPipeline){
+		delete m_defaultPipeline;
+	}
 
 	for(VkImageView v : m_imageViews){
 		vkDestroyImageView(m_device, v, nullptr);
@@ -181,16 +197,14 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 			},
 		};
 
-		if(vkCreateImageView(m_device, &ivCreateInfo, nullptr, &m_imageViews[i]) != VK_SUCCESS){
-			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create Vulkan image view!");
-		}
+		vkCheck(vkCreateImageView(m_device, &ivCreateInfo, nullptr, &m_imageViews[i]));
 	}
 
 	VkAttachmentDescription colourAttachment = {
 		.flags = 0,
 		.format = m_swapImageFormat,
 		.samples = VK_SAMPLE_COUNT_1_BIT, // No multisampling
-		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE, // Clear screen on load
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // Clear screen on load
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -263,6 +277,8 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		}
 	}
 
+	s_rendererInstance = this;
+
 	{
 		std::vector<uint8_t> vertData;
 		std::vector<uint8_t> fragData;
@@ -270,58 +286,21 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		ResourceManager::LoadResource("shaders/vert.spv", vertData);
 		ResourceManager::LoadResource("shaders/frag.spv", fragData);
 
-		VulkanShader vertShader(Shader::VertexShader, std::move(vertData));
-		VulkanShader fragShader(Shader::FragmentShader, std::move(fragData));
+		Shader vertShader(Shader::VertexShader, std::move(vertData));
+		Shader fragShader(Shader::FragmentShader, std::move(fragData));
 
-		m_pipeline = new VulkanPipeline(*this, &vertShader, &fragShader);
+		m_defaultPipeline = new RenderPipeline(vertShader, fragShader);
+		//m_pipeline = new VulkanPipeline(*this, &vertShader, &fragShader);
 	}
 
-	CreateCommandPool();
+	CreateCommandPools();
 
 	VkClearValue clearColour = {
-		1.f / m_windowContext->backgroundColour.r,
-		1.f / m_windowContext->backgroundColour.g,
-		1.f / m_windowContext->backgroundColour.b,
-		1.f / m_windowContext->backgroundColour.a,
+		1.f - 1.f / m_windowContext->backgroundColour.r,
+		1.f - 1.f / m_windowContext->backgroundColour.g,
+		1.f - 1.f / m_windowContext->backgroundColour.b,
+		1.f - 1.f / m_windowContext->backgroundColour.a,
 	};
-
-	for(unsigned i = 0; i < m_framebuffers.size(); i++){
-		VkCommandBufferBeginInfo beginInfo = {
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			.pNext = nullptr,
-			.flags = 0,
-			.pInheritanceInfo = nullptr,
-		};
-
-		if(vkBeginCommandBuffer(m_commandBuffers[i], &beginInfo) != VK_SUCCESS){
-			throw std::runtime_error("VulkanRenderer::Initialize: Failed to begin command buffer!");
-		}
-
-		VkRenderPassBeginInfo renderPassInfo = {
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			.pNext = nullptr,
-			.renderPass = m_renderPass,
-			.framebuffer = m_framebuffers[i],
-			.renderArea = { // Render area
-				{0, 0},
-				m_swapExtent,
-			},
-			.clearValueCount = 1,
-			.pClearValues = &clearColour, // Get our clear colour from the WindowContext
-		};
-
-		// The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.
-		vkCmdBeginRenderPass(m_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->GetPipelineHandle());
-		vkCmdDraw(m_commandBuffers[i], 3, 1, 0, 0);
-
-		vkCmdEndRenderPass(m_commandBuffers[i]);
-
-		if(vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS){
-			throw std::runtime_error("VulkanRenderer::Initialize: Failed to end command buffer!");
-		}
-	}
 
 	VkSemaphoreCreateInfo semaphoreInfo = {
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -335,6 +314,23 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		.flags =  VK_FENCE_CREATE_SIGNALED_BIT,
 	};
 
+	VmaAllocatorCreateInfo allocatorInfo = {
+		.flags = 0,
+		.physicalDevice = m_renderGPU,
+		.device = m_device,
+		.preferredLargeHeapBlockSize = 0, // Use default.
+		.pAllocationCallbacks = nullptr,
+		.pDeviceMemoryCallbacks = nullptr,
+		.frameInUseCount = 0,
+		.pHeapSizeLimit = nullptr, // Default
+		.pVulkanFunctions = nullptr, 
+		.pRecordSettings = nullptr,
+		.instance = m_instance,
+		.vulkanApiVersion = VK_API_VERSION_1_2,
+	};
+	
+	vkCheck(vmaCreateAllocator(&allocatorInfo, &m_alloc));
+
 	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
 		if(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS){
 			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create semaphores!");
@@ -347,19 +343,75 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		if(vkCreateFence(m_device, &fenceInfo, nullptr, &m_frameFences[i]) != VK_SUCCESS){
 			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create fences!");
 		}
+
+		m_vertexBuffers[i] = CreateVertexBuffer(4); // Each frame gets a default vertex buffer of 4 vertices
 	}
 
-	s_rendererInstance = this;
+	BeginFrame();
+	BeginRenderPass();
 	return 0;
 }
 
-void VulkanRenderer::Draw(){
-	vkWaitForFences(m_device, 1, &m_frameFences[currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(m_device, 1, &m_frameFences[currentFrame]);
+RenderPipeline::PipelineHandle VulkanRenderer::CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config){
+	VulkanPipeline* pipeline = new VulkanPipeline(*this, vertexShader, fragmentShader, config);
 
-	uint32_t imageIndex = 0;
-	int result = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	m_pipelines.insert(pipeline);
+
+	return pipeline;
+}
+
+void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle){
+	size_t erased = m_pipelines.erase(reinterpret_cast<VulkanPipeline*>(handle));
+	assert(erased == 1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
+
+	delete reinterpret_cast<VulkanPipeline*>(handle);
+}
+
+void VulkanRenderer::Render(){
+	EndRenderPass();
+	EndFrame();
+
+	BeginFrame();
+	BeginRenderPass();
+}
+
+void VulkanRenderer::WaitDeviceIdle() const {
+	vkDeviceWaitIdle(m_device);
+}
+
+const RenderPipeline& VulkanRenderer::DefaultPipeline() {
+	return *m_defaultPipeline;
+}
+
+void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const RenderPipeline& pipeline){
+	if(vertexCount > m_vertexBuffers[m_currentFrame].size){
+		throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
+	}
+
+	VertexBuffer& vertexBuffer = m_vertexBuffers[m_currentFrame];
+	memcpy(vertexBuffer.hostMapping, vertices, sizeof(Vertex) * vertexCount);
+	vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VulkanPipeline*>(m_defaultPipeline->Handle())->GetPipelineHandle());
+
+	VkBuffer vertexBuffers[] = { vertexBuffer.buffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, vertexBuffers, offsets);
+
+	vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
+}
+
+void VulkanRenderer::BeginFrame(){
+	VkResult result = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
 	assert(result == VK_SUCCESS);
+
+	vkWaitForFences(m_device, 1, &m_frameFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(m_device, 1, &m_frameFences[m_currentFrame]);
+
+	vkResetCommandPool(m_device, m_commandPools[m_currentFrame], 0); // Apparently resetting the whole command pool is faster
+	BeginCommandBuffer();
+}
+
+void VulkanRenderer::EndFrame(){
+	EndCommandBuffer();
 
 	VkPipelineStageFlags waitStages[] = {
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
@@ -369,35 +421,30 @@ void VulkanRenderer::Draw(){
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.pNext = nullptr,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &m_imageAvailableSemaphores[currentFrame],
+		.pWaitSemaphores = &m_imageAvailableSemaphores[m_currentFrame],
 		.pWaitDstStageMask = waitStages,
 		.commandBufferCount = 1,
-		.pCommandBuffers = &m_commandBuffers[imageIndex],
+		.pCommandBuffers = &m_commandBuffers[m_currentFrame],
 		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &m_renderFinishedSemaphores[currentFrame],
+		.pSignalSemaphores = &m_renderFinishedSemaphores[m_currentFrame],
 	};
 
-	if(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[currentFrame]) != VK_SUCCESS){
-		throw std::runtime_error("VulkanRenderer::Draw: Failed to submit command!");
-	}
+	vkCheck(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[m_currentFrame]));
 
 	VkPresentInfoKHR presentInfo = {
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.pNext = nullptr,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &m_renderFinishedSemaphores[currentFrame],
+		.pWaitSemaphores = &m_renderFinishedSemaphores[m_currentFrame],
 		.swapchainCount = 1,
 		.pSwapchains = &m_swapchain,
-		.pImageIndices = &imageIndex,
+		.pImageIndices = &m_imageIndex,
 		.pResults = nullptr,
 	};
 
 	vkQueuePresentKHR(m_graphicsQueue, &presentInfo);
-	currentFrame = (currentFrame + 1) % RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT;
-}
 
-void VulkanRenderer::WaitDeviceIdle() const {
-	vkDeviceWaitIdle(m_device);
+	m_currentFrame = (m_currentFrame + 1) % RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT;
 }
 
 int VulkanRenderer::LoadExtensions(){
@@ -592,7 +639,7 @@ int VulkanRenderer::CreateLogicalDevice(){
 	return 0;
 }
 
-void VulkanRenderer::CreateCommandPool(){
+void VulkanRenderer::CreateCommandPools(){
 	VkCommandPoolCreateInfo poolInfo = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		.pNext = nullptr,
@@ -600,22 +647,109 @@ void VulkanRenderer::CreateCommandPool(){
 		.queueFamilyIndex = m_graphicsQueueFamily,
 	};
 
-	if(vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS){
-		throw std::runtime_error("VulkanRenderer::CreateCommandPool: Failed to create a command pool!");
-	}
-
-	m_commandBuffers.resize(m_framebuffers.size());
-	VkCommandBufferAllocateInfo allocInfo = {
+	VkCommandBufferAllocateInfo bufferInfo = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		.pNext = nullptr,
-		.commandPool = m_commandPool,
+		.commandPool = VK_NULL_HANDLE,
 		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size()),
+		.commandBufferCount = 1,
+	};
+		
+	m_commandBuffers.resize(m_framebuffers.size());
+	m_commandPools.resize(m_framebuffers.size());
+
+	for(unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
+		vkCheck(vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPools[i]));
+
+		bufferInfo.commandPool = m_commandPools[i];
+		vkCheck(vkAllocateCommandBuffers(m_device, &bufferInfo, &m_commandBuffers[i]));
+	}
+}
+
+void VulkanRenderer::BeginCommandBuffer(){
+	VkCommandBufferBeginInfo beginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.pInheritanceInfo = nullptr,
 	};
 
-	if(vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()) != VK_SUCCESS){
-		throw std::runtime_error("VulkanRenderer::CreateCommandPool: Failed to create command buffers!");
-	}
+	vkCheck(vkBeginCommandBuffer(m_commandBuffers[m_currentFrame], &beginInfo));
+}
+
+void VulkanRenderer::EndCommandBuffer(){
+	vkCheck(vkEndCommandBuffer(m_commandBuffers[m_currentFrame]));
+}
+
+void VulkanRenderer::BeginRenderPass(){
+	VkClearValue clear = {
+		.color = {
+			1.0f - 1.0f / m_windowContext->backgroundColour.r,
+			1.0f - 1.0f / m_windowContext->backgroundColour.g,
+			1.0f - 1.0f / m_windowContext->backgroundColour.b,
+			1.0f - 1.0f / m_windowContext->backgroundColour.a,
+		},
+		.depthStencil = {},
+	};
+
+	VkRenderPassBeginInfo renderPassInfo = {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.pNext = nullptr,
+		.renderPass = m_renderPass,
+		.framebuffer = m_framebuffers[m_imageIndex],
+		.renderArea = { // Render area
+			{0, 0},
+			m_swapExtent,
+		},
+		.clearValueCount = 1,
+		.pClearValues = nullptr,
+	};
+
+	// The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.
+	vkCmdBeginRenderPass(m_commandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void VulkanRenderer::EndRenderPass(){
+	vkCmdEndRenderPass(m_commandBuffers[m_currentFrame]);
+}
+
+VulkanRenderer::VertexBuffer VulkanRenderer::CreateVertexBuffer(uint32_t vertexCount){
+	VkBufferCreateInfo bufferInfo = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.size = vertexCount * sizeof(Vertex),
+		.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 0,
+		.pQueueFamilyIndices = nullptr,
+	};
+
+	VmaAllocationCreateInfo allocCreateInfo = {
+		.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+		.usage = VMA_MEMORY_USAGE_CPU_ONLY,
+		.requiredFlags = 0,
+		.preferredFlags = 0,
+		.memoryTypeBits = 0,
+		.pool = 0,
+		.pUserData = nullptr,
+		.priority = 0.0f,
+	};
+
+	VkBuffer buffer;
+	VmaAllocation allocation;
+	VmaAllocationInfo allocInfo = {};
+
+	vkCheck(vmaCreateBuffer(m_alloc, &bufferInfo, &allocCreateInfo, &buffer, &allocation, &allocInfo));
+
+	VertexBuffer vertexBuffer = {
+		.allocation = allocation,
+		.buffer = buffer,
+		.hostMapping = allocInfo.pMappedData,
+		.size = vertexCount,
+	};
+
+	return vertexBuffer;
 }
 
 } // namespace Arclight::Rendering

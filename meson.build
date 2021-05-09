@@ -6,7 +6,8 @@ project('RPG',
 add_languages('c', 'cpp')
 
 cpp_args = [
-    
+    '-Wno-missing-field-initializers',
+    '-Wno-unused-parameter',
 ]
 
 cpp_files = [
@@ -15,11 +16,10 @@ cpp_files = [
 
     'src/Graphics/Rendering/Pipeline.cpp',
     'src/Graphics/Rendering/RendererBackend.cpp',
-    'src/Graphics/Rendering/ShaderBase.cpp',
+    'src/Graphics/Rendering/Shader.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanMemory.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanPipeline.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanRenderer.cpp',
-    'src/Graphics/Rendering/Vulkan/VulkanShader.cpp',
 
     'src/Window/WindowContext.cpp',
 ]

@@ -1,16 +1,20 @@
 #include "VulkanPipeline.h"
 
 #include "VulkanRenderer.h"
+#include "Graphics/Vertex.h"
 
 #include <stdexcept>
 #include <cassert>
 
 namespace Arclight::Rendering {
 
-VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, VulkanShader* vertexShader, VulkanShader* fragmentShader, const PipelineFixedConfig& config)
+VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config)
 	: m_renderer(renderer), m_device(renderer.GetDevice()), m_renderPass(renderer.GetRenderPass()) {
 	assert(m_device != VK_NULL_HANDLE);
 	assert(m_renderPass != VK_NULL_HANDLE);
+
+	assert(vertexShader.GetStage() == Shader::VertexShader);
+	assert(fragmentShader.GetStage() == Shader::FragmentShader);
 
 	VkPipelineLayoutCreateInfo vkPipelineLayoutCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -26,8 +30,19 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, VulkanShader* vertexSha
 		throw std::runtime_error("[Fatal error] VulkanPipeline::VulkanPipeline: failed to create pipeline layout!");
 	}
 
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo = vertexInputStateDefault;
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.vertexBindingDescriptionCount = 1,
+		.pVertexBindingDescriptions = &m_binding,
+		.vertexAttributeDescriptionCount = 2,
+		.pVertexAttributeDescriptions = m_attributeDescriptions,
+	};
+
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = inputAssemblyStateDefault;
+	inputAssembly.topology = ToVkPrimitiveTopology(config.topology);
+
 	VkPipelineMultisampleStateCreateInfo multisampling = multisampleStateDefault;
 
 	VkPipelineRasterizationStateCreateInfo rasterizer = rasterizationStateDefault;
@@ -38,8 +53,8 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, VulkanShader* vertexSha
 	colourBlending.attachmentCount = 1;
 	colourBlending.pAttachments = &colourBlendAttachment;
 
-	VkShaderModule vertexModule = vertexShader->CreateModule(m_device);
-	VkShaderModule fragmentModule = fragmentShader->CreateModule(m_device);
+	VkShaderModule vertexModule = CreateShaderModule(vertexShader);
+	VkShaderModule fragmentModule = CreateShaderModule(fragmentShader);
 
 	const int shaderStageCount = 2;
 	VkPipelineShaderStageCreateInfo shaderStages[shaderStageCount] = {
@@ -125,11 +140,28 @@ VulkanPipeline::~VulkanPipeline(){
 	vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 }
 
-VkPolygonMode VulkanPipeline::ToVkPolygonMode(RasterizerConfig::PolygonMode mode){
+VkShaderModule VulkanPipeline::CreateShaderModule(const Shader& shader){
+	VkShaderModuleCreateInfo createInfo = {
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.codeSize = shader.DataSize(),
+		.pCode = reinterpret_cast<const uint32_t*>(shader.GetData()),
+	};
+
+	VkShaderModule sModule;
+	if(vkCreateShaderModule(m_device, &createInfo, nullptr, &sModule)){
+		throw std::runtime_error("[Fatal error] VulkanShader::CreateModule: Failed to create shader module!");
+	}
+
+	return sModule;
+}
+
+VkPolygonMode VulkanPipeline::ToVkPolygonMode(RenderPipeline::RasterizerConfig::PolygonMode mode){
 	switch(mode){
-		case RasterizerConfig::PolygonFill:
+		case RenderPipeline::RasterizerConfig::PolygonFill:
 			return VK_POLYGON_MODE_FILL;
-		case RasterizerConfig::PolygonLine:
+		case RenderPipeline::RasterizerConfig::PolygonLine:
 			return VK_POLYGON_MODE_LINE;
 		default:
 			throw std::runtime_error("[Fatal error] VulkanPipeline::ToVkPolygonMode: Invalid polygon mode!");
@@ -137,11 +169,23 @@ VkPolygonMode VulkanPipeline::ToVkPolygonMode(RasterizerConfig::PolygonMode mode
 	}
 }
 
+VkPrimitiveTopology VulkanPipeline::ToVkPrimitiveTopology(RenderPipeline::PrimitiveType type){
+	switch(type){
+		case RenderPipeline::PrimitiveTriangleList:
+			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case RenderPipeline::PrimitiveTriangleStrip:
+			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		default:
+			throw std::runtime_error("[Fatal error] VulkanPipeline::ToVkPrimitiveTopology: Invalid primitive type!");
+			return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	}
+}
+
 const VkPipelineInputAssemblyStateCreateInfo VulkanPipeline::inputAssemblyStateDefault = {
 	.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 	.pNext = nullptr,
 	.flags = 0,
-	.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+	.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 	.primitiveRestartEnable = VK_FALSE,
 };
 

@@ -3,6 +3,7 @@
 #include <string>
 
 #include "Pipeline.h"
+#include "Graphics/Vertex.h"
 
 namespace Arclight::Rendering {
 
@@ -13,11 +14,15 @@ public:
 	virtual int Initialize(class WindowContext* context) = 0;
 	static inline Renderer* Instance() { return s_rendererInstance; }
 
-	virtual void Draw() = 0;
+	virtual void Render() = 0;
 	virtual void WaitDeviceIdle() const = 0;
 
-	//virtual int LoadShader(const std::string& name) = 0;
-	//virtual RenderPipeline* CreatePipeline(Shader* vertexShader, Shader* fragmentShader) = 0;
+	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
+
+	virtual RenderPipeline::PipelineHandle CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config) = 0;
+	virtual void DestroyPipeline(RenderPipeline::PipelineHandle handle) = 0;
+
+	virtual const RenderPipeline& DefaultPipeline() = 0;
 
 	virtual const std::string& GetName() const = 0;
 

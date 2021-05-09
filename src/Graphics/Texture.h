@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Arclight::Graphics {
+namespace Arclight {
 
 class Texture {
 public:
@@ -9,4 +9,4 @@ public:
 private:
 };
 
-} // namespace Arclight::Graphics
+} // namespace Arclight

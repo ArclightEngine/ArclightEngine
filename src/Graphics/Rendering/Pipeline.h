@@ -1,11 +1,15 @@
 #pragma once
 
-#include "ShaderBase.h"
+#include "Shader.h"
+#include "NonCopyable.h"
 
 namespace Arclight::Rendering {
 
-class RenderPipeline {
+class RenderPipeline
+	: NonCopyable {
 public:
+	using PipelineHandle = void*;
+
 	struct RasterizerConfig {
 		enum PolygonMode {
 			PolygonInvalid,
@@ -27,16 +31,27 @@ public:
 		bool enabled;
 	};
 
+	enum PrimitiveType {
+		PrimitiveTriangleList, // List of separate triangles
+		PrimitiveTriangleStrip, // List of connected triangles, each triangle shares the last two vertices
+	};
+
 	struct PipelineFixedConfig {
 		RasterizerConfig rasterizer;
 		ColourBlending blending;
+		PrimitiveType topology;
 	};
 
-	RenderPipeline() = default;
+	RenderPipeline(const Shader& vertexShader, const Shader& fragmentShader, const PipelineFixedConfig& config = defaultConfig);
 	virtual ~RenderPipeline() = default;
+
+	inline PipelineHandle Handle() { return m_handle; }
+
+	static const RenderPipeline& Default();
 
 	static const PipelineFixedConfig defaultConfig;
 private:
+	PipelineHandle m_handle;
 };
 
 } // namespace Arclight::Rendering
