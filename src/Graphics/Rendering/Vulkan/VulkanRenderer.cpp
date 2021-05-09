@@ -295,13 +295,6 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
 	CreateCommandPools();
 
-	VkClearValue clearColour = {
-		1.f - 1.f / m_windowContext->backgroundColour.r,
-		1.f - 1.f / m_windowContext->backgroundColour.g,
-		1.f - 1.f / m_windowContext->backgroundColour.b,
-		1.f - 1.f / m_windowContext->backgroundColour.a,
-	};
-
 	VkSemaphoreCreateInfo semaphoreInfo = {
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
 		.pNext = nullptr,
@@ -379,11 +372,11 @@ void VulkanRenderer::WaitDeviceIdle() const {
 	vkDeviceWaitIdle(m_device);
 }
 
-const RenderPipeline& VulkanRenderer::DefaultPipeline() {
+RenderPipeline& VulkanRenderer::DefaultPipeline() {
 	return *m_defaultPipeline;
 }
 
-void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const RenderPipeline& pipeline){
+void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, RenderPipeline& pipeline){
 	if(vertexCount > m_vertexBuffers[m_currentFrame].size){
 		throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
 	}
@@ -682,15 +675,12 @@ void VulkanRenderer::EndCommandBuffer(){
 }
 
 void VulkanRenderer::BeginRenderPass(){
-	VkClearValue clear = {
-		.color = {
-			1.0f - 1.0f / m_windowContext->backgroundColour.r,
-			1.0f - 1.0f / m_windowContext->backgroundColour.g,
-			1.0f - 1.0f / m_windowContext->backgroundColour.b,
-			1.0f - 1.0f / m_windowContext->backgroundColour.a,
-		},
-		.depthStencil = {},
-	};
+	VkClearValue clear = {{{
+		1.0f - 1.0f / m_windowContext->backgroundColour.r,
+		1.0f - 1.0f / m_windowContext->backgroundColour.g,
+		1.0f - 1.0f / m_windowContext->backgroundColour.b,
+		1.0f - 1.0f / m_windowContext->backgroundColour.a,
+	}}};
 
 	VkRenderPassBeginInfo renderPassInfo = {
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -702,7 +692,7 @@ void VulkanRenderer::BeginRenderPass(){
 			m_swapExtent,
 		},
 		.clearValueCount = 1,
-		.pClearValues = nullptr,
+		.pClearValues = &clear,
 	};
 
 	// The render pass commands will be embedded in the primary command buffer itself and no secondary command buffers will be executed.

@@ -27,10 +27,10 @@ public:
 	void WaitDeviceIdle() const;
 
 	// Get the default RenderPipeline
-	const RenderPipeline& DefaultPipeline();
+	RenderPipeline& DefaultPipeline();
 
 	// Draw Primitives
-	void Draw(const Vertex* vertices, unsigned vertexCount, const RenderPipeline& pipeline = RenderPipeline::Default());
+	void Draw(const Vertex* vertices, unsigned vertexCount, RenderPipeline& pipeline = RenderPipeline::Default());
 
 	const std::string& GetName() const { return m_rendererName; }
 

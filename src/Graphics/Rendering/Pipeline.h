@@ -47,7 +47,7 @@ public:
 
 	inline PipelineHandle Handle() { return m_handle; }
 
-	static const RenderPipeline& Default();
+	static RenderPipeline& Default();
 
 	static const PipelineFixedConfig defaultConfig;
 private:
