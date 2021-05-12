@@ -9,10 +9,16 @@ namespace Arclight::Rendering {
 
 class VulkanPipeline final {
 public:
+	struct PushConstant2DTransform{
+		float transform[16]; // mat4 transform
+	};
+
 	VulkanPipeline(class VulkanRenderer& renderer, const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config);
 	~VulkanPipeline();
 
 	VkPipeline GetPipelineHandle() { return m_pipeline; }
+
+	void UpdatePushConstant(VkCommandBuffer commandBuffer, uint32_t offset, uint32_t size, const void* data);
 
 	static VkPolygonMode ToVkPolygonMode(RenderPipeline::RasterizerConfig::PolygonMode mode);
 	static VkPrimitiveTopology ToVkPrimitiveTopology(RenderPipeline::PrimitiveType type);

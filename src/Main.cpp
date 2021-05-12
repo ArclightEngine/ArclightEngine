@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include <assert.h>
+#include <unistd.h>
 
 #include "Graphics/Rendering/Vulkan.h"
 #include "Window/WindowContext.h"
@@ -34,11 +35,12 @@ int main(){
 		{{0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.f}},
 	};
 
-	vkRenderer.Draw(vertices, 4);
+	Transform transform;
+	vkRenderer.Draw(vertices, 4, transform.Matrix());
 	vkRenderer.Render();
 
 	while(isRunning){
-		vkRenderer.Draw(vertices, 4);
+		vkRenderer.Draw(vertices, 4, transform.Matrix());
 		vkRenderer.Render();
 
 		SDL_Event event;

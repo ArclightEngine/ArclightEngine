@@ -14,6 +14,9 @@ cpp_files = [
     'src/Main.cpp',
     'src/ResourceManager.cpp',
 
+    'src/Graphics/Matrix.cpp',
+    'src/Graphics/Transform.cpp',
+
     'src/Graphics/Rendering/Pipeline.cpp',
     'src/Graphics/Rendering/RendererBackend.cpp',
     'src/Graphics/Rendering/Shader.cpp',

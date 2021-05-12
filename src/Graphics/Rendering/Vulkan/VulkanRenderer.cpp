@@ -376,7 +376,7 @@ RenderPipeline& VulkanRenderer::DefaultPipeline() {
 	return *m_defaultPipeline;
 }
 
-void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, RenderPipeline& pipeline){
+void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform, RenderPipeline& pipeline){
 	if(vertexCount > m_vertexBuffers[m_currentFrame].size){
 		throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
 	}
@@ -389,6 +389,7 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, RenderPi
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, vertexBuffers, offsets);
 
+	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], 0, 16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
 	vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
 }
 

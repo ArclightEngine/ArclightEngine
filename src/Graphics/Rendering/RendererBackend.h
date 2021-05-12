@@ -4,6 +4,7 @@
 
 #include "Pipeline.h"
 #include "Graphics/Vertex.h"
+#include "Graphics/Transform.h"
 
 namespace Arclight::Rendering {
 
@@ -17,7 +18,7 @@ public:
 	virtual void Render() = 0;
 	virtual void WaitDeviceIdle() const = 0;
 
-	virtual void Draw(const Vertex* vertices, unsigned vertexCount, RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
+	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
 
 	virtual RenderPipeline::PipelineHandle CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config) = 0;
 	virtual void DestroyPipeline(RenderPipeline::PipelineHandle handle) = 0;

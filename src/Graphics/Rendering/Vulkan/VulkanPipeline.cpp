@@ -16,14 +16,20 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
 	assert(vertexShader.GetStage() == Shader::VertexShader);
 	assert(fragmentShader.GetStage() == Shader::FragmentShader);
 
+	VkPushConstantRange pushConstant2D = {
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		.offset = 0,
+		.size = sizeof(PushConstant2DTransform),
+	};
+
 	VkPipelineLayoutCreateInfo vkPipelineLayoutCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.pNext = nullptr,
 		.flags = 0,
 		.setLayoutCount = 0,
 		.pSetLayouts = nullptr,
-		.pushConstantRangeCount = 0,
-		.pPushConstantRanges = nullptr,
+		.pushConstantRangeCount = 1,
+		.pPushConstantRanges = &pushConstant2D,
 	};
 
 	if(vkCreatePipelineLayout(m_device, &vkPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout)){
@@ -138,6 +144,10 @@ VulkanPipeline::~VulkanPipeline(){
 
 	vkDestroyPipeline(device, m_pipeline, nullptr);
 	vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
+}
+
+void VulkanPipeline::UpdatePushConstant(VkCommandBuffer commandBuffer, uint32_t offset, uint32_t size, const void* data){
+	vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, offset, size, data);
 }
 
 VkShaderModule VulkanPipeline::CreateShaderModule(const Shader& shader){
