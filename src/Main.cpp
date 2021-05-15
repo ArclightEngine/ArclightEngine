@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include "Graphics/Rendering/Vulkan.h"
-#include "Window/WindowContext.h"
+#include <Arclight/Window/WindowContext.h>
 
 #include <vector>
 
@@ -39,7 +39,10 @@ int main(){
 	vkRenderer.Draw(vertices, 4, transform.Matrix());
 	vkRenderer.Render();
 
+	unsigned rot = 0;
+
 	while(isRunning){
+		transform.SetRotation(rot % 360);
 		vkRenderer.Draw(vertices, 4, transform.Matrix());
 		vkRenderer.Render();
 
@@ -50,11 +53,18 @@ int main(){
 					isRunning = false;
 					break;
 				case SDL_KEYDOWN:
+					if(event.key.keysym.sym == SDLK_LEFT){
+						rot -= 3;
+					} else if(event.key.keysym.sym == SDLK_RIGHT){
+						rot += 3;
+					}
 					break;
 				default:
 					break;
 			}
 		}
+
+		usleep(5000);
 	}
 
 	SDL_DestroyWindow(win);

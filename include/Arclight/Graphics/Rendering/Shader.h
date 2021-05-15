@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdint>
 
-#include "NonCopyable.h"
+#include <Arclight/NonCopyable.h>
 
 namespace Arclight::Rendering {
 

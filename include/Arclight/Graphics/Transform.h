@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Matrix.h"
-#include "Vector.h"
+#include <Arclight/Graphics/Matrix.h>
+#include <Arclight/Vector.h>
 
 namespace Arclight {
 

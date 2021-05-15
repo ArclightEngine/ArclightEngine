@@ -1,7 +1,7 @@
 #include "VulkanPipeline.h"
 
 #include "VulkanRenderer.h"
-#include "Graphics/Vertex.h"
+#include <Arclight/Graphics/Vertex.h>
 
 #include <stdexcept>
 #include <cassert>

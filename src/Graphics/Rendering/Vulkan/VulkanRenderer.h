@@ -2,11 +2,13 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Window/WindowContext.h"
+#include <Arclight/Window/WindowContext.h>
 
-#include "Graphics/Rendering/RendererBackend.h"
+#include <Arclight/Graphics/Rendering/RendererBackend.h>
+
 #include "VulkanPipeline.h"
 #include "VulkanMemory.h"
+#include "VulkanTexture.h"
 
 #include <vector>
 #include <optional>
@@ -18,6 +20,7 @@ namespace Arclight::Rendering {
 
 class VulkanRenderer final : public Renderer {
 	friend class VulkanPipeline;
+	friend class VulkanTexture;
 public:
 	~VulkanRenderer();
 
@@ -37,11 +40,16 @@ public:
 	RenderPipeline::PipelineHandle CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config);
 	void DestroyPipeline(RenderPipeline::PipelineHandle handle);
 
+	Renderer::TextureHandle AllocateTexture(const Vector2u& bounds);
+	void UpdateTexture(Renderer::TextureHandle texture, const void* data);
+	void DestroyTexture(Renderer::TextureHandle texture);
+
 protected:
 	inline VkDevice GetDevice() { return m_device; }
 	inline VkRenderPass GetRenderPass() { return m_renderPass; }
 	inline VkExtent2D GetScreenExtent() const { return m_swapExtent; }
 
+	std::set<VulkanTexture*> m_textures;
 	std::set<VulkanPipeline*> m_pipelines;
 	RenderPipeline* m_defaultPipeline = nullptr;
 

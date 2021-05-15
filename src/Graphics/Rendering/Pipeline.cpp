@@ -1,6 +1,6 @@
-#include "Pipeline.h"
+#include <Arclight/Graphics/Rendering/Pipeline.h>
 
-#include "RendererBackend.h"
+#include <Arclight/Graphics/Rendering/RendererBackend.h>
 
 namespace Arclight::Rendering {
 

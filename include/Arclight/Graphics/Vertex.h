@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Vector.h"
-#include "Colour.h"
+#include <Arclight/Vector.h>
+#include <Arclight/Colour.h>
 
 namespace Arclight {
 

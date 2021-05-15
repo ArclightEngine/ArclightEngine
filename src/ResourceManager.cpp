@@ -1,15 +1,19 @@
-#include "ResourceManager.h"
+#include <Arclight/ResourceManager.h>
 
 #include <cstdio>
 #include <cassert>
 
+#include <map>
+
 namespace Arclight::ResourceManager {
+
+std::map<std::string, Resource*> cache;
 
 void Initialize(){
 
 }
 
-int LoadResource(const std::string& name, std::vector<uint8_t>& data){
+int LoadResource(const std::string& name, Resource*& resource){
     std::string path = "Resources/" + name;
 
     FILE* file = fopen(path.c_str(), "r");
@@ -17,12 +21,16 @@ int LoadResource(const std::string& name, std::vector<uint8_t>& data){
         return 1;
     }
 
+    resource = new Resource();
+
     fseek(file, 0, SEEK_END);
-    data.resize(ftell(file));
+    resource->m_data.resize(ftell(file));
     fseek(file, 0, SEEK_SET);
 
-    size_t read = fread(data.data(), 1, data.size(), file);
-    assert(read == data.size());
+    size_t read = fread(resource->m_data.data(), 1, resource->m_data.size(), file);
+    assert(read == resource->m_data.size());
+
+    cache[name] = resource;
 
     return 0;
 }

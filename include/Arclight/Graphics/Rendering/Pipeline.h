@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Shader.h"
-#include "NonCopyable.h"
+#include <Arclight/Graphics/Rendering/Shader.h>
+#include <Arclight/NonCopyable.h>
 
 namespace Arclight::Rendering {
 

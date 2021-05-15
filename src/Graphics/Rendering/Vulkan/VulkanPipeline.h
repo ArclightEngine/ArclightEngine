@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Graphics/Rendering/Pipeline.h"
-#include "Graphics/Vertex.h"
+#include <Arclight/Graphics/Rendering/Pipeline.h>
+#include <Arclight/Graphics/Vertex.h>
 
 #include <vulkan/vulkan_core.h>
 

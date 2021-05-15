@@ -3,8 +3,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 
-#include "Vector.h"
-#include "Colour.h"
+#include <Arclight/Vector.h>
+#include <Arclight/Colour.h>
 
 namespace Arclight {
 

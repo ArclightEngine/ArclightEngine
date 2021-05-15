@@ -14,6 +14,7 @@ cpp_files = [
     'src/Main.cpp',
     'src/ResourceManager.cpp',
 
+    'src/Graphics/Image.cpp',
     'src/Graphics/Matrix.cpp',
     'src/Graphics/Transform.cpp',
 
@@ -27,7 +28,7 @@ cpp_files = [
     'src/Window/WindowContext.cpp',
 ]
 
-inc_dirs = include_directories('src')
+inc_dirs = include_directories('include')
 
 sdl2 = dependency('sdl2')
 vulkan = dependency('vulkan')

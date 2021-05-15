@@ -3,10 +3,12 @@
 #include <string>
 #include <vector>
 
+#include <Arclight/Resource.h>
+
 namespace Arclight::ResourceManager {
 
 void Initialize();
 
-int LoadResource(const std::string& name, std::vector<uint8_t>& data);
+int LoadResource(const std::string& name, Resource*& resource);
 
 } // namespace Arclight::ResourceManager

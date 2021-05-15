@@ -1,7 +1,7 @@
 #include "VulkanRenderer.h"
 #include "VulkanPrivate.h"
 
-#include "ResourceManager.h"
+#include <Arclight/ResourceManager.h>
 
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>
@@ -280,14 +280,14 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 	s_rendererInstance = this;
 
 	{
-		std::vector<uint8_t> vertData;
-		std::vector<uint8_t> fragData;
+		Resource* vertData;
+		Resource* fragData;
 
 		ResourceManager::LoadResource("shaders/vert.spv", vertData);
 		ResourceManager::LoadResource("shaders/frag.spv", fragData);
 
-		Shader vertShader(Shader::VertexShader, std::move(vertData));
-		Shader fragShader(Shader::FragmentShader, std::move(fragData));
+		Shader vertShader(Shader::VertexShader, vertData->m_data);
+		Shader fragShader(Shader::FragmentShader, fragData->m_data);
 
 		m_defaultPipeline = new RenderPipeline(vertShader, fragShader);
 		//m_pipeline = new VulkanPipeline(*this, &vertShader, &fragShader);
@@ -358,6 +358,18 @@ void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle){
 	assert(erased == 1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
 
 	delete reinterpret_cast<VulkanPipeline*>(handle);
+}
+
+Renderer::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds){
+	
+}
+
+void VulkanRenderer::UpdateTexture(Renderer::TextureHandle texture, const void* data){
+
+}
+
+void VulkanRenderer::DestroyTexture(Renderer::TextureHandle texture){
+
 }
 
 void VulkanRenderer::Render(){
