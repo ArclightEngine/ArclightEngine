@@ -45,9 +45,29 @@ public:
 	void DestroyTexture(Renderer::TextureHandle texture);
 
 protected:
+	// RAII Command Buffer wrapper
+	class OneTimeCommandBuffer
+		: NonCopyable {
+	public:
+		OneTimeCommandBuffer(VulkanRenderer& renderer, VkCommandPool pool);
+		~OneTimeCommandBuffer();
+
+		inline VkCommandBuffer Buffer() { return m_buffer; }
+
+	private:
+		VulkanRenderer& m_renderer;
+		VkCommandPool m_pool = VK_NULL_HANDLE;
+		VkCommandBuffer m_buffer = VK_NULL_HANDLE;
+	};
+
 	inline VkDevice GetDevice() { return m_device; }
 	inline VkRenderPass GetRenderPass() { return m_renderPass; }
 	inline VkExtent2D GetScreenExtent() const { return m_swapExtent; }
+	inline VmaAllocator Allocator() { return m_alloc; }
+
+	inline OneTimeCommandBuffer CreateOneTimeCommandBuffer(){
+		return OneTimeCommandBuffer(*this, m_commandPools[m_currentFrame]);
+	}
 
 	std::set<VulkanTexture*> m_textures;
 	std::set<VulkanPipeline*> m_pipelines;

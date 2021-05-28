@@ -16,6 +16,7 @@ cpp_files = [
 
     'src/Graphics/Image.cpp',
     'src/Graphics/Matrix.cpp',
+    'src/Graphics/Texture.cpp',
     'src/Graphics/Transform.cpp',
 
     'src/Graphics/Rendering/Pipeline.cpp',
@@ -24,11 +25,12 @@ cpp_files = [
     'src/Graphics/Rendering/Vulkan/VulkanMemory.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanPipeline.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanRenderer.cpp',
+    'src/Graphics/Rendering/Vulkan/VulkanTexture.cpp',
 
     'src/Window/WindowContext.cpp',
 ]
 
-inc_dirs = include_directories('include')
+inc_dirs = [ include_directories('include'),  include_directories('ThirdParty') ]
 
 sdl2 = dependency('sdl2')
 vulkan = dependency('vulkan')

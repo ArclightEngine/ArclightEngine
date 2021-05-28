@@ -1,12 +1,12 @@
 #include "VulkanRenderer.h"
 #include "VulkanPrivate.h"
 
+#include "VulkanMemory.h"
+
 #include <Arclight/ResourceManager.h>
 
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>
-
-#include "vk_mem_alloc.h"
 
 #include <stdexcept>
 
@@ -16,6 +16,10 @@ VulkanRenderer::~VulkanRenderer(){
 	EndRenderPass();
 
 	vkQueueWaitIdle(m_graphicsQueue);
+
+	for(VulkanTexture* texture : m_textures){
+		delete texture;
+	}
 
 	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
 		vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
@@ -361,7 +365,7 @@ void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle){
 }
 
 Renderer::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds){
-	
+	return nullptr;
 }
 
 void VulkanRenderer::UpdateTexture(Renderer::TextureHandle texture, const void* data){
@@ -405,6 +409,63 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 	vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
 }
 
+VulkanRenderer::OneTimeCommandBuffer::OneTimeCommandBuffer(VulkanRenderer& renderer, VkCommandPool pool)
+	: m_renderer(renderer), m_pool(pool) {
+	VkCommandBufferAllocateInfo bufferInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.commandPool = pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1,
+	};
+
+	vkCheck(vkAllocateCommandBuffers(m_renderer.m_device, &bufferInfo, &m_buffer));
+
+	VkCommandBufferBeginInfo bufferBeginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.pInheritanceInfo = nullptr,
+	};
+
+	vkCheck(vkBeginCommandBuffer(m_buffer, &bufferBeginInfo));
+}
+
+VulkanRenderer::OneTimeCommandBuffer::~OneTimeCommandBuffer(){
+	if(m_buffer == VK_NULL_HANDLE){
+		return;
+	}
+
+	vkCheck(vkEndCommandBuffer(m_buffer));
+
+	VkSubmitInfo submitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = nullptr,
+		.waitSemaphoreCount = 0,
+		.pWaitSemaphores = nullptr,
+		.pWaitDstStageMask = 0,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &m_buffer,
+		.signalSemaphoreCount = 0,
+		.pSignalSemaphores = nullptr,
+	};
+
+	VkFenceCreateInfo fenceInfo = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+	};
+
+	VkFence fence;
+	vkCheck(vkCreateFence(m_renderer.m_device, &fenceInfo, nullptr, &fence)); // Create a fence
+
+	vkCheck(vkQueueSubmit(m_renderer.m_graphicsQueue, 1, &submitInfo, fence)); // Submit to the queue
+
+	vkWaitForFences(m_renderer.m_device, 1, &fence, VK_TRUE, UINT64_MAX); // Make sure we are finished
+
+	vkFreeCommandBuffers(m_renderer.m_device, m_pool, 1, &m_buffer);
+}
+
 void VulkanRenderer::BeginFrame(){
 	VkResult result = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
 	assert(result == VK_SUCCESS);
@@ -412,7 +473,7 @@ void VulkanRenderer::BeginFrame(){
 	vkWaitForFences(m_device, 1, &m_frameFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(m_device, 1, &m_frameFences[m_currentFrame]);
 
-	vkResetCommandPool(m_device, m_commandPools[m_currentFrame], 0); // Apparently resetting the whole command pool is faster
+	vkCheck(vkResetCommandPool(m_device, m_commandPools[m_currentFrame], 0)); // Apparently resetting the whole command pool is faster
 	BeginCommandBuffer();
 }
 

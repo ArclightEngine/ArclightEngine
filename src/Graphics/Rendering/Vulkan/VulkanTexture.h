@@ -8,17 +8,47 @@
 
 namespace Arclight::Rendering {
 
-class VulkanTexture {
+class VulkanTexture final {
 public:
-	VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds);
+	VulkanTexture(class VulkanRenderer& renderer, const Vector2u& bounds);
+	~VulkanTexture();
+
+	////////////////////////////////////////
+	/// Returns the staging buffer mapping for the texture.
+	///
+	/// \return Pointer to mapped staging buffer
+	///
+	/// \note This buffer is CPU-only. Call UpdateTextureImage to update the GPU copy.
+	////////////////////////////////////////
+	inline void* Buffer() { return m_stagingMap; }
+
+	////////////////////////////////////////
+	/// Update the VkImage for a texture using the staging buffer.
+	////////////////////////////////////////
+	void UpdateTextureImage();
 
 private:
-	Vector2u m_bounds;
+	////////////////////////////////////////
+	/// Transition the image layout using an image memory barrier.
+	///
+	/// \param commandBuffer Command buffer
+	/// \param oldLayout Old image layout
+	/// \param newLayout New image layout
+	////////////////////////////////////////
+	void LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-	VkImage m_image;
-	VmaAllocation m_alloaction;
+	class VulkanRenderer& m_renderer; // Renderer object
 
-	class VulkanRenderer& m_renderer;
+	Vector2u m_bounds; // Texture bounds
+
+	bool requireLayoutTransition = true; // Layout transition when updating texture?
+
+	void* m_stagingMap; // Staging buffer host mapping
+
+	VkBuffer m_staging; // Staging buffer (CPU to GPU)
+	VmaAllocation m_stagingAllocation;
+	VkImage m_image; // Vulkan image object (GPU only, more efficient)
+	VmaAllocation m_imageAllocation;
 };
 
 } // namespace Arclight

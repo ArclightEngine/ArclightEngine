@@ -11,7 +11,7 @@
 #pragma GCC diagnostic ignored "-Wnullability-completeness"
 #endif
 
-#include "vk_mem_alloc.h"
+#include "VulkanMemoryAllocator/vk_mem_alloc.h"
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
