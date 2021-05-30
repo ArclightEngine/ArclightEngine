@@ -78,9 +78,60 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
 
     requireLayoutTransition = true;
     UpdateTextureImage();
+
+    VkImageViewCreateInfo imageViewCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .image = m_image,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = VK_FORMAT_R8G8B8A8_SRGB,
+        .components = {
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+        },
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
+
+    vkCheck(vkCreateImageView(m_renderer.GetDevice(), &imageViewCreateInfo, nullptr, &m_imageView));
+
+    // TODO: Filter and address mode configuration
+    VkSamplerCreateInfo samplerCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .magFilter = VK_FILTER_NEAREST, // Magnification filter
+        .minFilter = VK_FILTER_NEAREST, // Minificatioon filter
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT, // Repeat texture
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT, // Repeat texture
+        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT, // Repeat texture
+        .mipLodBias = 0.f,
+        .anisotropyEnable = VK_FALSE, // No ansiotropy
+        .maxAnisotropy = 0.f, // Ignored as we are not using it
+        .compareEnable = VK_FALSE,
+        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .minLod = 0.f,
+        .maxLod = 0.f,
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK, // Used when sampling beyond image, not awfully relevant to us with repeat
+        .unnormalizedCoordinates = VK_FALSE, // Use [0, 1) texel range
+    };
+
+    vkCheck(vkCreateSampler(m_renderer.GetDevice(), &samplerCreateInfo, nullptr, &m_texSampler));
 }
 
 VulkanTexture::~VulkanTexture(){
+    vkDestroySampler(m_renderer.GetDevice(), m_texSampler, nullptr);
+    vkDestroyImageView(m_renderer.GetDevice(), m_imageView, nullptr);
+
     vmaDestroyImage(m_renderer.Allocator(), m_image, m_imageAllocation);
     vmaDestroyBuffer(m_renderer.Allocator(), m_staging, m_stagingAllocation);
 }

@@ -47,8 +47,12 @@ private:
 
 	VkBuffer m_staging; // Staging buffer (CPU to GPU)
 	VmaAllocation m_stagingAllocation;
+
 	VkImage m_image; // Vulkan image object (GPU only, more efficient)
 	VmaAllocation m_imageAllocation;
+
+	VkImageView m_imageView; // Needs an image view
+	VkSampler m_texSampler; // Image sampler (allows us to apply filters, etc.)
 };
 
 } // namespace Arclight
