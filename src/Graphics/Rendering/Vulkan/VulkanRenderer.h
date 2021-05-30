@@ -5,6 +5,7 @@
 #include <Arclight/Window/WindowContext.h>
 
 #include <Arclight/Graphics/Rendering/RendererBackend.h>
+#include <Arclight/Graphics/Texture.h>
 
 #include "VulkanPipeline.h"
 #include "VulkanMemory.h"
@@ -15,6 +16,7 @@
 #include <set>
 
 #define RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT 2
+#define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 0
 
 namespace Arclight::Rendering {
 
@@ -33,16 +35,16 @@ public:
 	RenderPipeline& DefaultPipeline();
 
 	// Draw Primitives
-	void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), RenderPipeline& pipeline = RenderPipeline::Default());
+	void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), Texture::TextureHandle texture = nullptr, RenderPipeline& pipeline = RenderPipeline::Default());
 
 	const std::string& GetName() const { return m_rendererName; }
 
 	RenderPipeline::PipelineHandle CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config);
 	void DestroyPipeline(RenderPipeline::PipelineHandle handle);
 
-	Renderer::TextureHandle AllocateTexture(const Vector2u& bounds);
-	void UpdateTexture(Renderer::TextureHandle texture, const void* data);
-	void DestroyTexture(Renderer::TextureHandle texture);
+	Texture::TextureHandle AllocateTexture(const Vector2u& bounds);
+	void UpdateTexture(Texture::TextureHandle texture, const void* data);
+	void DestroyTexture(Texture::TextureHandle texture);
 
 protected:
 	// RAII Command Buffer wrapper
@@ -72,6 +74,10 @@ protected:
 	std::set<VulkanTexture*> m_textures;
 	std::set<VulkanPipeline*> m_pipelines;
 	RenderPipeline* m_defaultPipeline = nullptr;
+
+	// For now all pipelines are required to have the same descriptor set layout
+	// TODO: More configurable pipelines
+	VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
 
 private:
 	struct SwapChainInfo {
@@ -114,6 +120,9 @@ private:
 	int CreateLogicalDevice();
 	void CreateCommandPools();
 
+	void CreateDescriptorSetLayout();
+	void CreateDescriptorPool();
+
 	// Begin recording command buffer
 	void BeginCommandBuffer();
 	// Finish recording command buffer
@@ -152,6 +161,14 @@ private:
 	VkSemaphore m_renderFinishedSemaphores[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 	VkFence m_frameFences[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 	VertexBuffer m_vertexBuffers[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+
+	// Last used texture
+	// If the texture of the vertices being rendered is the same as the previous,
+	// We do not need to update descriptor sets
+	VulkanTexture* m_lastTextures[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+
+	VkDescriptorSet m_descriptorSets[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+	VkDescriptorPool m_descriptorPool;
 
 	std::vector<VkImage> m_images; // Swapchain image handles
 	std::vector<VkImageView> m_imageViews;

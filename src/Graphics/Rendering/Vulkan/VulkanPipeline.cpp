@@ -26,8 +26,8 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.pNext = nullptr,
 		.flags = 0,
-		.setLayoutCount = 0,
-		.pSetLayouts = nullptr,
+		.setLayoutCount = 1,
+		.pSetLayouts = &m_renderer.m_descriptorSetLayout,
 		.pushConstantRangeCount = 1,
 		.pPushConstantRanges = &pushConstant2D,
 	};
@@ -42,7 +42,7 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
 		.flags = 0,
 		.vertexBindingDescriptionCount = 1,
 		.pVertexBindingDescriptions = &m_binding,
-		.vertexAttributeDescriptionCount = 2,
+		.vertexAttributeDescriptionCount = 3,
 		.pVertexAttributeDescriptions = m_attributeDescriptions,
 	};
 

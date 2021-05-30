@@ -5,13 +5,12 @@
 #include <Arclight/Graphics/Rendering/Pipeline.h>
 #include <Arclight/Graphics/Vertex.h>
 #include <Arclight/Graphics/Transform.h>
+#include <Arclight/Graphics/Texture.h>
 
 namespace Arclight::Rendering {
 
 class Renderer {
 public:
-	using TextureHandle = void*;
-
 	virtual ~Renderer() = default;
 
 	virtual int Initialize(class WindowContext* context) = 0;
@@ -20,7 +19,18 @@ public:
 	virtual void Render() = 0;
 	virtual void WaitDeviceIdle() const = 0;
 
-	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
+	////////////////////////////////////////
+	/// \brief Draw
+	///
+	///	Draw a polygon.
+	///
+	/// \param vertices Array of vertices
+	/// \param vertexCount Amount of elements in vertices, amount of vertices to draw
+	/// \param transform Transformation matrix to apply
+	/// \param texture Texture to use in shader
+	/// \param renderPipeline Render pipeline to use
+	////////////////////////////////////////
+	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), Texture::TextureHandle texture = nullptr, RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
 
 	////////////////////////////////////////
 	/// \brief CreatePipeline
@@ -52,7 +62,7 @@ public:
 	///
 	/// \return Handle to texture, texture handles are specific to the renderer and are no more than a way to unqiuely identify textures internally
 	////////////////////////////////////////
-	virtual TextureHandle AllocateTexture(const Vector2u& bounds) = 0;
+	virtual Texture::TextureHandle AllocateTexture(const Vector2u& bounds) = 0;
 
 	////////////////////////////////////////
 	/// \brief UpdateTexture
@@ -60,7 +70,7 @@ public:
 	/// \param texture Texture handle. MUST be valid
 	/// \param data Pointer to pixel data in RGBA format. MUST be large enough to contain full texture data.
 	////////////////////////////////////////
-	virtual void UpdateTexture(TextureHandle texture, const void* data) = 0;
+	virtual void UpdateTexture(Texture::TextureHandle texture, const void* data) = 0;
 	
 	////////////////////////////////////////
 	/// \brief DestroyTexture
@@ -69,7 +79,7 @@ public:
 	///
 	/// \param texture Valid texture handle
 	////////////////////////////////////////
-	virtual void DestroyTexture(TextureHandle texture) = 0;
+	virtual void DestroyTexture(Texture::TextureHandle texture) = 0;
 
 	virtual const std::string& GetName() const = 0;
 

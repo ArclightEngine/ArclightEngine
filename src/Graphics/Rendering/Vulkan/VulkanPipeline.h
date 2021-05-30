@@ -16,7 +16,8 @@ public:
 	VulkanPipeline(class VulkanRenderer& renderer, const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config);
 	~VulkanPipeline();
 
-	VkPipeline GetPipelineHandle() { return m_pipeline; }
+	inline VkPipeline GetPipelineHandle() { return m_pipeline; }
+	inline VkPipelineLayout PipelineLayout() { return m_pipelineLayout; }
 
 	void UpdatePushConstant(VkCommandBuffer commandBuffer, uint32_t offset, uint32_t size, const void* data);
 
@@ -41,8 +42,9 @@ private:
 
 	static_assert(sizeof(Vertex::position.x) == sizeof(uint32_t));
 	static_assert(sizeof(Vertex::position) == 8U);
+	static_assert(sizeof(Vertex::texCoord) == 8U);
 	static_assert(sizeof(Vertex::colour) == 16U);
-	VkVertexInputAttributeDescription m_attributeDescriptions[2] = {
+	VkVertexInputAttributeDescription m_attributeDescriptions[3] = {
 		{
 			.location = 0, // Shader input, specified using the location directive in shader code. We take position in location 0
 			.binding = 0, // Index of the binding
@@ -50,7 +52,13 @@ private:
 			.offset = (offsetof(Vertex, position)),
 		},
 		{
-			.location = 1, // Shader input, specified using the location directive in shader code. We take colour in location 1
+			.location = 1, // Shader input, specified using the location directive in shader code. We take texture coordinate in location 0
+			.binding = 0, // Index of the binding
+			.format = VK_FORMAT_R32G32_SFLOAT, // Two 32-bit floats
+			.offset = (offsetof(Vertex, texCoord)),
+		},
+		{
+			.location = 2, // Shader input, specified using the location directive in shader code. We take colour in location 1
 			.binding = 0, // Index of the binding
 			.format = VK_FORMAT_R32G32B32A32_SFLOAT, // 32-bit red, green, blue, alpha
 			.offset = (offsetof(Vertex, colour)),

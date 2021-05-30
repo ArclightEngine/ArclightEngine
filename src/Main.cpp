@@ -29,21 +29,28 @@ int main(){
 	}
 
 	Vertex vertices[] = {
-		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.f}},
-		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.f}},
-		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f, 1.f}},
-		{{0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.f}},
+		{{-0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.f}}, // Bottom left
+		{{-0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.f}}, // Top left
+		{{0.5f, 0.5f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.f}}, // Bottom right
+		{{0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.f}}, // Top right
 	};
 
+	Image image;
+	image.LoadResource("textures/art.png");
+
+	Texture tex(image);
+
 	Transform transform;
-	vkRenderer.Draw(vertices, 4, transform.Matrix());
+	
+	vkRenderer.Draw(vertices, 4, transform.Matrix(), tex.Handle());
 	vkRenderer.Render();
 
-	unsigned rot = 0;
-
+	signed rot = 0;
 	while(isRunning){
+		SDL_WaitEvent(nullptr);
+
 		transform.SetRotation(rot % 360);
-		vkRenderer.Draw(vertices, 4, transform.Matrix());
+		vkRenderer.Draw(vertices, 4, transform.Matrix(), tex.Handle());
 		vkRenderer.Render();
 
 		SDL_Event event;
@@ -54,17 +61,15 @@ int main(){
 					break;
 				case SDL_KEYDOWN:
 					if(event.key.keysym.sym == SDLK_LEFT){
-						rot -= 3;
+						rot -= 15;
 					} else if(event.key.keysym.sym == SDLK_RIGHT){
-						rot += 3;
+						rot += 15;
 					}
 					break;
 				default:
 					break;
 			}
 		}
-
-		usleep(5000);
 	}
 
 	SDL_DestroyWindow(win);

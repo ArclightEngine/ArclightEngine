@@ -38,7 +38,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     
     m_stagingMap = stagingAllocInfo.pMappedData;
     for(unsigned i = 0; i < bounds.x * bounds.y; i++){
-        reinterpret_cast<uint32_t*>(m_stagingMap)[i] = 0xff00ffff; // Fill missing textures with pink
+        reinterpret_cast<uint32_t*>(m_stagingMap)[i] = __builtin_bswap32(RGBAColour(255, 255, 0, 255).value); // Fill missing textures with pink
     }
 
     VkImageCreateInfo imageCreateInfo = {
@@ -85,7 +85,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
         .flags = 0,
         .image = m_image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = VK_FORMAT_R8G8B8A8_SRGB,
+        .format = imageCreateInfo.format, // Use the same format
         .components = {
             VK_COMPONENT_SWIZZLE_IDENTITY,
             VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -126,6 +126,12 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     };
 
     vkCheck(vkCreateSampler(m_renderer.GetDevice(), &samplerCreateInfo, nullptr, &m_texSampler));
+
+    m_descriptorImageInfo = {
+        .sampler = m_texSampler,
+        .imageView = m_imageView,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
 }
 
 VulkanTexture::~VulkanTexture(){
@@ -180,6 +186,10 @@ void VulkanTexture::LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayou
         1, &barrier);
 }
 
+void VulkanTexture::UpdateTextureBuffer(const void* data){
+    memcpy(m_stagingMap, data, sizeof(RGBAColour) * m_bounds.x * m_bounds.y);
+}
+
 void VulkanTexture::UpdateTextureImage(){
     auto commandBuffer = m_renderer.CreateOneTimeCommandBuffer(); // Get a one-time command buffer for our copy operation
 
@@ -209,7 +219,11 @@ void VulkanTexture::UpdateTextureImage(){
         LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         requireLayoutTransition = false;
     } else {
+        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
         vkCmdCopyBufferToImage(commandBuffer.Buffer(), m_staging, m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyInfo);
+
+        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 }
 

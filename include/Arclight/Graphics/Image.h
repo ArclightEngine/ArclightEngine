@@ -12,6 +12,9 @@ class Image {
 public:
 	Image();
 
+	inline const Vector2i& Size() const { return m_size; }
+	inline const void* Data() const { return m_pixelData.get(); }
+
 	int LoadResource(const std::string& name);
 
 private:

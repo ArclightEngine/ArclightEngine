@@ -23,9 +23,18 @@ public:
 	inline void* Buffer() { return m_stagingMap; }
 
 	////////////////////////////////////////
+	/// Update the staging buffer
+	///
+	/// \param data New pixel data
+	////////////////////////////////////////
+	void UpdateTextureBuffer(const void* data);
+
+	////////////////////////////////////////
 	/// Update the VkImage for a texture using the staging buffer.
 	////////////////////////////////////////
 	void UpdateTextureImage();
+
+	inline const VkDescriptorImageInfo& DescriptorImageInfo() const { return m_descriptorImageInfo; }; // Used to update descriptor sets for the fragment shader
 
 private:
 	////////////////////////////////////////
@@ -50,6 +59,7 @@ private:
 
 	VkImage m_image; // Vulkan image object (GPU only, more efficient)
 	VmaAllocation m_imageAllocation;
+	VkDescriptorImageInfo m_descriptorImageInfo; // Used to update descriptor sets for the fragment shader
 
 	VkImageView m_imageView; // Needs an image view
 	VkSampler m_texSampler; // Image sampler (allows us to apply filters, etc.)

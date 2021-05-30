@@ -17,6 +17,9 @@ VulkanRenderer::~VulkanRenderer(){
 
 	vkQueueWaitIdle(m_graphicsQueue);
 
+	vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+
 	for(VulkanTexture* texture : m_textures){
 		delete texture;
 	}
@@ -283,6 +286,9 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
 	s_rendererInstance = this;
 
+	CreateDescriptorSetLayout();
+	CreateDescriptorPool();
+
 	{
 		Resource* vertData;
 		Resource* fragData;
@@ -294,7 +300,6 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		Shader fragShader(Shader::FragmentShader, fragData->m_data);
 
 		m_defaultPipeline = new RenderPipeline(vertShader, fragShader);
-		//m_pipeline = new VulkanPipeline(*this, &vertShader, &fragShader);
 	}
 
 	CreateCommandPools();
@@ -329,19 +334,14 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 	vkCheck(vmaCreateAllocator(&allocatorInfo, &m_alloc));
 
 	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
-		if(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS){
-			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create semaphores!");
-		}
+		vkCheck(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
 
-		if(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS){
-			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create semaphores!");
-		}
+		vkCheck(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
 		
-		if(vkCreateFence(m_device, &fenceInfo, nullptr, &m_frameFences[i]) != VK_SUCCESS){
-			throw std::runtime_error("VulkanRenderer::Initialize: Failed to create fences!");
-		}
+		vkCheck(vkCreateFence(m_device, &fenceInfo, nullptr, &m_frameFences[i]));
 
 		m_vertexBuffers[i] = CreateVertexBuffer(4); // Each frame gets a default vertex buffer of 4 vertices
+		m_lastTextures[i] = nullptr;
 	}
 
 	BeginFrame();
@@ -364,16 +364,34 @@ void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle){
 	delete reinterpret_cast<VulkanPipeline*>(handle);
 }
 
-Renderer::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds){
-	return nullptr;
+Texture::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds){
+	VulkanTexture* texture = new VulkanTexture(*this, bounds);
+
+	m_textures.insert(texture);
+
+	return texture;
 }
 
-void VulkanRenderer::UpdateTexture(Renderer::TextureHandle texture, const void* data){
+void VulkanRenderer::UpdateTexture(Texture::TextureHandle texture, const void* data){
+	assert(m_textures.contains(reinterpret_cast<VulkanTexture*>(texture)));
 
+	VulkanTexture* vkTex = reinterpret_cast<VulkanTexture*>(texture);
+
+	vkTex->UpdateTextureBuffer(data);
+	vkTex->UpdateTextureImage();
 }
 
-void VulkanRenderer::DestroyTexture(Renderer::TextureHandle texture){
+void VulkanRenderer::DestroyTexture(Texture::TextureHandle texture){
+	size_t erased = m_textures.erase(reinterpret_cast<VulkanTexture*>(texture));
+	assert(erased == 1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
 
+	for(unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
+		if(m_lastTextures[i] == texture){
+			m_lastTextures[i] = nullptr; // Invalidate m_lastTexture if relevant
+		}
+	}
+
+	delete reinterpret_cast<VulkanTexture*>(texture);
 }
 
 void VulkanRenderer::Render(){
@@ -392,9 +410,28 @@ RenderPipeline& VulkanRenderer::DefaultPipeline() {
 	return *m_defaultPipeline;
 }
 
-void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform, RenderPipeline& pipeline){
+void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform, Texture::TextureHandle texture, RenderPipeline& pipeline){
 	if(vertexCount > m_vertexBuffers[m_currentFrame].size){
 		throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
+	}
+
+	if(texture && texture != m_lastTextures[m_currentFrame]){
+		m_lastTextures[m_currentFrame] = reinterpret_cast<VulkanTexture*>(texture);
+
+		VkWriteDescriptorSet descriptorWrite = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext = nullptr,
+			.dstSet = m_descriptorSets[m_currentFrame],
+			.dstBinding = RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR,
+			.dstArrayElement = 0,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = &reinterpret_cast<VulkanTexture*>(texture)->DescriptorImageInfo(),
+			.pBufferInfo = nullptr,
+			.pTexelBufferView = nullptr,
+		};
+
+		vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr); // Update sampler descriptor
 	}
 
 	VertexBuffer& vertexBuffer = m_vertexBuffers[m_currentFrame];
@@ -404,6 +441,8 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 	VkBuffer vertexBuffers[] = { vertexBuffer.buffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, vertexBuffers, offsets);
+
+	vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->PipelineLayout(), 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
 
 	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], 0, 16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
 	vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
@@ -731,6 +770,55 @@ void VulkanRenderer::CreateCommandPools(){
 		bufferInfo.commandPool = m_commandPools[i];
 		vkCheck(vkAllocateCommandBuffers(m_device, &bufferInfo, &m_commandBuffers[i]));
 	}
+}
+
+void VulkanRenderer::CreateDescriptorSetLayout(){
+	VkDescriptorSetLayoutBinding samplerLayoutBinding = {
+		.binding = RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR,
+		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // Combined image sampler
+		.descriptorCount = 1,
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // Use in fragment shader
+		.pImmutableSamplers = nullptr,
+	};
+
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.bindingCount = 1,
+		.pBindings = &samplerLayoutBinding,
+	};
+
+	vkCheck(vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr, &m_descriptorSetLayout));
+}
+
+void VulkanRenderer::CreateDescriptorPool(){
+	VkDescriptorPoolSize samplerSize = {
+		.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.descriptorCount = RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT, // One set for each frame
+	};
+
+	VkDescriptorPoolCreateInfo poolCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.maxSets = RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT,
+		.poolSizeCount = 1,
+		.pPoolSizes = &samplerSize,
+	};
+
+	// TODO: This is VERY wasteful, we need a layout in an array for each set, find a better way to do this
+	std::vector<VkDescriptorSetLayout> layouts(RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
+	vkCheck(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &m_descriptorPool));
+
+	VkDescriptorSetAllocateInfo setAllocInfo = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.descriptorPool = m_descriptorPool,
+		.descriptorSetCount = RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT,
+		.pSetLayouts = layouts.data(),
+	};
+	vkCheck(vkAllocateDescriptorSets(m_device, &setAllocInfo, m_descriptorSets));
 }
 
 void VulkanRenderer::BeginCommandBuffer(){
