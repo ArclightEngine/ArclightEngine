@@ -2,6 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout( push_constant ) uniform Transform {
+    mat4 viewport;
     mat4 transform;
 };
 
@@ -13,7 +14,7 @@ layout(location = 0) out vec4 fragColour;
 layout(location = 1) out vec2 fragTexCoord;
 
 void main() {
-    gl_Position = transform * vec4(position, 0.0, 1.0);
+    gl_Position = viewport * transform * vec4(position, 0.0, 1.0);
     fragColour = colour;
     fragTexCoord = texCoord;
 }

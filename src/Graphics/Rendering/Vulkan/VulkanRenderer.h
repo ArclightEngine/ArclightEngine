@@ -6,6 +6,7 @@
 
 #include <Arclight/Graphics/Rendering/RendererBackend.h>
 #include <Arclight/Graphics/Texture.h>
+#include <Arclight/Graphics/Transform.h>
 
 #include "VulkanPipeline.h"
 #include "VulkanMemory.h"
@@ -145,6 +146,8 @@ private:
 	VkFormat m_swapImageFormat = VK_FORMAT_UNDEFINED;
 	VkColorSpaceKHR m_swapColourSpace;
 	VkExtent2D m_swapExtent;
+
+	Transform m_viewportTransform;
 
 	VmaAllocator m_alloc; // VMA library allocator object
 

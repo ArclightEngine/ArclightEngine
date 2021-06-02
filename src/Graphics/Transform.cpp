@@ -8,6 +8,8 @@ namespace Arclight {
 Transform::Transform(const Vector2f& position, const Vector2f& scale, float rotationDegrees)
 	: m_position(position), m_scale(scale) {
 	m_rotation = rotationDegrees * (M_PI / 180.f);
+
+	m_matrixDirty = true;
 }
 
 void Transform::SetPosition(const Vector2f& position) {

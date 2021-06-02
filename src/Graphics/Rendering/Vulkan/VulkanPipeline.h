@@ -10,6 +10,7 @@ namespace Arclight::Rendering {
 class VulkanPipeline final {
 public:
 	struct PushConstant2DTransform{
+		float viewport[16]; // mat4 viewport
 		float transform[16]; // mat4 transform
 	};
 

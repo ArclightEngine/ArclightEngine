@@ -284,23 +284,11 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		}
 	}
 
+	m_viewportTransform = Transform({ -1, -1 }, { 1.f / m_swapExtent.width, 1.f / m_swapExtent.height });
 	s_rendererInstance = this;
 
 	CreateDescriptorSetLayout();
 	CreateDescriptorPool();
-
-	{
-		Resource* vertData;
-		Resource* fragData;
-
-		ResourceManager::LoadResource("shaders/vert.spv", vertData);
-		ResourceManager::LoadResource("shaders/frag.spv", fragData);
-
-		Shader vertShader(Shader::VertexShader, vertData->m_data);
-		Shader fragShader(Shader::FragmentShader, fragData->m_data);
-
-		m_defaultPipeline = new RenderPipeline(vertShader, fragShader);
-	}
 
 	CreateCommandPools();
 
@@ -332,6 +320,19 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 	};
 	
 	vkCheck(vmaCreateAllocator(&allocatorInfo, &m_alloc));
+
+	{
+		Resource* vertData;
+		Resource* fragData;
+
+		ResourceManager::LoadResource("shaders/vert.spv", vertData);
+		ResourceManager::LoadResource("shaders/frag.spv", fragData);
+
+		Shader vertShader(Shader::VertexShader, vertData->m_data);
+		Shader fragShader(Shader::FragmentShader, fragData->m_data);
+
+		m_defaultPipeline = new RenderPipeline(vertShader, fragShader);
+	}
 
 	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
 		vkCheck(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
@@ -444,7 +445,9 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 
 	vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->PipelineLayout(), 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
 
-	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], 0, 16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
+	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], offsetof(VulkanPipeline::PushConstant2DTransform, viewport), 16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
+	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], offsetof(VulkanPipeline::PushConstant2DTransform, transform), 16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
+	
 	vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
 }
 
