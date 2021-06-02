@@ -20,10 +20,6 @@ VulkanRenderer::~VulkanRenderer(){
 	vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-	for(VulkanTexture* texture : m_textures){
-		delete texture;
-	}
-
 	for(int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++){
 		vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
 		vkDestroyCommandPool(m_device, m_commandPools[i], nullptr);
@@ -33,6 +29,10 @@ VulkanRenderer::~VulkanRenderer(){
 		vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
 		vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
 		vkDestroyFence(m_device, m_frameFences[i], nullptr);
+	}
+
+	for(VulkanTexture* texture : m_textures){
+		delete texture;
 	}
 
 	vmaDestroyAllocator(m_alloc);
@@ -505,6 +505,7 @@ VulkanRenderer::OneTimeCommandBuffer::~OneTimeCommandBuffer(){
 
 	vkWaitForFences(m_renderer.m_device, 1, &fence, VK_TRUE, UINT64_MAX); // Make sure we are finished
 
+	vkDestroyFence(m_renderer.m_device, fence, nullptr);
 	vkFreeCommandBuffers(m_renderer.m_device, m_pool, 1, &m_buffer);
 }
 

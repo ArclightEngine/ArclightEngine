@@ -16,6 +16,7 @@ cpp_files = [
 
     'src/Graphics/Image.cpp',
     'src/Graphics/Matrix.cpp',
+    'src/Graphics/Sprite.cpp',
     'src/Graphics/Texture.cpp',
     'src/Graphics/Transform.cpp',
 
