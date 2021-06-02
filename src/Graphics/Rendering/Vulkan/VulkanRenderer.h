@@ -21,7 +21,8 @@
 
 namespace Arclight::Rendering {
 
-class VulkanRenderer final : public Renderer {
+class VulkanRenderer final
+	: public Renderer {
 	friend class VulkanPipeline;
 	friend class VulkanTexture;
 public:
@@ -37,6 +38,8 @@ public:
 
 	// Draw Primitives
 	void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), Texture::TextureHandle texture = nullptr, RenderPipeline& pipeline = RenderPipeline::Default());
+
+	inline void Draw(RenderObject& obj) { Renderer::Draw(obj); }
 
 	const std::string& GetName() const { return m_rendererName; }
 

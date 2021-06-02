@@ -3,6 +3,8 @@
 #include <string>
 
 #include <Arclight/Graphics/Rendering/Pipeline.h>
+#include <Arclight/Graphics/Rendering/RenderObject.h>
+
 #include <Arclight/Graphics/Vertex.h>
 #include <Arclight/Graphics/Transform.h>
 #include <Arclight/Graphics/Texture.h>
@@ -31,6 +33,15 @@ public:
 	/// \param renderPipeline Render pipeline to use
 	////////////////////////////////////////
 	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), Texture::TextureHandle texture = nullptr, RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
+
+	////////////////////////////////////////
+	/// \brief Draw
+	///
+	/// Draw a RenderObject.
+	///
+	/// \param obj RenderObject to draw
+	////////////////////////////////////////
+	virtual void Draw(RenderObject& obj);
 
 	////////////////////////////////////////
 	/// \brief CreatePipeline

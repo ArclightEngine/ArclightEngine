@@ -8,6 +8,7 @@
 
 #include "Graphics/Rendering/Vulkan.h"
 #include <Arclight/Window/WindowContext.h>
+#include <Arclight/Graphics/Sprite.h>
 
 #include <vector>
 
@@ -28,29 +29,20 @@ int main(){
 		return 1;
 	}
 
-	Vertex vertices[] = {
-		{{0, 50}, {0.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.f}}, // Bottom left
-		{{0, 0}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.f}}, // Top left
-		{{50, 50}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.f}}, // Bottom right
-		{{50, 0}, {1.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.f}}, // Top right
-	};
-
 	Image image;
 	image.LoadResource("textures/art.png");
 
 	Texture tex(image);
-
-	Transform transform;
+	Sprite spr(tex);
 	
-	vkRenderer.Draw(vertices, 4, transform.Matrix(), tex.Handle());
+	vkRenderer.Draw(spr);
 	vkRenderer.Render();
 
 	signed rot = 0;
 	while(isRunning){
 		SDL_WaitEvent(nullptr);
 
-		transform.SetRotation(rot % 360);
-		vkRenderer.Draw(vertices, 4, transform.Matrix(), tex.Handle());
+		vkRenderer.Draw(spr);
 		vkRenderer.Render();
 
 		SDL_Event event;

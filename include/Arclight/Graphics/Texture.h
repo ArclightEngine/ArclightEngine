@@ -20,7 +20,9 @@ public:
 
     void Resize(const Vector2u& bounds);
 
+    inline const Vector2u& Size() const { return m_size; }
     inline TextureHandle Handle() { return m_handle; }
+
 private:
     Vector2u m_size = {0, 0};
 

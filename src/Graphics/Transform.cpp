@@ -45,6 +45,8 @@ const Matrix4& Transform::Matrix() {
 						sin * m_scale.x, cos * m_scale.y, 0, m_position.y,
 						0,    0,   1, 0,
 						0,    0,   0, 1);
+
+		m_matrixDirty = false;
 	}
 
 	return m_matrix;
