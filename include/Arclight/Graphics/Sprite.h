@@ -18,6 +18,15 @@ public:
 
     void Draw(Rendering::Renderer& renderer);
 
+    inline void SetScale(float scaleX, float scaleY) { m_transform.SetScale(scaleX, scaleY); }
+    inline void SetScale(const Vector2f& scale) { m_transform.SetScale(scale); }
+
+    inline void SetPosition(float x, float y) { m_transform.SetPosition(x, y); }
+    inline void SetPosition(const Vector2f& pos) { m_transform.SetPosition(pos); }
+    inline void Move(float offsetX, float offsetY) { m_transform.SetPosition(m_transform.GetPosition().x + offsetX, m_transform.GetPosition().y + offsetY); }
+    inline void Move(const Vector2f& offset) { m_transform.SetPosition(m_transform.GetPosition() + offset); }
+
+    inline const Vector2f& Scale() const { return m_transform.GetScale(); }
     inline const Vector2f& Position() const { return m_transform.GetPosition(); }	// Draw Drawable
 
 private:

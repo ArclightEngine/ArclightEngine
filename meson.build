@@ -14,6 +14,9 @@ cpp_files = [
     'src/Main.cpp',
     'src/ResourceManager.cpp',
 
+    'src/Core/Logger.cpp',
+    'src/Core/ThreadPool.cpp',
+
     'src/Graphics/Image.cpp',
     'src/Graphics/Matrix.cpp',
     'src/Graphics/Sprite.cpp',

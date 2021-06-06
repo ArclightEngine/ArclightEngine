@@ -4,6 +4,7 @@
 #include "VulkanMemory.h"
 
 #include <Arclight/ResourceManager.h>
+#include <Arclight/Core/Logger.h>
 
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>
@@ -74,19 +75,19 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
 	// Create our Vulkan instance
 	if(vkCreateInstance(&m_vkCreateInfo, nullptr, &m_instance) != VK_SUCCESS){
-		fprintf(stderr, "VulkanRenderer::Initialize: Failed to create Vulkan instance!");
+		Logger::Error("VulkanRenderer::Initialize: Failed to create Vulkan instance!");
 		return -1;
 	}
 
 	if(EnumerateGPUs()){
 		return -4;
 	} else if(!m_GPUs.size()){
-		fprintf(stderr, "VulkanRenderer::Initialize: No available Vulkan devices!");
+		Logger::Error("VulkanRenderer::Initialize: No available Vulkan devices!");
 		return -5;
 	}
 
 	if(SelectBestGPU() || m_renderGPU == VK_NULL_HANDLE){
-		fprintf(stderr, "VulkanRenderer::Initialize: No suitable Vulkan devices!");
+		Logger::Error("VulkanRenderer::Initialize: No suitable Vulkan devices!");
 		return -5;
 	}
 
@@ -94,7 +95,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		VkPhysicalDeviceProperties p;
 		vkGetPhysicalDeviceProperties(m_renderGPU, &p);
 
-		printf("Using GPU: %s\n", p.deviceName);
+		Logger::Debug("Using GPU: ", p.deviceName);
 	}
 
 	if(CreateLogicalDevice()){
@@ -103,13 +104,13 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
 	// Create Vulkan surface with SDL
 	if(!SDL_Vulkan_CreateSurface(sdlWindow, m_instance, &m_surface)){
-		fprintf(stderr, "VulkanRenderer::Initialize: Failed to create SDL Vulkan surface!\n");
+		Logger::Error("VulkanRenderer::Initialize: Failed to create SDL Vulkan surface!");
 		return -3;
 	}
 
 	VkBool32 supportsSurface = false;
 	if(vkGetPhysicalDeviceSurfaceSupportKHR(m_renderGPU, m_graphicsQueueFamily, m_surface, &supportsSurface) != VK_SUCCESS || !supportsSurface){
-		fprintf(stderr, "VulkanRenderer::Initialize: GPU does not support Vulkan surface!\n");
+		Logger::Error("VulkanRenderer::Initialize: GPU does not support Vulkan surface!");
 		return -7;
 	}
 
@@ -172,7 +173,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 	};
 
 	if(vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, nullptr, &m_swapchain) != VK_SUCCESS){
-		fprintf(stderr, "VulkanRenderer::Initialize: Failed to create swapchain!\n");
+		Logger::Error("VulkanRenderer::Initialize: Failed to create swapchain!\n");
 		return -8;
 	}
 
@@ -563,14 +564,14 @@ int VulkanRenderer::LoadExtensions(){
 	// Get the amount of Vulkan instance extensions from SDL
 	unsigned int eCount;
 	if(!SDL_Vulkan_GetInstanceExtensions(sdlWindow, &eCount, nullptr)){
-		fprintf(stderr, "VulkanRenderer::Initialize: Failed to get SDL Vulkan Extensions!\n");
+		Logger::Error("VulkanRenderer::Initialize: Failed to get SDL Vulkan Extensions!\n");
 		return -2;
 	}
 
 	// Get the actual extension names
 	m_vkExtensions.resize(eCount);
 	if(!SDL_Vulkan_GetInstanceExtensions(sdlWindow, &eCount, m_vkExtensions.data())){
-		fprintf(stderr, "VulkanRenderer::Initialize: Failed to get SDL Vulkan Extensions!\n");
+		Logger::Error("VulkanRenderer::Initialize: Failed to get SDL Vulkan Extensions!\n");
 		return -2;
 	}
 
@@ -583,13 +584,13 @@ int VulkanRenderer::LoadExtensions(){
 int VulkanRenderer::EnumerateGPUs(){
 	uint32_t deviceCount;
 	if(vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr) != VK_SUCCESS){ // Get Physical Device Count
-		fprintf(stderr, "VulkanRenderer::EnumerateGPUs: Failed to enumerate Vulkan Physical Devices!\n");
+		Logger::Error("VulkanRenderer::EnumerateGPUs: Failed to enumerate Vulkan Physical Devices!\n");
 		return -1;
 	}
 
 	m_GPUs.resize(deviceCount);
 	if(vkEnumeratePhysicalDevices(m_instance, &deviceCount, m_GPUs.data())){
-		fprintf(stderr, "VulkanRenderer::EnumerateGPUs: Failed to enumerate Vulkan Physical Devices!\n");
+		Logger::Error("VulkanRenderer::EnumerateGPUs: Failed to enumerate Vulkan Physical Devices!\n");
 		return -1;
 	}
 
@@ -704,7 +705,7 @@ VulkanRenderer::SwapChainInfo VulkanRenderer::GetSwapChainInfo(){
 int VulkanRenderer::CreateLogicalDevice(){
 	std::optional<uint32_t> gQueueFamily = GetGraphicsQueueFamily(); // Index of the first queue family found supporting graphics commands
 	if(!gQueueFamily.has_value()){
-		fprintf(stderr, "VulkanRenderer::CreateLogicalDevice: Failed to find graphics queue family!");
+		Logger::Error("VulkanRenderer::CreateLogicalDevice: Failed to find graphics queue family!");
 		return -1;
 	}
 
@@ -740,7 +741,7 @@ int VulkanRenderer::CreateLogicalDevice(){
 	};
 
 	if(vkCreateDevice(m_renderGPU, &createInfo, nullptr, &m_device) != VK_SUCCESS){
-		fprintf(stderr, "VulkanRenderer::CreateLogicalDevice: Failed to create logical device!");
+		Logger::Error("VulkanRenderer::CreateLogicalDevice: Failed to create logical device!");
 		return -1;
 	}
 

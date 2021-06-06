@@ -7,6 +7,9 @@
 #include <unistd.h>
 
 #include "Graphics/Rendering/Vulkan.h"
+
+#include <Arclight/Core/ThreadPool.h>
+
 #include <Arclight/Window/WindowContext.h>
 #include <Arclight/Graphics/Sprite.h>
 
@@ -22,6 +25,8 @@ int main(){
 	SDL_Window* win = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_VULKAN);
 	assert(win);
 
+	ThreadPool threadPool;
+
 	WindowContext windowContext(win);
 
 	Rendering::VulkanRenderer vkRenderer;
@@ -34,11 +39,13 @@ int main(){
 
 	Texture tex(image);
 	Sprite spr(tex);
+
+	spr.SetPosition(320, 240);
+	spr.SetScale(0.25f, 0.25f);
 	
 	vkRenderer.Draw(spr);
 	vkRenderer.Render();
 
-	signed rot = 0;
 	while(isRunning){
 		SDL_WaitEvent(nullptr);
 
@@ -53,9 +60,13 @@ int main(){
 					break;
 				case SDL_KEYDOWN:
 					if(event.key.keysym.sym == SDLK_LEFT){
-						rot -= 15;
+						spr.Move(-15, 0);
 					} else if(event.key.keysym.sym == SDLK_RIGHT){
-						rot += 15;
+						spr.Move(15, 0);
+					} else if(event.key.keysym.sym == SDLK_UP){
+						spr.Move(0, -15);
+					} else if(event.key.keysym.sym == SDLK_DOWN){
+						spr.Move(0, 15);
 					}
 					break;
 				default:
