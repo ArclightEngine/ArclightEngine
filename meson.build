@@ -1,4 +1,4 @@
-project('RPG',
+project('ArclightEngine',
     default_options : [
         'warning_level=2',
         'cpp_std=c++2a',
@@ -25,6 +25,7 @@ cpp_files = [
 
     'src/Graphics/Rendering/Pipeline.cpp',
     'src/Graphics/Rendering/RendererBackend.cpp',
+    'src/Graphics/Rendering/RenderObject.cpp',
     'src/Graphics/Rendering/Shader.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanMemory.cpp',
     'src/Graphics/Rendering/Vulkan/VulkanPipeline.cpp',

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <set>
 
 #include <Arclight/Graphics/Rendering/Pipeline.h>
 #include <Arclight/Graphics/Rendering/RenderObject.h>
@@ -18,7 +19,7 @@ public:
 	virtual int Initialize(class WindowContext* context) = 0;
 	static inline Renderer* Instance() { return s_rendererInstance; }
 
-	virtual void Render() = 0;
+	virtual void Render();
 	virtual void WaitDeviceIdle() const = 0;
 
 	////////////////////////////////////////
@@ -94,8 +95,30 @@ public:
 
 	virtual const std::string& GetName() const = 0;
 
+	////////////////////////////////////////
+	/// \brief RegisterRenderObject
+	///
+	///	Add RenderObject to render queue.
+	/// It is the caller's repsonsiblity to manage the lifetime of the object
+	/// and remove render object before its destruction.
+	///
+	/// \param obj Pointer to RenderObject.
+	////////////////////////////////////////
+	void RegisterRenderObject(RenderObject* obj);
+	
+	////////////////////////////////////////
+	/// \brief RegisterRenderObject
+	///
+	///	Remove RenderObject from render queue.
+	/// Should always be called before a RenderObject's destruction.
+	///
+	/// \param obj Pointer to RenderObject.
+	////////////////////////////////////////
+	void DeregisterRenderObject(RenderObject* obj);
 protected:
 	static Renderer* s_rendererInstance;
+
+	std::set<RenderObject*> m_renderObjects;
 };
 
 } // namespace Arclight::Rendering

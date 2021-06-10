@@ -14,7 +14,7 @@ Sprite::Sprite(Texture& texture) {
 	m_verticesDirty = true;
 }
 
-void Sprite::Draw(Rendering::Renderer& renderer){
+void Sprite::Draw(){
 	if(m_verticesDirty){ // Rebuild vertices
 		m_vertices[0].position = { 0, static_cast<float>(m_texture->Size().y) };
 		m_vertices[1].position = { 0, 0 };
@@ -24,7 +24,7 @@ void Sprite::Draw(Rendering::Renderer& renderer){
 		m_verticesDirty = false;
 	}
 
-	renderer.Draw(m_vertices, 4, m_transform.Matrix(), m_texture->Handle());
+	m_renderer.Draw(m_vertices, 4, m_transform.Matrix(), m_texture->Handle());
 }
 
 } // namespace Arclight

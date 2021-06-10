@@ -5,7 +5,7 @@ A lightweight 2D game engine written in C++ using Vulkan and SDL.
 Future goals:
 - Multi-language support
 - Multithreading
-- Multiplatform support (Windows, Linux, macOS, FreeBSD, Lemon OS, Android)
+- Multiplatform support (Windows, Linux, macOS, FreeBSD, Web?)
 
 ## Building
 Requirements:

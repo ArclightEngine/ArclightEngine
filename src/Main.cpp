@@ -47,9 +47,8 @@ int main(){
 	vkRenderer.Render();
 
 	while(isRunning){
-		SDL_WaitEvent(nullptr);
+		SDL_WaitEventTimeout(nullptr, 10);
 
-		vkRenderer.Draw(spr);
 		vkRenderer.Render();
 
 		SDL_Event event;

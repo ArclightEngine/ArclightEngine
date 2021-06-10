@@ -397,6 +397,8 @@ void VulkanRenderer::DestroyTexture(Texture::TextureHandle texture){
 }
 
 void VulkanRenderer::Render(){
+	Renderer::Render();
+
 	EndRenderPass();
 	EndFrame();
 
