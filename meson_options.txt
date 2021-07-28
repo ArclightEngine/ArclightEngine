@@ -1,0 +1,2 @@
+option('use_sdl2', type : 'boolean', value : true)
+option('use_vulkan', type : 'boolean', value : true)

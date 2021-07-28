@@ -9,6 +9,11 @@ struct Vector2 {
 };
 
 template <typename T>
+inline Vector2<T> operator*(const Vector2<T>& vector, T magnitude){
+	return Vector2<T>{ vector.x * magnitude, vector.y * magnitude };
+}
+
+template <typename T>
 inline bool operator==(const Vector2<T>& l, const Vector2<T>& r){
 	return l.x == r.x && l.y == r.y;
 }

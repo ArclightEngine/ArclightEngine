@@ -14,7 +14,7 @@ void Initialize(){
 }
 
 int LoadResource(const std::string& name, Resource*& resource){
-    std::string path = "Resources/" + name;
+    std::string path = "resources/" + name;
 
     FILE* file = fopen(path.c_str(), "r");
     if(!file){

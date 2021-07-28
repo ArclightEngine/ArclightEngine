@@ -1,16 +1,33 @@
 #include <Arclight/Graphics/Rendering/RendererBackend.h>
 
+#include <Arclight/Core/ThreadPool.h>
+#include <Arclight/Core/Job.h>
+
 #include <cassert>
 #include <stdexcept>
 
 namespace Arclight::Rendering {
+
+class RenderJob
+	: public Job {
+public:
+	RenderJob(){}
+	RenderJob(RenderObject* obj)
+		: m_obj(obj){}
+
+	void Run() override {
+		m_obj->Draw();
+	}
+
+	RenderObject* m_obj;
+};
 
 void Renderer::Draw(RenderObject& obj){
 	obj.Draw();
 }
 
 void Renderer::Render(){
-	for(auto& obj : m_renderObjects){
+	for(auto obj : m_renderObjects){
 		obj->Draw();
 	}
 }

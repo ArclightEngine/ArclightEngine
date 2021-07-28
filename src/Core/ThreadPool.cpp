@@ -25,6 +25,7 @@ void ThreadMain(ThreadPool* pool){
 
         // Ensure we release lock before job is run
         currentJob->Run();
+        pool->m_jobCount--;
     }
 }
 
@@ -56,21 +57,25 @@ ThreadPool::~ThreadPool(){
 
     m_threadsShouldDie = true;
     
-    while(!m_threads.empty()){
-        m_condition.notify_all();
-        for(auto& thread : m_threads){
-            thread.join();
-        }
+    m_condition.notify_all();
+    for(auto& thread : m_threads){
+        thread.join();
     }
 }
 
 void ThreadPool::Schedule(Job& job){
     m_queueMutex.lock();
 
+    m_jobCount++;
+
     m_jobs.push(&job); // Push job to queue
     m_condition.notify_one(); // Wake up a thread
 
     m_queueMutex.unlock();
+}
+
+bool ThreadPool::Idle() const {
+    return !m_jobCount;
 }
 
 } // namespace Arclight

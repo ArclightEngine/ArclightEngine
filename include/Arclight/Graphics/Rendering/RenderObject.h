@@ -11,6 +11,8 @@ namespace Arclight::Rendering {
 class RenderObject {
 public:
 	RenderObject();
+	RenderObject(const RenderObject&);
+
 	virtual ~RenderObject();
 
 	virtual void Draw() = 0;

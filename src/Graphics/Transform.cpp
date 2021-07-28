@@ -7,21 +7,43 @@ namespace Arclight {
 
 Transform::Transform(const Vector2f& position, const Vector2f& scale, float rotationDegrees)
 	: m_position(position), m_scale(scale) {
+	std::lock_guard acq(m_matrixLock);
 	m_rotation = rotationDegrees * (M_PI / 180.f);
 
 	m_matrixDirty = true;
 }
 
+Transform::Transform(const Transform& other){
+	m_position = other.m_position;
+	m_scale = other.m_scale;
+	m_rotation = other.m_rotation;
+
+	m_matrixDirty = true;
+}
+
+Transform& Transform::operator=(const Transform& other){
+	m_position = other.m_position;
+	m_scale = other.m_scale;
+	m_rotation = other.m_rotation;
+
+	std::unique_lock acq(m_matrixLock);
+	m_matrixDirty = true;
+
+	return *this;
+}
+
 void Transform::SetPosition(const Vector2f& position) {
+	std::unique_lock acq(m_matrixLock);
 	m_position = position;
 
 	m_matrixDirty = true;
-
 }
+
 void Transform::SetPosition(float x, float y) {
 	return SetPosition({x, y});
 }
 void Transform::SetScale(const Vector2f& scale) {
+	std::lock_guard acq(m_matrixLock);
 	m_scale = scale;
 
 	m_matrixDirty = true;
@@ -36,6 +58,8 @@ void Transform::SetRotation(float degrees) {
 }
 
 const Matrix4& Transform::Matrix() {
+	std::lock_guard acq(m_matrixLock);
+
 	if(m_matrixDirty){
 		float sin = sinf(m_rotation);
 		float cos = cosf(m_rotation);

@@ -11,6 +11,9 @@ Sprite::Sprite(){
 Sprite::Sprite(Texture& texture) {
 	m_texture = &texture;
 
+	m_scaledTextureSize = { m_texture->FloatSize().x * m_transform.GetScale().x,
+	m_texture->FloatSize().y * m_transform.GetScale().y };
+
 	m_verticesDirty = true;
 }
 
@@ -23,7 +26,7 @@ void Sprite::Draw(){
 
 		m_verticesDirty = false;
 	}
-
+	
 	m_renderer.Draw(m_vertices, 4, m_transform.Matrix(), m_texture->Handle());
 }
 

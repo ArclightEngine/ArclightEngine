@@ -17,6 +17,7 @@ void Log(long arg);
 void Log(unsigned short arg);
 void Log(unsigned int arg);
 void Log(unsigned long arg);
+void Log(float arg);
 void Log(const char* arg);
 
 template <typename Arg, typename ...Args>

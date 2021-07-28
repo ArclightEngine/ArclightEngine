@@ -172,6 +172,7 @@ private:
 	// If the texture of the vertices being rendered is the same as the previous,
 	// We do not need to update descriptor sets
 	VulkanTexture* m_lastTextures[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+	VulkanPipeline* m_lastPipelines[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 
 	VkDescriptorSet m_descriptorSets[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 	VkDescriptorPool m_descriptorPool;

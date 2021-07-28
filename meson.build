@@ -14,7 +14,10 @@ cpp_files = [
     'src/Main.cpp',
     'src/ResourceManager.cpp',
 
+    'src/Core/Input.cpp',
     'src/Core/Logger.cpp',
+    'src/Core/Node.cpp',
+    'src/Core/Scene.cpp',
     'src/Core/ThreadPool.cpp',
 
     'src/Graphics/Image.cpp',
@@ -35,11 +38,31 @@ cpp_files = [
     'src/Window/WindowContext.cpp',
 ]
 
-inc_dirs = [ include_directories('include'),  include_directories('ThirdParty') ]
+inc_dirs = [ include_directories('include'),  include_directories('thirdparty') ]
 
-sdl2 = dependency('sdl2')
-vulkan = dependency('vulkan')
+deps = [
+
+]
+
+if get_option('use_sdl2')
+    deps += dependency('sdl2')
+
+    add_global_arguments('-DARCLIGHT_SDL2=1', language : ['c', 'cpp'])
+else
+    error('No windowing library specified (SDL2)')
+endif
+
+if get_option('use_vulkan')
+    deps += dependency('vulkan')
+
+    add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
+else
+    error('No rendering library specified (Vulkan)')
+endif
 
 add_project_arguments(cpp_args, language : 'cpp')
-executable('game', cpp_files, include_directories: inc_dirs,
-    dependencies : [ sdl2, vulkan ])
+executable('arclight', cpp_files, include_directories: inc_dirs,
+    dependencies : deps)
+
+run_target('run',
+    command : ['build/arclight testgame'])

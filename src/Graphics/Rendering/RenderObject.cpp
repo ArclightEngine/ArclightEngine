@@ -9,6 +9,11 @@ RenderObject::RenderObject()
     m_renderer.RegisterRenderObject(this);
 }
 
+RenderObject::RenderObject(const RenderObject& other)
+    : m_renderer(other.m_renderer) {
+    m_renderer.RegisterRenderObject(this);
+}
+
 RenderObject::~RenderObject(){
     m_renderer.DeregisterRenderObject(this);
 }

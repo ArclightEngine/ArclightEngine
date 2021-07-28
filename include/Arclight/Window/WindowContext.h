@@ -11,7 +11,9 @@ namespace Arclight {
 class WindowContext final {
 public:
 	WindowContext(SDL_Window* window);
+	~WindowContext();
 
+	static inline WindowContext* Instance() { return m_instance; }
 	inline SDL_Window* GetWindow() { return m_window; }
 
 	// Returns a Vector2i containing the window size
@@ -36,6 +38,8 @@ public:
 	Colour backgroundColour = { 0, 0, 0, 255 };
 
 private:
+	static WindowContext* m_instance;
+
 	SDL_Window* m_window;
 };
 

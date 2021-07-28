@@ -73,6 +73,8 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		return -2; // Failed to load extensions
 	}
 
+	m_vkCreateInfo.enabledLayerCount = 0;
+
 	// Create our Vulkan instance
 	if(vkCreateInstance(&m_vkCreateInfo, nullptr, &m_instance) != VK_SUCCESS){
 		Logger::Error("VulkanRenderer::Initialize: Failed to create Vulkan instance!");
@@ -285,7 +287,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		}
 	}
 
-	m_viewportTransform = Transform({ -1, -1 }, { 1.f / m_swapExtent.width, 1.f / m_swapExtent.height });
+	m_viewportTransform = Transform({ -1, -1 }, { 2.f / m_swapExtent.width, 2.f / m_swapExtent.height });
 	s_rendererInstance = this;
 
 	CreateDescriptorSetLayout();
@@ -326,8 +328,13 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		Resource* vertData;
 		Resource* fragData;
 
-		ResourceManager::LoadResource("shaders/vert.spv", vertData);
-		ResourceManager::LoadResource("shaders/frag.spv", fragData);
+		if(ResourceManager::LoadResource("shaders/vert.spv", vertData)){
+			std::runtime_error("Failed to load default vertex shader!");
+		}
+
+		if(ResourceManager::LoadResource("shaders/frag.spv", fragData)){
+			std::runtime_error("Failed to load default fragment shader!");
+		}
 
 		Shader vertShader(Shader::VertexShader, vertData->m_data);
 		Shader fragShader(Shader::FragmentShader, fragData->m_data);
@@ -438,17 +445,26 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 		vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr); // Update sampler descriptor
 	}
 
+	// Only rebind the pipeline and descriptor sets
+	// and update the viewport transform
+	// when the pipeline has changed.
+	VulkanPipeline* pipelineObj = reinterpret_cast<VulkanPipeline*>(m_defaultPipeline->Handle());
+	if(pipelineObj != m_lastPipelines[m_currentFrame]){
+		m_lastPipelines[m_currentFrame] = pipelineObj;
+
+		vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineObj->GetPipelineHandle());
+		vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->PipelineLayout(), 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
+
+		reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], offsetof(VulkanPipeline::PushConstant2DTransform, viewport), 16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
+	}
+
 	VertexBuffer& vertexBuffer = m_vertexBuffers[m_currentFrame];
 	memcpy(vertexBuffer.hostMapping, vertices, sizeof(Vertex) * vertexCount);
-	vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VulkanPipeline*>(m_defaultPipeline->Handle())->GetPipelineHandle());
 
 	VkBuffer vertexBuffers[] = { vertexBuffer.buffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->PipelineLayout(), 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
-
-	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], offsetof(VulkanPipeline::PushConstant2DTransform, viewport), 16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
 	reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->UpdatePushConstant(m_commandBuffers[m_currentFrame], offsetof(VulkanPipeline::PushConstant2DTransform, transform), 16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
 	
 	vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
@@ -521,6 +537,8 @@ void VulkanRenderer::BeginFrame(){
 
 	vkCheck(vkResetCommandPool(m_device, m_commandPools[m_currentFrame], 0)); // Apparently resetting the whole command pool is faster
 	BeginCommandBuffer();
+
+	m_lastPipelines[m_currentFrame] = 0;
 }
 
 void VulkanRenderer::EndFrame(){

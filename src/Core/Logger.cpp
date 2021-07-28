@@ -36,6 +36,10 @@ void Log(unsigned long arg){
     std::cout << arg;
 }
 
+void Log(float arg){
+    std::cout << arg;
+}
+
 void Log(const char* arg){
     std::cout << arg;
 }

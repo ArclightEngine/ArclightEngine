@@ -18,9 +18,11 @@ public:
     
     ~Texture();
 
+    void Load(const Image& image);
     void Resize(const Vector2u& bounds);
 
     inline const Vector2u& Size() const { return m_size; }
+    inline Vector2f FloatSize() const { return { static_cast<float>(m_size.x), static_cast<float>(m_size.y) }; }
     inline TextureHandle Handle() { return m_handle; }
 
 private:
