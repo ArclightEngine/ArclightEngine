@@ -329,11 +329,11 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 		Resource* fragData;
 
 		if(ResourceManager::LoadResource("shaders/vert.spv", vertData)){
-			std::runtime_error("Failed to load default vertex shader!");
+			throw std::runtime_error("Failed to load default vertex shader!");
 		}
 
 		if(ResourceManager::LoadResource("shaders/frag.spv", fragData)){
-			std::runtime_error("Failed to load default fragment shader!");
+			throw std::runtime_error("Failed to load default fragment shader!");
 		}
 
 		Shader vertShader(Shader::VertexShader, vertData->m_data);

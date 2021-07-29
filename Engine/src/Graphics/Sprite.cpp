@@ -1,6 +1,6 @@
 #include <Arclight/Graphics/Sprite.h>
 
-#include <Arclight/Graphics/Rendering/RendererBackend.h>
+#include <Arclight/Graphics/Rendering/Renderer.h>
 
 namespace Arclight {
 

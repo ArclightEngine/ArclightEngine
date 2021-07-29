@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdarg>
+#include <iostream>
 
 #include <Arclight/NonCopyable.h>
 
@@ -8,7 +9,9 @@ namespace Arclight{
 namespace Logger {
 
 template<typename Arg>
-void Log(const Arg& arg);
+void Log(const Arg& arg){
+    std::cout << arg;
+}
 
 // Explicit overloads for basic types, no need to pass by const reference
 void Log(short arg);
@@ -18,7 +21,6 @@ void Log(unsigned short arg);
 void Log(unsigned int arg);
 void Log(unsigned long arg);
 void Log(float arg);
-void Log(const char* arg);
 
 template <typename Arg, typename ...Args>
 inline void Log(const Arg& arg, const Args&... args){

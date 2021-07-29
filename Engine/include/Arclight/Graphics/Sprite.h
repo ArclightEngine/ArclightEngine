@@ -21,6 +21,12 @@ public:
 
     void Draw();
 
+    inline void SetTexture(Texture& texture){
+        m_texture = &texture;
+        m_scaledTextureSize = { m_texture->FloatSize().x * m_transform.GetScale().x,
+        m_texture->FloatSize().y * m_transform.GetScale().y };
+    }
+
     inline void SetScale(float scaleX, float scaleY) {
         m_transform.SetScale(scaleX, scaleY);
         if(m_texture) {

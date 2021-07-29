@@ -10,7 +10,10 @@
 #include <Arclight/Graphics/Transform.h>
 #include <Arclight/Graphics/Texture.h>
 
-namespace Arclight::Rendering {
+namespace Arclight {
+class WindowContext;
+
+namespace Rendering {
 
 class Renderer {
 public:
@@ -121,4 +124,5 @@ protected:
 	std::set<RenderObject*> m_renderObjects;
 };
 
-} // namespace Arclight::Rendering
+} // namespace Rendering
+} // namespace Arclight
