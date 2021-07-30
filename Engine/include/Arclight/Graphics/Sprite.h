@@ -62,10 +62,10 @@ private:
 
     bool m_verticesDirty = true;
     Vertex m_vertices[4] = {
-		{{0, 1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.f}}, // Bottom left
-		{{0, 0}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.f}}, // Top left
-		{{1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.f}}, // Bottom right
-		{{1.0f, 0}, {1.0f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.f}}, // Top right
+		{{0, 1.0f}, {0.0f, 1.0f}, {1.f, 1.f, 1.f, 1.f}}, // Bottom left
+		{{0, 0}, {0.0f, 0.0f}, {1.f, 1.f, 1.f, 1.f}}, // Top left
+		{{1.0f, 1.0f}, {1.0f, 1.0f}, {1.f, 1.f, 1.f, 1.f}}, // Bottom right
+		{{1.0f, 0}, {1.0f, 0.0f}, {1.f, 1.f, 1.f, 1.f}}, // Top right
     };
 };
 
