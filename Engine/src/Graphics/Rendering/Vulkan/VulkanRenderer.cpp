@@ -13,6 +13,8 @@
 
 namespace Arclight::Rendering {
 
+#include "DefaultShaderBytecode.h"
+
 VulkanRenderer::~VulkanRenderer(){
 	EndRenderPass();
 
@@ -325,19 +327,8 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 	vkCheck(vmaCreateAllocator(&allocatorInfo, &m_alloc));
 
 	{
-		Resource* vertData;
-		Resource* fragData;
-
-		if(ResourceManager::LoadResource("shaders/vert.spv", vertData)){
-			throw std::runtime_error("Failed to load default vertex shader!");
-		}
-
-		if(ResourceManager::LoadResource("shaders/frag.spv", fragData)){
-			throw std::runtime_error("Failed to load default fragment shader!");
-		}
-
-		Shader vertShader(Shader::VertexShader, vertData->m_data);
-		Shader fragShader(Shader::FragmentShader, fragData->m_data);
+		Shader vertShader(Shader::VertexShader, defaultVertexShaderData);
+		Shader fragShader(Shader::FragmentShader, defaultFragmentShaderData);
 
 		m_defaultPipeline = new RenderPipeline(vertShader, fragShader);
 	}
