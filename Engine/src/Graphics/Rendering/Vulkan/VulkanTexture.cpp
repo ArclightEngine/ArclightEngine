@@ -1,7 +1,7 @@
-#include "VulkanRenderer.h"
 #include "VulkanTexture.h"
 #include "VulkanMemory.h"
 #include "VulkanPrivate.h"
+#include "VulkanRenderer.h"
 
 #include <Arclight/Colour.h>
 
@@ -23,22 +23,25 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     };
 
     VmaAllocationCreateInfo stagingBufferAllocCreateInfo = {
-		.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
-		.usage = VMA_MEMORY_USAGE_CPU_ONLY,
-		.requiredFlags = 0,
-		.preferredFlags = 0,
-		.memoryTypeBits = 0,
-		.pool = 0,
-		.pUserData = nullptr,
-		.priority = 0.0f,
-	};
+        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        .usage = VMA_MEMORY_USAGE_CPU_ONLY,
+        .requiredFlags = 0,
+        .preferredFlags = 0,
+        .memoryTypeBits = 0,
+        .pool = 0,
+        .pUserData = nullptr,
+        .priority = 0.0f,
+    };
 
     VmaAllocationInfo stagingAllocInfo;
-    vkCheck(vmaCreateBuffer(m_renderer.Allocator(), &stagingBufferCreateInfo, &stagingBufferAllocCreateInfo, &m_staging, &m_stagingAllocation, &stagingAllocInfo));
-    
+    vkCheck(vmaCreateBuffer(m_renderer.Allocator(), &stagingBufferCreateInfo,
+                            &stagingBufferAllocCreateInfo, &m_staging, &m_stagingAllocation,
+                            &stagingAllocInfo));
+
     m_stagingMap = stagingAllocInfo.pMappedData;
-    for(unsigned i = 0; i < bounds.x * bounds.y; i++){
-        reinterpret_cast<uint32_t*>(m_stagingMap)[i] = __builtin_bswap32(RGBAColour(255, 255, 0, 255).value); // Fill missing textures with pink
+    for (unsigned i = 0; i < bounds.x * bounds.y; i++) {
+        reinterpret_cast<uint32_t*>(m_stagingMap)[i] = __builtin_bswap32(
+            RGBAColour(255, 255, 0, 255).value); // Fill missing textures with pink
     }
 
     VkImageCreateInfo imageCreateInfo = {
@@ -47,14 +50,15 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
         .flags = 0,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = VK_FORMAT_R8G8B8A8_SRGB,
-        .extent = {
-            m_bounds.x, // Width
-            m_bounds.y, // Height
-            1, // Depth
-        },
+        .extent =
+            {
+                m_bounds.x, // Width
+                m_bounds.y, // Height
+                1,          // Depth
+            },
         .mipLevels = 1, // No mipmaps
         .arrayLayers = 1,
-        .samples = VK_SAMPLE_COUNT_1_BIT, // No multisampling
+        .samples = VK_SAMPLE_COUNT_1_BIT,  // No multisampling
         .tiling = VK_IMAGE_TILING_OPTIMAL, // Most efficient, may not be row-major
         .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -64,17 +68,18 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     };
 
     VmaAllocationCreateInfo imageAllocCreateInfo = {
-		.flags = 0,
-		.usage = VMA_MEMORY_USAGE_GPU_ONLY,
-		.requiredFlags = 0,
-		.preferredFlags = 0,
-		.memoryTypeBits = 0,
-		.pool = 0,
-		.pUserData = nullptr,
-		.priority = 0.0f,
-	};
-    
-    vkCheck(vmaCreateImage(m_renderer.Allocator(), &imageCreateInfo, &imageAllocCreateInfo, &m_image, &m_imageAllocation, nullptr));
+        .flags = 0,
+        .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+        .requiredFlags = 0,
+        .preferredFlags = 0,
+        .memoryTypeBits = 0,
+        .pool = 0,
+        .pUserData = nullptr,
+        .priority = 0.0f,
+    };
+
+    vkCheck(vmaCreateImage(m_renderer.Allocator(), &imageCreateInfo, &imageAllocCreateInfo,
+                           &m_image, &m_imageAllocation, nullptr));
 
     requireLayoutTransition = true;
     UpdateTextureImage();
@@ -86,19 +91,21 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
         .image = m_image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
         .format = imageCreateInfo.format, // Use the same format
-        .components = {
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-        },
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
+        .components =
+            {
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+                VK_COMPONENT_SWIZZLE_IDENTITY,
+            },
+        .subresourceRange =
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
     };
 
     vkCheck(vkCreateImageView(m_renderer.GetDevice(), &imageViewCreateInfo, nullptr, &m_imageView));
@@ -116,13 +123,14 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
         .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT, // Repeat texture
         .mipLodBias = 0.f,
         .anisotropyEnable = VK_FALSE, // No ansiotropy
-        .maxAnisotropy = 0.f, // Ignored as we are not using it
+        .maxAnisotropy = 0.f,         // Ignored as we are not using it
         .compareEnable = VK_FALSE,
         .compareOp = VK_COMPARE_OP_ALWAYS,
         .minLod = 0.f,
         .maxLod = 0.f,
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK, // Used when sampling beyond image, not awfully relevant to us with repeat
-        .unnormalizedCoordinates = VK_FALSE, // Use [0, 1) texel range
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK, // Used when sampling beyond image, not
+                                                         // awfully relevant to us with repeat
+        .unnormalizedCoordinates = VK_FALSE,             // Use [0, 1) texel range
     };
 
     vkCheck(vkCreateSampler(m_renderer.GetDevice(), &samplerCreateInfo, nullptr, &m_texSampler));
@@ -134,7 +142,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     };
 }
 
-VulkanTexture::~VulkanTexture(){
+VulkanTexture::~VulkanTexture() {
     // We need to wait for command buffer completion
     // TODO: Use another thread?
     m_renderer.WaitDeviceIdle();
@@ -146,7 +154,8 @@ VulkanTexture::~VulkanTexture(){
     vmaDestroyBuffer(m_renderer.Allocator(), m_staging, m_stagingAllocation);
 }
 
-void VulkanTexture::LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout){
+void VulkanTexture::LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayout oldLayout,
+                                     VkImageLayout newLayout) {
     VkImageMemoryBarrier barrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .pNext = nullptr,
@@ -157,24 +166,26 @@ void VulkanTexture::LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayou
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = m_image,
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = 1, // We do not use mipmapping
-            .baseArrayLayer = 0,
-            .layerCount = 1, // The image is not an array
-        },
+        .subresourceRange =
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1, // We do not use mipmapping
+                .baseArrayLayer = 0,
+                .layerCount = 1, // The image is not an array
+            },
     };
 
     VkPipelineStageFlags srcStage;
     VkPipelineStageFlags destStage;
 
-    if(newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL){
+    if (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
         srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if(newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL){ // Shaders should wait for transfer writes
+    } else if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) { // Shaders should wait for
+                                                                        // transfer writes
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
@@ -184,51 +195,53 @@ void VulkanTexture::LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayou
         throw std::runtime_error("VulkanTexture::LayoutTransition: Invalid image layout!");
     }
 
-    vkCmdPipelineBarrier(commandBuffer, srcStage, destStage, 0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier);
+    vkCmdPipelineBarrier(commandBuffer, srcStage, destStage, 0, 0, nullptr, 0, nullptr, 1,
+                         &barrier);
 }
 
-void VulkanTexture::UpdateTextureBuffer(const void* data){
+void VulkanTexture::UpdateTextureBuffer(const void* data) {
     memcpy(m_stagingMap, data, sizeof(RGBAColour) * m_bounds.x * m_bounds.y);
 }
 
-void VulkanTexture::UpdateTextureImage(){
-    auto commandBuffer = m_renderer.CreateOneTimeCommandBuffer(); // Get a one-time command buffer for our copy operation
+void VulkanTexture::UpdateTextureImage() {
+    auto commandBuffer =
+        m_renderer
+            .CreateOneTimeCommandBuffer(); // Get a one-time command buffer for our copy operation
 
     VkBufferImageCopy copyInfo = {
         .bufferOffset = 0,
         .bufferRowLength = 0,
         .bufferImageHeight = 0,
-        .imageSubresource {
+        .imageSubresource{
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,
         },
         .imageOffset = {0, 0, 0},
-        .imageExtent = {
-            m_bounds.x,
-            m_bounds.y,
-            1
-        },
+        .imageExtent = {m_bounds.x, m_bounds.y, 1},
     };
 
-    if(requireLayoutTransition){
-        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    if (requireLayoutTransition) {
+        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_UNDEFINED,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        vkCmdCopyBufferToImage(commandBuffer.Buffer(), m_staging, m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyInfo);
+        vkCmdCopyBufferToImage(commandBuffer.Buffer(), m_staging, m_image,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyInfo);
 
-        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         requireLayoutTransition = false;
     } else {
-        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        vkCmdCopyBufferToImage(commandBuffer.Buffer(), m_staging, m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyInfo);
+        vkCmdCopyBufferToImage(commandBuffer.Buffer(), m_staging, m_image,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyInfo);
 
-        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        LayoutTransition(commandBuffer.Buffer(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 }
 
-};
+}; // namespace Arclight::Rendering

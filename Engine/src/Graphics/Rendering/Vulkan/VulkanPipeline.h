@@ -9,69 +9,74 @@ namespace Arclight::Rendering {
 
 class VulkanPipeline final {
 public:
-	struct PushConstant2DTransform{
-		float viewport[16]; // mat4 viewport
-		float transform[16]; // mat4 transform
-	};
+    struct PushConstant2DTransform {
+        float viewport[16];  // mat4 viewport
+        float transform[16]; // mat4 transform
+    };
 
-	VulkanPipeline(class VulkanRenderer& renderer, const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config);
-	~VulkanPipeline();
+    VulkanPipeline(class VulkanRenderer& renderer, const Shader& vertexShader,
+                   const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config);
+    ~VulkanPipeline();
 
-	inline VkPipeline GetPipelineHandle() { return m_pipeline; }
-	inline VkPipelineLayout PipelineLayout() { return m_pipelineLayout; }
+    inline VkPipeline GetPipelineHandle() { return m_pipeline; }
+    inline VkPipelineLayout PipelineLayout() { return m_pipelineLayout; }
 
-	void UpdatePushConstant(VkCommandBuffer commandBuffer, uint32_t offset, uint32_t size, const void* data);
+    void UpdatePushConstant(VkCommandBuffer commandBuffer, uint32_t offset, uint32_t size,
+                            const void* data);
 
-	static VkPolygonMode ToVkPolygonMode(RenderPipeline::RasterizerConfig::PolygonMode mode);
-	static VkPrimitiveTopology ToVkPrimitiveTopology(RenderPipeline::PrimitiveType type);
+    static VkPolygonMode ToVkPolygonMode(RenderPipeline::RasterizerConfig::PolygonMode mode);
+    static VkPrimitiveTopology ToVkPrimitiveTopology(RenderPipeline::PrimitiveType type);
+
 private:
-	VkShaderModule CreateShaderModule(const Shader& shader);
+    VkShaderModule CreateShaderModule(const Shader& shader);
 
-	class VulkanRenderer& m_renderer;
-	VkDevice m_device;
+    class VulkanRenderer& m_renderer;
+    VkDevice m_device;
 
-	VkRenderPass m_renderPass = VK_NULL_HANDLE;
+    VkRenderPass m_renderPass = VK_NULL_HANDLE;
 
-	VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
-	VkPipeline m_pipeline = VK_NULL_HANDLE;
+    VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+    VkPipeline m_pipeline = VK_NULL_HANDLE;
 
-	VkVertexInputBindingDescription m_binding = {
-		.binding = 0, // Index of the binding
-		.stride = sizeof(Vertex), // Bytes from one entry to next
-		.inputRate = VK_VERTEX_INPUT_RATE_VERTEX, // Next data entry after each vertex
-	};
+    VkVertexInputBindingDescription m_binding = {
+        .binding = 0,                             // Index of the binding
+        .stride = sizeof(Vertex),                 // Bytes from one entry to next
+        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX, // Next data entry after each vertex
+    };
 
-	static_assert(sizeof(Vertex::position.x) == sizeof(uint32_t));
-	static_assert(sizeof(Vertex::position) == 8U);
-	static_assert(sizeof(Vertex::texCoord) == 8U);
-	static_assert(sizeof(Vertex::colour) == 16U);
-	VkVertexInputAttributeDescription m_attributeDescriptions[3] = {
-		{
-			.location = 0, // Shader input, specified using the location directive in shader code. We take position in location 0
-			.binding = 0, // Index of the binding
-			.format = VK_FORMAT_R32G32_SFLOAT, // Two 32-bit floats
-			.offset = (offsetof(Vertex, position)),
-		},
-		{
-			.location = 1, // Shader input, specified using the location directive in shader code. We take texture coordinate in location 0
-			.binding = 0, // Index of the binding
-			.format = VK_FORMAT_R32G32_SFLOAT, // Two 32-bit floats
-			.offset = (offsetof(Vertex, texCoord)),
-		},
-		{
-			.location = 2, // Shader input, specified using the location directive in shader code. We take colour in location 1
-			.binding = 0, // Index of the binding
-			.format = VK_FORMAT_R32G32B32A32_SFLOAT, // 32-bit red, green, blue, alpha
-			.offset = (offsetof(Vertex, colour)),
-		}
-	};
+    static_assert(sizeof(Vertex::position.x) == sizeof(uint32_t));
+    static_assert(sizeof(Vertex::position) == 8U);
+    static_assert(sizeof(Vertex::texCoord) == 8U);
+    static_assert(sizeof(Vertex::colour) == 16U);
+    VkVertexInputAttributeDescription m_attributeDescriptions[3] = {
+        {
+            .location = 0, // Shader input, specified using the location directive in shader code.
+                           // We take position in location 0
+            .binding = 0,  // Index of the binding
+            .format = VK_FORMAT_R32G32_SFLOAT, // Two 32-bit floats
+            .offset = (offsetof(Vertex, position)),
+        },
+        {
+            .location = 1, // Shader input, specified using the location directive in shader code.
+                           // We take texture coordinate in location 0
+            .binding = 0,  // Index of the binding
+            .format = VK_FORMAT_R32G32_SFLOAT, // Two 32-bit floats
+            .offset = (offsetof(Vertex, texCoord)),
+        },
+        {
+            .location = 2, // Shader input, specified using the location directive in shader code.
+                           // We take colour in location 1
+            .binding = 0,  // Index of the binding
+            .format = VK_FORMAT_R32G32B32A32_SFLOAT, // 32-bit red, green, blue, alpha
+            .offset = (offsetof(Vertex, colour)),
+        }};
 
-	static const VkPipelineVertexInputStateCreateInfo vertexInputStateDefault;
-	static const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateDefault;
-	static const VkPipelineMultisampleStateCreateInfo multisampleStateDefault;
-	static const VkPipelineRasterizationStateCreateInfo rasterizationStateDefault;
-	static const VkPipelineColorBlendAttachmentState colourBlendAttachmentStateDefault;
-	static const VkPipelineColorBlendStateCreateInfo colourBlendStateDefault;
+    static const VkPipelineVertexInputStateCreateInfo vertexInputStateDefault;
+    static const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateDefault;
+    static const VkPipelineMultisampleStateCreateInfo multisampleStateDefault;
+    static const VkPipelineRasterizationStateCreateInfo rasterizationStateDefault;
+    static const VkPipelineColorBlendAttachmentState colourBlendAttachmentStateDefault;
+    static const VkPipelineColorBlendStateCreateInfo colourBlendStateDefault;
 };
 
 } // namespace Arclight::Rendering
