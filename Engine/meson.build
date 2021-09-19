@@ -1,15 +1,18 @@
 cpp_files = [
-    'src/ResourceManager.cpp',
-
+    'src/Core/File.cpp',
     'src/Core/Input.cpp',
     'src/Core/Logger.cpp',
     'src/Core/Node.cpp',
+    'src/Core/Resource.cpp',
+    'src/Core/ResourceManager.cpp',
     'src/Core/Scene.cpp',
     'src/Core/ThreadPool.cpp',
 
+    'src/Graphics/Font.cpp',
     'src/Graphics/Image.cpp',
     'src/Graphics/Matrix.cpp',
     'src/Graphics/Sprite.cpp',
+    'src/Graphics/Text.cpp',
     'src/Graphics/Texture.cpp',
     'src/Graphics/Transform.cpp',
 
@@ -28,6 +31,12 @@ cpp_files = [
 ]
 
 inc_dirs = [ include_directories('include'),  include_directories('../thirdparty') ]
+
+if is_unix == true
+    subdir('Platform/UNIX')
+elif host_machine.system() == 'windows'
+    subdir('Platform/Windows')
+endif
 
 add_project_arguments(cpp_args, language : 'cpp')
 lib = static_library('arclight', cpp_files, include_directories: inc_dirs,

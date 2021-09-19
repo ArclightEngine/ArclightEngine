@@ -4,7 +4,7 @@
 #include "VulkanMemory.h"
 
 #include <Arclight/Core/Logger.h>
-#include <Arclight/ResourceManager.h>
+#include <Arclight/Core/ResourceManager.h>
 
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>

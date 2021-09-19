@@ -25,6 +25,8 @@ union Colour final {
 	}
 };
 
+using Color = Colour;
 using RGBAColour = Colour;
+using RGBAColor = RGBAColour;
 
 } // namespace Arclight

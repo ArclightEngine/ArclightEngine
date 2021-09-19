@@ -1,26 +1,53 @@
 #include <Arclight/Graphics/Image.h>
 
-#include <Arclight/Resource.h>
-#include <Arclight/ResourceManager.h>
+#include <Arclight/Core/Resource.h>
+#include <Arclight/Core/ResourceManager.h>
+#include <Arclight/Core/File.h>
+
+#include <stdexcept>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
 namespace Arclight {
 
-Image::Image(){
+static int stbi_read(void* user, char* data, int size) {
+	auto f = reinterpret_cast<File*>(user);
+	return f->Read(data, size);
+}
+
+static void stbi_skip(void* user, int n) {
+	auto f = reinterpret_cast<File*>(user);
+	f->Seek(f->Tell() + n);
+}
+
+static int stbi_eof(void* user) {
+	auto f = reinterpret_cast<File*>(user);
+	return f->IsEOF();
+}
+
+static stbi_io_callbacks stbi_callbacks = {
+	stbi_read,
+	stbi_skip,
+	stbi_eof
+};
+
+Image::Image(std::string name)
+	: Resource(std::move(name)) {
 
 }
 
-int Image::LoadResource(const std::string& name){
-	Resource* res;
-	if(int e = ResourceManager::LoadResource(name, res); e){
-		return e;
-	}
+// Load if not loaded
+int Image::Load() {
+	return LoadImpl();
+}
 
-	const uint8_t* imageData = res->m_data.data();
-	int channels; // We want four channels (RGBA)
-	uint8_t* pixelData = stbi_load_from_memory(imageData, res->m_data.size(), &m_size.x, &m_size.y, &channels, 4);
+int Image::LoadImpl(){
+	int channels = 0; // We want four channels (RGBA)
+
+	File* file = File::Open(m_filesystemPath, File::OpenReadOnly);
+	uint8_t* pixelData = stbi_load_from_callbacks(&stbi_callbacks, file, &m_size.x, &m_size.y, &channels, 4);
+	delete file;
 
 	if(channels != 4){
 		throw std::runtime_error("Image::LoadResource: Failed to load image from resource, expected 4 channels.");
@@ -32,4 +59,4 @@ int Image::LoadResource(const std::string& name){
 	return 0;
 }
 
-} // namespace Arclightload_from_memory
+} // namespace Arclight

@@ -7,6 +7,13 @@
 namespace Arclight {
 namespace Logger {
 
+template<>
+void Log(const UnicodeString& arg){
+    std::string s;
+    arg.toUTF8String<std::string>(s);
+    std::cout << s;
+}
+
 void Log(short arg){
     std::cout << arg;
 }

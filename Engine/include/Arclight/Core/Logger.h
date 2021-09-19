@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstdarg>
 #include <iostream>
 
-#include <Arclight/NonCopyable.h>
+#include <Arclight/Core/UnicodeString.h>
 
 namespace Arclight{
 namespace Logger {
@@ -12,6 +11,9 @@ template<typename Arg>
 void Log(const Arg& arg){
     std::cout << arg;
 }
+
+template<>
+void Log(const UnicodeString& arg);
 
 // Explicit overloads for basic types, no need to pass by const reference
 void Log(short arg);

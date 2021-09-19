@@ -17,7 +17,8 @@ add_project_arguments(cpp_args, language : 'cpp')
 inc_dirs = [ include_directories('Engine/include'),  include_directories('thirdparty') ]
 
 deps = [
-    
+    dependency('freetype2'),
+    dependency('icu-i18n')
 ]
 
 if get_option('use_sdl2')
@@ -34,6 +35,25 @@ if get_option('use_vulkan')
     add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
 else
     error('No rendering library specified (Vulkan)')
+endif
+
+is_unix = false
+if host_machine.system() == 'linux'
+    is_unix = true
+elif host_machine.system() == 'darwin'
+    is_unix = true
+elif host_machine.system() == 'freebsd'
+    is_unix = true
+elif host_machine.system() == 'lemon'
+    is_unix = true
+elif host_machine.system() == 'netbsd'
+    is_unix = true
+elif host_machine.system() == 'openbsd'
+    is_unix = true
+elif host_machine.system() == 'haiku'
+    is_unix = true
+elif host_machine.system() == 'dragonfly'
+    is_unix = true
 endif
 
 subdir('Engine')
