@@ -94,7 +94,8 @@ private:
 };
 
 bool _Access(const UnicodeString& upath, int mode) {
-    std::string path = upath.toUTF8String<std::string>(path);
+    std::string path;
+    upath.toUTF8String<std::string>(path);
 
     if (access(path.c_str(), OSFile::ToUNIXAccessMode(mode)) != 0) {
         Logger::Error("Failed to access ", path, ": ", strerror(errno));
@@ -105,7 +106,8 @@ bool _Access(const UnicodeString& upath, int mode) {
 }
 
 File* _OpenFile(const UnicodeString& upath, int mode, Error* e) {
-    std::string path = upath.toUTF8String<std::string>(path);
+    std::string path;
+    upath.toUTF8String<std::string>(path);
 
     // Most UTF-8 strings are valid on UNIX
     // The only reserved character is the null terminator and '/' separator
