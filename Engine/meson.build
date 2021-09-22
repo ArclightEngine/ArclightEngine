@@ -2,11 +2,11 @@ cpp_files = [
     'src/Core/File.cpp',
     'src/Core/Input.cpp',
     'src/Core/Logger.cpp',
-    'src/Core/Node.cpp',
     'src/Core/Resource.cpp',
     'src/Core/ResourceManager.cpp',
-    'src/Core/Scene.cpp',
     'src/Core/ThreadPool.cpp',
+
+    'src/ECS/System.cpp',
 
     'src/Graphics/Font.cpp',
     'src/Graphics/Image.cpp',

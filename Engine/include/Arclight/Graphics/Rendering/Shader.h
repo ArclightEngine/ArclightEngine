@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 
-#include <Arclight/NonCopyable.h>
+#include <Arclight/Core/NonCopyable.h>
 
 namespace Arclight::Rendering {
 

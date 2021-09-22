@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arclight/Core/Resource.h>
-#include <Arclight/NonCopyable.h>
+#include <Arclight/Core/NonCopyable.h>
 
 #include <mutex>
 

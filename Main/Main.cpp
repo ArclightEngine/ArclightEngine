@@ -9,7 +9,7 @@
 #include <Arclight/Core/Input.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
-#include <Arclight/Core/Scene.h>
+#include <Arclight/Core/Timer.h>
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Platform/Platform.h>
 #include <Arclight/Window/WindowContext.h>
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     Logger::Debug("Loading game executable: ", gamePath);
 
     void* game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
-    if(!game) {
+    if (!game) {
         // Try Build/game.so instead
         gamePath = std::string(cwd) + "/Build/" + "game.so";
         game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
     ThreadPool threadPool;
     Input inputManager;
-	ResourceManager resourceManager;
+    ResourceManager resourceManager;
 
     auto pollEvents = [&]() -> void {
         SDL_Event event;

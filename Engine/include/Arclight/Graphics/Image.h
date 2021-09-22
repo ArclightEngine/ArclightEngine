@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <Arclight/Core/NonCopyable.h>
 #include <Arclight/Core/Resource.h>
-#include <Arclight/NonCopyable.h>
 #include <Arclight/Vector.h>
 
 namespace Arclight {
