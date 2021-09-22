@@ -14,6 +14,7 @@ Platforms:
 Future goals:
 - Multi-language support
 - Heavily multithreaded
+- Networking support
 - Multiplatform support (Windows, Linux, macOS, FreeBSD, Android?, Web?)
 
 ## Building

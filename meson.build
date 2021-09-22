@@ -1,7 +1,7 @@
 project('ArclightEngine',
     default_options : [
         'warning_level=2',
-        'cpp_std=c++2a',
+        'cpp_std=c++20',
     ])
 add_languages('c', 'cpp')
 
