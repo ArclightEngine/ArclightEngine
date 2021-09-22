@@ -1,5 +1,5 @@
 project('Game',
-    default_options : ['warning_level=2', 'cpp_std=c++2a'])
+    default_options : ['warning_level=2', 'cpp_std=c++2a', 'b_lundef=false'])
 add_languages('c', 'cpp')
 
 cpp_args = [
