@@ -1,11 +1,12 @@
 # Arclight Engine
 
-A lightweight 2D game engine written in C++ using Vulkan and SDL.
+A lightweight 2D game engine written in C++20 using Vulkan and SDL.
 
 Features:
 - Multithreaded
 - Unicode support
 - Vulkan rendering
+- ECS architecture
 
 Platforms:
 - Linux
@@ -15,7 +16,7 @@ Future goals:
 - Multi-language support
 - Heavily multithreaded
 - Networking support
-- Multiplatform support (Windows, Linux, macOS, FreeBSD, Android?, Web?)
+- Multiplatform support (Windows, Linux, macOS, FreeBSD, Android?, WebAssembly?)
 
 ## Building
 Requirements:
@@ -36,8 +37,10 @@ ninja -C build
 
 Arclight engine uses the following third party libraries:
 
+- [SDL2](http://libsdl.org/)
 - [AMD's Vulkan Memory Allocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 - [stb_image](https://github.com/nothings/stb)
 - [nlohmann/json](https://github.com/nlohmann/json)
 - [Freetype](https://freetype.org)
 - [ICU](https://icu.unicode.org/)
+- [EnTT](https://github.com/skypjack/entt)

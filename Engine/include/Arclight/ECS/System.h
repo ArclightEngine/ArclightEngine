@@ -14,8 +14,6 @@ namespace Arclight {
 class System : public Job, public Object, NonCopyable {
     ARCLIGHT_OBJECT(System, Object);
 public:
-    System(std::string name);
-
     void Run() final override;
 
     virtual void Start();
@@ -27,10 +25,12 @@ protected:
     inline float Elapsed() const { return m_elapsedTime; }
 
 private:
+    System(std::string name);
+
     float m_elapsedTime;
     Timer m_timer;
 
-    std::string m_name;
+    std::string m_name; 
 };
 
 } // namespace Arclight

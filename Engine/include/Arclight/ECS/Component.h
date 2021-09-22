@@ -2,13 +2,17 @@
 
 #include <Arclight/Core/Object.h>
 
+#include <concepts>
+
 namespace Arclight {
 
-class Component : public Object {
-    ARCLIGHT_OBJECT(Component, Object);
-
-    // Components should not contain any logic, only data
-    ~Component() final override;
+template<typename T>
+concept Component = requires(T t) {
+    // Components CANNOT be pointers
+    // TODO: Future requirements will involve serailizable
+    std::same_as<std::decay_t<T>, T>;
+    T(); // Must have default constructor
+    std::move_constructible<T>; // Must have move constructor
 };
 
 } // namespace Arclight
