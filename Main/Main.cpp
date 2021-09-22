@@ -33,6 +33,12 @@ int main(int argc, char** argv) {
     Logger::Debug("Loading game executable: ", gamePath);
 
     void* game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
+    if(!game) {
+        // Try Build/game.so instead
+        gamePath = std::string(cwd) + "/Build/" + "game.so";
+        game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
+    }
+
     if (!game) {
         Logger::Debug("Error loading ", dlerror());
         return 1;

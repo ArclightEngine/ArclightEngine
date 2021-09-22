@@ -1,12 +1,21 @@
 #!/usr/bin/python3
 
 from os import chdir, mkdir, path
+import shutil
 import subprocess
 import sys
 import json
 from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS
 
 arclight_root = path.dirname(path.realpath(__file__))
+
+def rebuild():
+    if path.exists("Build"):
+        shutil.rmtree("Build")
+
+    subprocess.run(["meson", "setup", "Build", f"-Darclight_engine_path={arclight_root}"], check=True)
+
+    subprocess.run(["ninja", "-CBuild"], check=True)
 
 def build():
     if not path.isdir("Build"):
@@ -40,10 +49,11 @@ def package():
 
 def run():
     engine = path.join(path.dirname(path.realpath(__file__)), "Build", "arclight")
-    subprocess.run([engine, 'Build'], check=True)
+    subprocess.run([engine], check=True)
 
 commands = {
     "build": (build, "Build project"),
+    "rebuild": (rebuild, "Reconfigure and build project"),
     "create": (create_project, "Create a new project"),
     "run": (run, "Run project")
 }
