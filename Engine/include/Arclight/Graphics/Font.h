@@ -1,13 +1,15 @@
 #pragma once
 
 #include <Arclight/Core/Resource.h>
+#include <Arclight/NonCopyable.h>
 
 #include <mutex>
 
 namespace Arclight {
 
-class Font final : public Resource {
+class Font final : public Resource, NonCopyable {
     friend class Text;
+    ARCLIGHT_OBJECT(Font, Resource)
 public:
     Font(std::string name);
     ~Font() override;

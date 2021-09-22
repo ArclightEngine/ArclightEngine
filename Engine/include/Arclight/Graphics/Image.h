@@ -11,6 +11,7 @@
 namespace Arclight {
 
 class Image final : public Resource, NonCopyable {
+    ARCLIGHT_OBJECT(Image, Resource)
 public:
     Image(std::string name);
 
@@ -22,7 +23,6 @@ public:
 private:
     int LoadImpl();
 
-    unsigned m_dataSize = 0;              // Size of the pixel data buffer
     std::unique_ptr<uint8_t> m_pixelData; // smart pointer for the pixel data
     Vector2i m_size;                      // Bounds of the image
 };
