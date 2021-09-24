@@ -10,12 +10,12 @@
 
 #include <SDL2/SDL.h>
 
-//#ifdef ARCLIGHT_VULKAN
+#ifdef ARCLIGHT_VULKAN
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
-#include "../Graphics/Rendering/Vulkan.h"
-//#endif
+#include <Rendering/Vulkan/VulkanRenderer.h>
+#endif
 
 namespace Arclight::Platform {
 

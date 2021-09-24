@@ -22,10 +22,6 @@ cpp_files = [
     'src/Graphics/Rendering/RendererBackend.cpp',
     'src/Graphics/Rendering/RenderObject.cpp',
     'src/Graphics/Rendering/Shader.cpp',
-    'src/Graphics/Rendering/Vulkan/VulkanMemory.cpp',
-    'src/Graphics/Rendering/Vulkan/VulkanPipeline.cpp',
-    'src/Graphics/Rendering/Vulkan/VulkanRenderer.cpp',
-    'src/Graphics/Rendering/Vulkan/VulkanTexture.cpp',
 
     'src/Platform/Platform.cpp',
 
@@ -34,7 +30,25 @@ cpp_files = [
     'src/Window/WindowContext.cpp',
 ]
 
-inc_dirs = [ include_directories('include'),  include_directories('../thirdparty') ]
+inc_dirs = [ include_directories('include'),  include_directories('../thirdparty'), include_directories('.') ]
+
+if get_option('use_sdl2')
+    deps += dependency('sdl2')
+
+    add_global_arguments('-DARCLIGHT_SDL2=1', language : ['c', 'cpp'])
+else
+    error('No windowing library specified (SDL2)')
+endif
+
+if get_option('use_vulkan')
+    deps += dependency('vulkan')
+
+    subdir('Rendering/Vulkan')
+
+    add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
+else
+    error('No rendering library specified (Vulkan)')
+endif
 
 if is_unix == true
     subdir('Platform/UNIX')

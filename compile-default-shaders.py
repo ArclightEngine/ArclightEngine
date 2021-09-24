@@ -27,7 +27,7 @@ if __name__ == "__main__":
     
     frag = open(path.join(arclight_root, "Build/default_frag.spv"), "rb")
     vert = open(path.join(arclight_root, "Build/default_vert.spv"), "rb")
-    output = open(path.join(arclight_root, "Engine/src/Graphics/Rendering/Vulkan/DefaultShaderBytecode.h"), "w")
+    output = open(path.join(arclight_root, "Engine/Rendering/Vulkan/DefaultShaderBytecode.h"), "w")
 
     header_file = dump_shader_file(frag, "defaultFragmentShader") + "\n" + dump_shader_file(vert, "defaultVertexShader")
     output.write(header_file)

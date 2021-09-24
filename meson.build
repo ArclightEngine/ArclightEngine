@@ -21,22 +21,6 @@ deps = [
     dependency('icu-i18n')
 ]
 
-if get_option('use_sdl2')
-    deps += dependency('sdl2')
-
-    add_global_arguments('-DARCLIGHT_SDL2=1', language : ['c', 'cpp'])
-else
-    error('No windowing library specified (SDL2)')
-endif
-
-if get_option('use_vulkan')
-    deps += dependency('vulkan')
-
-    add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
-else
-    error('No rendering library specified (Vulkan)')
-endif
-
 is_unix = false
 if host_machine.system() == 'linux'
     is_unix = true
