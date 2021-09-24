@@ -13,10 +13,11 @@ Platforms:
 - Windows (WIP)
 
 Future goals:
-- Multi-language support
+- Clean API
+- Multi-language/Scripting support
 - Heavily multithreaded
 - Networking support
-- Multiplatform support (Windows, Linux, macOS, FreeBSD, Android?, WebAssembly?)
+- Multiplatform support (Linux, Windows, WebAssembly, macOS, FreeBSD, Android?)
 
 ## Building
 Requirements:

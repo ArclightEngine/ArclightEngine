@@ -24,7 +24,7 @@ public:
 protected:
     inline float Elapsed() const { return m_elapsedTime; }
 
-private:
+protected:
     System(std::string name);
 
     float m_elapsedTime;

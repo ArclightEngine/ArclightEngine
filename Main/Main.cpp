@@ -4,14 +4,15 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
-#include <Arclight/Core/ThreadPool.h>
-
+#include <Arclight/Core/Application.h>
 #include <Arclight/Core/Input.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
+#include <Arclight/Core/ThreadPool.h>
 #include <Arclight/Core/Timer.h>
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Platform/Platform.h>
+#include <Arclight/State/StateManager.h>
 #include <Arclight/Window/WindowContext.h>
 
 #include <chrono>
@@ -46,55 +47,16 @@ int main(int argc, char** argv) {
 
     Platform::Initialize();
 
-    ThreadPool threadPool;
-    Input inputManager;
-    ResourceManager resourceManager;
-
-    auto pollEvents = [&]() -> void {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT:
-                isRunning = false;
-                break;
-            case SDL_KEYDOWN:
-                inputManager.OnKey((KeyCode)event.key.keysym.sym, Input::KeyState_Pressed);
-                break;
-            case SDL_KEYUP:
-                inputManager.OnKey((KeyCode)event.key.keysym.sym, Input::KeyState_Released);
-                break;
-            default:
-                break;
-            }
-        }
-    };
+    Application app;
 
     void (*GameInit)(void) = (void (*)())dlsym(game, "GameInit");
-    void (*GameRun)(void) = (void (*)())dlsym(game, "GameRun");
-
-    assert(GameInit && GameRun);
+    assert(GameInit);
 
     GameInit();
 
-    Timer timer;
-    while (isRunning) {
-        timer.Reset();
-        inputManager.Tick();
+    app.Run();
 
-        pollEvents();
-
-        GameRun();
-        Rendering::Renderer::Instance()->Render();
-
-        while (!threadPool.Idle())
-            pollEvents(); // We shouldn't really busy wait
-
-        long elapsed = timer.Elapsed();
-        long waitTime = 1000000 / 60 - elapsed;
-        if (waitTime > 0) {
-            usleep(waitTime);
-        }
-    }
+    Platform::Cleanup();
 
     return 0;
 }

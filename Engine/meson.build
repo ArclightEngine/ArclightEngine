@@ -1,4 +1,5 @@
 cpp_files = [
+    'src/Core/Application.cpp',
     'src/Core/File.cpp',
     'src/Core/Input.cpp',
     'src/Core/Logger.cpp',
@@ -7,6 +8,7 @@ cpp_files = [
     'src/Core/ThreadPool.cpp',
 
     'src/ECS/System.cpp',
+    'src/ECS/World.cpp',
 
     'src/Graphics/Font.cpp',
     'src/Graphics/Image.cpp',
@@ -26,6 +28,8 @@ cpp_files = [
     'src/Graphics/Rendering/Vulkan/VulkanTexture.cpp',
 
     'src/Platform/Platform.cpp',
+
+    'src/State/StateManager.cpp',
 
     'src/Window/WindowContext.cpp',
 ]

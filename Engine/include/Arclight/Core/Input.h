@@ -20,7 +20,7 @@ public:
     }; // If the key is down KeyState & 0x1 will be 1
 
     Input();
-    ~Input();\
+    ~Input();
 
     inline Input* Instance() { return m_instance; }
 

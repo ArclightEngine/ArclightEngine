@@ -1,12 +1,16 @@
 #pragma once
 
+#include <Arclight/ECS/Component.h>
+
+#include <entt/entity/fwd.hpp>
+
 #include <cstdint>
-#include <memory>
 #include <list>
+#include <memory>
 
 namespace Arclight {
 
 // Entities are exposed as no more than integers
-using Entity = std::uint32_t;
+using Entity = entt::entity;
 
 } // namespace Arclight

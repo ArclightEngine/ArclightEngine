@@ -8,10 +8,6 @@ WindowContext* WindowContext::m_instance = nullptr;
 
 WindowContext::WindowContext(SDL_Window* window)
 	: m_window(window) {
-	if(m_instance){
-		std::runtime_error("WindowContext instance already exists!");
-	}
-
 	m_instance = this;
 }
 

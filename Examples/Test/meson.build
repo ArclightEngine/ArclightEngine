@@ -8,6 +8,7 @@ cpp_args = [
 ]
 
 add_project_arguments(cpp_args, language : 'cpp')
+add_global_arguments('-DARCLIGHT_SDL2=1', language : ['c', 'cpp'])
 
 inc_dirs = [
     include_directories(join_paths(get_option('arclight_engine_path'), 'Engine', 'include')),
@@ -15,7 +16,7 @@ inc_dirs = [
 ]
 
 game_cpp_files = [
-    'src/Main.cpp'
+    'src/Main.cpp',
 ]
 
 game = shared_library('game', game_cpp_files,

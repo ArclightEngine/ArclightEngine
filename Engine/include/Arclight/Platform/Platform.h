@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arclight/Window/WindowContext.h>
+
 #ifdef __unix__
 #define ARCLIGHT_PLATFORM_UNIX
 #endif

@@ -12,6 +12,10 @@ class RenderObject {
 public:
 	RenderObject();
 	RenderObject(const RenderObject&);
+	RenderObject(RenderObject&&);
+
+	RenderObject& operator=(RenderObject&&);
+	RenderObject& operator=(const RenderObject&);
 
 	virtual ~RenderObject();
 
