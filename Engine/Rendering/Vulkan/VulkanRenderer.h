@@ -19,6 +19,8 @@
 #define RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT 2
 #define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 0
 
+//#define RENDERING_VULKANRENDERER_ENABLE_VALIDATION_LAYERS
+
 namespace Arclight::Rendering {
 
 class VulkanRenderer final : public Renderer {
@@ -212,7 +214,11 @@ private:
         .pNext = nullptr,
         .flags = 0,
         .pApplicationInfo = &m_vkAppInfo,
+#ifdef RENDERING_VULKANRENDERER_ENABLE_VALIDATION_LAYERS
         .enabledLayerCount = 1,
+#else
+        .enabledLayerCount = 0,
+#endif
         .ppEnabledLayerNames = validationLayers,
         .enabledExtensionCount = 0,
         .ppEnabledExtensionNames = nullptr,

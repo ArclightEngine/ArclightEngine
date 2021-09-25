@@ -1,77 +1,77 @@
 #pragma once
 
+#include <Arclight/Core/Util.h>
+
 namespace Arclight {
 
-template <typename T>
-struct Vector2 {
-	T x;
-	T y;
+template <typename T> struct Vector2 {
+    T x;
+    T y;
+
+    ALWAYS_INLINE Vector2<T>& Scale(const Vector2<T>& scaleVector) {
+        x *= scaleVector.x;
+        y *= scaleVector.y;
+        return *this;
+    }
+
+    static ALWAYS_INLINE Vector2<T> Scale(const Vector2<T>& l, const Vector2<T>& r) {
+        return Vector2<T>{l.x * r.x, l.y * r.y};
+    }
 };
 
-template <typename T>
-inline Vector2<T> operator*(const Vector2<T>& vector, T magnitude){
-	return Vector2<T>{ vector.x * magnitude, vector.y * magnitude };
+template <typename T> inline Vector2<T> operator*(const Vector2<T>& vector, T magnitude) {
+    return Vector2<T>{vector.x * magnitude, vector.y * magnitude};
 }
 
-template <typename T>
-inline bool operator==(const Vector2<T>& l, const Vector2<T>& r){
-	return l.x == r.x && l.y == r.y;
+template <typename T> inline bool operator==(const Vector2<T>& l, const Vector2<T>& r) {
+    return l.x == r.x && l.y == r.y;
 }
 
-template <typename T>
-inline bool operator!=(const Vector2<T>& l, const Vector2<T>& r){
-	return l.x != r.x || l.y != r.y;
+template <typename T> inline bool operator!=(const Vector2<T>& l, const Vector2<T>& r) {
+    return l.x != r.x || l.y != r.y;
 }
 
-template <typename T>
-inline Vector2<T> operator+(const Vector2<T>& l, const Vector2<T>& r){
-	return {l.x + r.x, l.y + r.y};
+template <typename T> inline Vector2<T> operator+(const Vector2<T>& l, const Vector2<T>& r) {
+    return {l.x + r.x, l.y + r.y};
 }
 
-template <typename T>
-inline Vector2<T>& operator+=(Vector2<T>& l, const Vector2<T>& r){
-	l.x += r.x;
-	l.y += r.y;
+template <typename T> inline Vector2<T>& operator+=(Vector2<T>& l, const Vector2<T>& r) {
+    l.x += r.x;
+    l.y += r.y;
 
-	return l;
+    return l;
 }
 
-template <typename T>
-inline Vector2<T> operator-(const Vector2<T>& l, const Vector2<T>& r){
-	return {l.x - r.x, l.y - r.y};
+template <typename T> inline Vector2<T> operator-(const Vector2<T>& l, const Vector2<T>& r) {
+    return {l.x - r.x, l.y - r.y};
 }
 
-template <typename T>
-inline Vector2<T>& operator-=(Vector2<T>& l, const Vector2<T>& r){
-	l.x -= r.x;
-	l.y -= r.y;
+template <typename T> inline Vector2<T>& operator-=(Vector2<T>& l, const Vector2<T>& r) {
+    l.x -= r.x;
+    l.y -= r.y;
 
-	return l;
+    return l;
 }
 
-template <typename T>
-struct Vector3 {
-	T x;
-	T y;
-	T z;
+template <typename T> struct Vector3 {
+    T x;
+    T y;
+    T z;
 };
 
-template <typename T>
-inline bool operator==(const Vector3<T>& l, const Vector3<T>& r){
-	return l.x == r.x && l.y == r.y && l.z == r.z;
+template <typename T> inline bool operator==(const Vector3<T>& l, const Vector3<T>& r) {
+    return l.x == r.x && l.y == r.y && l.z == r.z;
 }
 
-template <typename T>
-inline bool operator!=(const Vector3<T>& l, const Vector3<T>& r){
-	return l.x != r.x || l.y != r.y || l.z != r.z;
+template <typename T> inline bool operator!=(const Vector3<T>& l, const Vector3<T>& r) {
+    return l.x != r.x || l.y != r.y || l.z != r.z;
 }
 
-template <typename T>
-struct Vector4 {
-	T x;
-	T y;
-	T z;
-	T w;
+template <typename T> struct Vector4 {
+    T x;
+    T y;
+    T z;
+    T w;
 };
 
 using Vector2f = Vector2<float>;

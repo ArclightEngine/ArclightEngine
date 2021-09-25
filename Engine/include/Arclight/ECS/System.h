@@ -16,7 +16,6 @@ class System : public Job, public Object, NonCopyable {
 public:
     void Run() final override;
 
-    virtual void Start();
     virtual void Tick();
 
     inline const std::string& Name() const { return m_name; }

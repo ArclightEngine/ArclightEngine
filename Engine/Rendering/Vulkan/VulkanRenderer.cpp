@@ -75,7 +75,11 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
         return -2; // Failed to load extensions
     }
 
-    m_vkCreateInfo.enabledLayerCount = 0;
+#ifdef RENDERING_VULKANRENDERER_ENABLE_VALIDATION_LAYERS
+    Logger::Debug("VulkanRenderer: Using validation layers? Yes");
+#else
+    Logger::Debug("VulkanRenderer: Using validation layers? No");
+#endif
 
     // Create our Vulkan instance
     if (vkCreateInstance(&m_vkCreateInfo, nullptr, &m_instance) != VK_SUCCESS) {

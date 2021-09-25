@@ -40,6 +40,8 @@ void Application::Run() {
         }
     };
 
+    Rendering::Renderer::Instance()->Render();
+
     while (m_isRunning) {
         m_timer.Reset();
         m_input.Tick();
@@ -49,8 +51,6 @@ void Application::Run() {
         for (auto& sys : m_globalSystems) {
             m_threadPool.Schedule(*sys);
         }
-
-        Rendering::Renderer::Instance()->Render();
 
         while (!m_threadPool.Idle())
             pollEvents(); // We shouldn't really busy wait

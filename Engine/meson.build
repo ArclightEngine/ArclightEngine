@@ -13,7 +13,6 @@ cpp_files = [
     'src/Graphics/Font.cpp',
     'src/Graphics/Image.cpp',
     'src/Graphics/Matrix.cpp',
-    'src/Graphics/Sprite.cpp',
     'src/Graphics/Text.cpp',
     'src/Graphics/Texture.cpp',
     'src/Graphics/Transform.cpp',
@@ -26,6 +25,8 @@ cpp_files = [
     'src/Platform/Platform.cpp',
 
     'src/State/StateManager.cpp',
+
+    'src/Systems/Renderer2D.cpp',
 
     'src/Window/WindowContext.cpp',
 ]

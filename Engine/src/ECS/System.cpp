@@ -9,10 +9,6 @@ System::System(std::string name)
     
 }
 
-void System::Start(){
-    
-}
-
 void System::Tick(){
 
 }
