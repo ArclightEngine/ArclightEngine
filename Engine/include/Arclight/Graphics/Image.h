@@ -13,7 +13,7 @@ namespace Arclight {
 class Image final : public Resource, NonCopyable {
     ARCLIGHT_OBJECT(Image, Resource)
 public:
-    Image(std::string name);
+    Image();
 
     int Load() override;
 

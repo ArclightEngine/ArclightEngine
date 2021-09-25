@@ -16,7 +16,7 @@ public:
     virtual ~ResourceFormat() = default;
 
     virtual bool CanLoad(const UnicodeString& path) const = 0;
-    virtual std::shared_ptr<Resource> CreateResource(std::string name) const = 0;
+    virtual std::shared_ptr<Resource> CreateResource() const = 0;
 };
 
 class ResourceManager final {

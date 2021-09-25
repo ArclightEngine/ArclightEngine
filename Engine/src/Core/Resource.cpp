@@ -2,6 +2,6 @@
 
 namespace Arclight {
 
-Resource::Resource(std::string name) : m_name(std::move(name)) {}
+Resource::Resource() {}
 
 } // namespace Arclight

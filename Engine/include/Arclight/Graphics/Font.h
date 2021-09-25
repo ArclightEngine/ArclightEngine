@@ -11,7 +11,7 @@ class Font final : public Resource, NonCopyable {
     friend class Text;
     ARCLIGHT_OBJECT(Font, Resource)
 public:
-    Font(std::string name);
+    Font();
     ~Font() override;
 
     int Load() override;

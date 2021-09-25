@@ -11,7 +11,7 @@
 
 namespace Arclight {
 
-Font::Font(std::string name) : Resource(std::move(name)) {}
+Font::Font() : Resource() {}
 
 Font::~Font() {
     if (m_handle) {

@@ -34,8 +34,8 @@ public:
         return false;
     }
 
-    std::shared_ptr<Resource> CreateResource(std::string name) const override {
-        return std::make_shared<Image>(std::move(name));
+    std::shared_ptr<Resource> CreateResource() const override {
+        return std::make_shared<Image>();
     }
 };
 
@@ -56,8 +56,8 @@ public:
         return false;
     }
 
-    std::shared_ptr<Resource> CreateResource(std::string name) const override {
-        return std::make_shared<Font>(std::move(name));
+    std::shared_ptr<Resource> CreateResource() const override {
+        return std::make_shared<Font>();
     }
 };
 
@@ -95,7 +95,7 @@ const std::shared_ptr<Resource>& ResourceManager::GetResource(const std::string&
     if(File::Access(uID)){
         for(auto* f : m_formats){
             if(f->CanLoad(uID)){
-                auto r = f->CreateResource(id);
+                auto r = f->CreateResource();
                 r->SetFilesystemPath(std::move(uID));
                 r->Load();
 

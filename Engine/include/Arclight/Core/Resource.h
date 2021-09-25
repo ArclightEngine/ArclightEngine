@@ -10,7 +10,7 @@ class Resource : public Object {
 
     ARCLIGHT_OBJECT(Resource, Object)
 public:
-    Resource(std::string name);
+    Resource();
     virtual ~Resource() = default;
 
     // Load if not loaded
@@ -19,7 +19,6 @@ public:
     inline void SetFilesystemPath(UnicodeString path) { m_filesystemPath = std::move(path); }
 
 protected:
-    std::string m_name;
     UnicodeString m_filesystemPath;
 };
 
