@@ -17,6 +17,10 @@
 #include <Rendering/Vulkan/VulkanRenderer.h>
 #endif
 
+#ifdef ARCLIGHT_DUMMY_RENDERER
+#include <Rendering/Dummy/DummyRenderer.h>
+#endif
+
 namespace Arclight::Platform {
 
 std::vector<Rendering::Renderer*> renderers;
@@ -38,12 +42,19 @@ void Initialize(){
 
 	windowContext = new WindowContext(sdlWindow);
 
-    #ifdef ARCLIGHT_VULKAN
+#ifdef ARCLIGHT_VULKAN
     Rendering::VulkanRenderer* vkRenderer =  new Rendering::VulkanRenderer();
     if(!vkRenderer->Initialize(windowContext)){
         renderers.push_back(vkRenderer);
     }
-    #endif
+#endif
+
+#ifdef ARCLIGHT_DUMMY_RENDERER
+    Rendering::DummyRenderer* dummyRenderer = new Rendering::DummyRenderer();
+    if(!dummyRenderer->Initialize(windowContext)){
+        renderers.push_back(dummyRenderer);
+    }
+#endif
 
     if(!renderers.size() || !Rendering::Renderer::Instance()){
         throw std::runtime_error("No available rendering API!");

@@ -4,7 +4,6 @@
 #include <set>
 
 #include <Arclight/Graphics/Rendering/Pipeline.h>
-#include <Arclight/Graphics/Rendering/RenderObject.h>
 
 #include <Arclight/Graphics/Vertex.h>
 #include <Arclight/Graphics/Transform.h>
@@ -37,15 +36,6 @@ public:
 	/// \param renderPipeline Render pipeline to use
 	////////////////////////////////////////
 	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), Texture::TextureHandle texture = nullptr, RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
-
-	////////////////////////////////////////
-	/// \brief Draw
-	///
-	/// Draw a RenderObject.
-	///
-	/// \param obj RenderObject to draw
-	////////////////////////////////////////
-	virtual void Draw(RenderObject& obj);
 
 	////////////////////////////////////////
 	/// \brief CreatePipeline
@@ -97,31 +87,8 @@ public:
 	virtual void DestroyTexture(Texture::TextureHandle texture) = 0;
 
 	virtual const std::string& GetName() const = 0;
-
-	////////////////////////////////////////
-	/// \brief RegisterRenderObject
-	///
-	///	Add RenderObject to render queue.
-	/// It is the caller's repsonsiblity to manage the lifetime of the object
-	/// and remove render object before its destruction.
-	///
-	/// \param obj Pointer to RenderObject.
-	////////////////////////////////////////
-	void RegisterRenderObject(RenderObject* obj);
-	
-	////////////////////////////////////////
-	/// \brief RegisterRenderObject
-	///
-	///	Remove RenderObject from render queue.
-	/// Should always be called before a RenderObject's destruction.
-	///
-	/// \param obj Pointer to RenderObject.
-	////////////////////////////////////////
-	void DeregisterRenderObject(RenderObject* obj);
 protected:
 	static Renderer* s_rendererInstance;
-
-	std::set<RenderObject*> m_renderObjects;
 };
 
 } // namespace Rendering

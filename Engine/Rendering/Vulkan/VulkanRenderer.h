@@ -43,8 +43,6 @@ public:
               Texture::TextureHandle texture = nullptr,
               RenderPipeline& pipeline = RenderPipeline::Default());
 
-    inline void Draw(RenderObject& obj) { Renderer::Draw(obj); }
-
     const std::string& GetName() const { return m_rendererName; }
 
     RenderPipeline::PipelineHandle

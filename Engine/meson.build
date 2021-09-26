@@ -19,7 +19,6 @@ cpp_files = [
 
     'src/Graphics/Rendering/Pipeline.cpp',
     'src/Graphics/Rendering/RendererBackend.cpp',
-    'src/Graphics/Rendering/RenderObject.cpp',
     'src/Graphics/Rendering/Shader.cpp',
 
     'src/Platform/Platform.cpp',
@@ -47,8 +46,10 @@ if get_option('use_vulkan')
     subdir('Rendering/Vulkan')
 
     add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
-else
-    error('No rendering library specified (Vulkan)')
+    endif
+endif
+if get_option('use_dummy_renderer')
+    add_global_arguments('-DARCLIGHT_DUMMY_RENDERER=1', language : ['c', 'cpp'])
 endif
 
 if is_unix == true
