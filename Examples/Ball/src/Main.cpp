@@ -39,10 +39,13 @@ public:
             Arclight::Sprite spr;
             spr.texture = &tex;
             spr.transform.SetPosition(rand() % app.Window().GetWindowRenderSize().x,
-                                      rand() % app.Window().GetWindowRenderSize().y);
+                                        rand() % app.Window().GetWindowRenderSize().y);
 
-            app.World().AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity, std::move(spr));
-            app.World().AddComponent<BallData>(newEntity, BallData{{ballSpeed, ballSpeed}});
+            app.World().AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
+                                                                            std::move(spr));
+            app.World().AddComponent<BallData>(
+                newEntity,
+                BallData{{ballSpeed * ((rand() & 2) - 1), ballSpeed * ((rand() & 2) - 1)}});
 
             ballCount++;
             Arclight::Logger::Debug(ballCount, " balls");
@@ -54,11 +57,13 @@ public:
                 Arclight::Sprite spr;
                 spr.texture = &tex;
                 spr.transform.SetPosition(rand() % app.Window().GetWindowRenderSize().x,
-                                        rand() % app.Window().GetWindowRenderSize().y);
+                                          rand() % app.Window().GetWindowRenderSize().y);
 
                 app.World().AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
                                                                              std::move(spr));
-                app.World().AddComponent<BallData>(newEntity, BallData{{ballSpeed, ballSpeed}});
+                app.World().AddComponent<BallData>(
+                    newEntity,
+                    BallData{{ballSpeed * ((rand() & 2) - 1), ballSpeed * ((rand() & 2) - 1)}});
             }
 
             ballCount += 1000;
