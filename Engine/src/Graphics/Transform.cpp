@@ -52,7 +52,7 @@ void Transform::SetScale(float scaleX, float scaleY) {
 	return SetScale({scaleX, scaleY});
 }
 void Transform::SetRotation(float degrees) {
-	m_rotation = degrees * (M_PIf32 / 180.f);
+	m_rotation = degrees * (M_PI / 180.f);
 
 	m_matrixDirty = true;
 }

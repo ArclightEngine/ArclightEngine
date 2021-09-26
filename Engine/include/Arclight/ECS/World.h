@@ -67,7 +67,7 @@ private:
 
         auto& func = m_componentCleanupFunctions[index];
         if (!func) {
-            func = RemoveComponentImpl<C>;
+            func = &RemoveComponentImpl<C>;
         }
     }
 
@@ -80,7 +80,7 @@ private:
 
     // Store the components that need to be removed at the end of the frame
     std::mutex m_componentCleanupMutex;
-    std::vector<void (*)()> m_componentCleanupFunctions;
+    std::vector<void (World::*)()> m_componentCleanupFunctions;
 
     ECSRegistry m_registry;
 };

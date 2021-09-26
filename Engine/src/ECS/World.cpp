@@ -3,8 +3,8 @@
 namespace Arclight {
 
 void World::Cleanup() {
-    for(void(*func)() : m_componentCleanupFunctions){
-        func();
+    for(void(World::*func)() : m_componentCleanupFunctions){
+        (this->*func)();
     }
 
     // Remove all tagged entities

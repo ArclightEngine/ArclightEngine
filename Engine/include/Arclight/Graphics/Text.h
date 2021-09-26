@@ -3,7 +3,6 @@
 #include <Arclight/Colour.h>
 #include <Arclight/Core/UnicodeString.h>
 #include <Arclight/Graphics/Font.h>
-#include <Arclight/Graphics/Rendering/RenderObject.h>
 #include <Arclight/Graphics/Texture.h>
 #include <Arclight/Graphics/Transform.h>
 #include <Arclight/Graphics/Vertex.h>
@@ -13,7 +12,7 @@
 
 namespace Arclight {
 
-class Text : public Rendering::RenderObject {
+class Text {
 public:
     enum {
         FontSize_Pixels,
@@ -32,7 +31,7 @@ public:
     Transform transform;
 
 private:
-    void Draw() override;
+    void Draw();
 
     Font* font;
 
