@@ -1,7 +1,13 @@
 #pragma once
 
+#include <Arclight/Platform/Platform.h>
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+#ifdef ARCLIGHT_PLATFORM_WASM
+#define FT_Error_String(s) ((const char*)(""))
+#endif
 
 // Private wrapper class for FreeType
 

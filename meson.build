@@ -12,14 +12,24 @@ cpp_args = [
     '-g',
 ]
 
-add_project_arguments(cpp_args, language : 'cpp')
-
 inc_dirs = [ include_directories('Engine/include'),  include_directories('thirdparty') ]
 
 deps = [
-    dependency('freetype2'),
-    dependency('icu-i18n')
+
 ]
+
+if host_machine.system() == 'emscripten'
+    cpp_args += [
+        '-sUSE_FREETYPE=2',
+        '-sUSE_ICU=1',
+        '-sUSE_PTHREADS=1'
+    ]
+else
+    deps += [
+        dependency('freetype2'),
+        dependency('icu-i18n')
+    ]
+endif
 
 is_unix = false
 if host_machine.system() == 'linux'
@@ -38,9 +48,32 @@ elif host_machine.system() == 'haiku'
     is_unix = true
 elif host_machine.system() == 'dragonfly'
     is_unix = true
+elif host_machine.system() == 'emscripten'
+    is_unix = true # Emscripten emulates a unix-ish environment
 endif
+
+add_project_arguments(cpp_args, language : 'cpp')
 
 subdir('Engine')
 
-executable('arclight', [ 'Main/Main.cpp' ], include_directories: inc_dirs,
-    dependencies : [deps, engine_dep], link_args: ['-ldl', '-rdynamic'])
+link_args = [
+
+]
+
+ex_name = 'arclight'
+
+if host_machine.system() == 'emscripten'
+    link_args += ['-s', 'USE_SDL=2']
+    #link_args += ['-s', 'USE_ICU=1']
+    link_args += ['-s', 'USE_FREETYPE=2']
+    link_args += ['-s', 'USE_PTHREADS=1']
+    link_args += ['-s', 'PTHREAD_POOL_SIZE=2']
+
+    static_library(ex_name, [ 'Main/Main.cpp' ], include_directories: inc_dirs,
+        dependencies : [deps, engine_dep], link_args: link_args)
+elif is_unix
+    link_args += ['-ldl', '-rdynamic']
+
+    executable(ex_name, [ 'Main/Main.cpp' ], include_directories: inc_dirs,
+        dependencies : [deps, engine_dep], link_args: link_args)
+endif

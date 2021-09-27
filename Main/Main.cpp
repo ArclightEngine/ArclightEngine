@@ -22,6 +22,8 @@ using namespace Arclight;
 
 bool isRunning = true;
 
+extern "C" void GameInit();
+
 int main(int argc, char** argv) {
     if (argc >= 2) {
         chdir(argv[1]);
@@ -33,6 +35,9 @@ int main(int argc, char** argv) {
     std::string gamePath = std::string(cwd) + "/" + "game.so";
     Logger::Debug("Loading game executable: ", gamePath);
 
+#if defined(ARCLIGHT_PLATFORM_WASM)
+    void (*InitFunc)(void) = GameInit;
+#elif defined(ARCLIGHT_PLATFORM_UNIX)
     void* game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
     if (!game) {
         // Try Build/game.so instead
@@ -40,23 +45,31 @@ int main(int argc, char** argv) {
         game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
     }
 
+    void (*InitFunc)(void) = (void (*)())dlsym(game, "GameInit");
+
     if (!game) {
         Logger::Debug("Error loading ", dlerror());
         return 1;
     }
+#else
+    #error "Unsupported platform!"
+#endif
 
     Platform::Initialize();
 
     Application app;
 
-    void (*GameInit)(void) = (void (*)())dlsym(game, "GameInit");
-    assert(GameInit);
+    assert(InitFunc);
 
-    GameInit();
+    InitFunc();
 
     app.Run();
 
+#if defined(ARCLIGHT_PLATFORM_WASM)
+    return 0;
+#else
     Platform::Cleanup();
 
     return 0;
+#endif
 }

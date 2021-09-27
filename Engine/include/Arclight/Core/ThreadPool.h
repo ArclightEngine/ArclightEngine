@@ -20,6 +20,11 @@ public:
     void Schedule(Job& job);
 
     ////////////////////////////////////////
+	/// \brief Execute ThreadPool job queue until it is exhausted
+    ////////////////////////////////////////
+    void Run();
+
+    ////////////////////////////////////////
 	/// \brief Check if ThreadPool is idle.
     ///
     /// Returns true when the ThreadPool is idle.

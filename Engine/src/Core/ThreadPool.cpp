@@ -1,5 +1,6 @@
 #include <Arclight/Core/ThreadPool.h>
 
+#include <Arclight/Platform/Platform.h>
 #include <Arclight/Core/Logger.h>
 
 #include <stdexcept>
@@ -35,11 +36,15 @@ ThreadPool::ThreadPool(){
         return;
     }
 
+#ifdef ARCLIGHT_PLATFORM_WASM
+    long cpuCount = 0;
+#else
     // Hint of hardware threads
     long cpuCount = static_cast<long>(std::thread::hardware_concurrency()) - 1; // Prevent overflow
     if(cpuCount < 1){ // Failed to query hardware thread count
         cpuCount = 1;
     }
+#endif
 
     Logger::Debug("[ThreadPool] Using ", cpuCount, " threads.");
 
@@ -72,6 +77,26 @@ void ThreadPool::Schedule(Job& job){
     m_condition.notify_one(); // Wake up a thread
 
     m_queueMutex.unlock();
+}
+
+void ThreadPool::Run(){
+    Arclight::Job* currentJob = nullptr;
+    while(!m_threadsShouldDie && !m_jobs.empty()){
+        {
+            std::unique_lock<std::mutex> acquiredLock(m_queueMutex);
+
+            if(m_jobs.empty()){
+                continue;
+            }
+
+            currentJob = m_jobs.front();
+            m_jobs.pop();
+        }
+
+        // Ensure we release lock before job is run
+        currentJob->Run();
+        m_jobCount--;
+    }
 }
 
 bool ThreadPool::Idle() const {

@@ -1,4 +1,4 @@
-cpp_files = [
+cpp_files = files(
     'src/Core/Application.cpp',
     'src/Core/File.cpp',
     'src/Core/Input.cpp',
@@ -28,26 +28,32 @@ cpp_files = [
     'src/Systems/Renderer2D.cpp',
 
     'src/Window/WindowContext.cpp',
-]
+)
 
 inc_dirs = [ include_directories('include'),  include_directories('../thirdparty'), include_directories('.') ]
 
-if get_option('use_sdl2')
-    deps += dependency('sdl2')
-
-    add_global_arguments('-DARCLIGHT_SDL2=1', language : ['c', 'cpp'])
+if host_machine.system() == 'emscripten'
+    if get_option('use_sdl2')
+        add_global_arguments(['-s', 'USE_SDL=2', '-DARCLIGHT_SDL2=1'], language : ['c', 'cpp'])
+    endif
 else
-    error('No windowing library specified (SDL2)')
-endif
+    if get_option('use_sdl2')
+        deps += dependency('sdl2')
 
-if get_option('use_vulkan')
-    deps += dependency('vulkan')
+        add_global_arguments('-DARCLIGHT_SDL2=1', language : ['c', 'cpp'])
+    else
+        error('No windowing library specified (SDL2)')
+    endif
 
-    subdir('Rendering/Vulkan')
+    if get_option('use_vulkan')
+        deps += dependency('vulkan')
 
-    add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
+        subdir('Rendering/Vulkan')
+
+        add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
     endif
 endif
+
 if get_option('use_dummy_renderer')
     add_global_arguments('-DARCLIGHT_DUMMY_RENDERER=1', language : ['c', 'cpp'])
 endif

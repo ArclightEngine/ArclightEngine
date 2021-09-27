@@ -11,6 +11,7 @@ Features:
 Platforms:
 - Linux
 - Windows (WIP)
+- Emscripten (WIP, no WebGL)
 
 Future goals:
 - Clean API
@@ -27,6 +28,7 @@ Requirements:
 - SDL2
 - ICU
 - Freetype
+- Emscripten (optional)
 
 ### Linux
 ```shell

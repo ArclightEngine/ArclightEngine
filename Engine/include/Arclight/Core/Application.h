@@ -31,6 +31,8 @@ public:
     static ::Arclight::World& World() { return s_instance->m_currentWorld; }
 
     void Run();
+    void MainLoop();
+
     void Exit();
 
     // For now we do not allow runtime definition of states
@@ -74,6 +76,9 @@ private:
     struct StateData {
         std::list<System*> systems;
     };
+
+    // Frame delay in us
+    const long m_frameDelay = 1000000 / 60;
 
     bool m_isRunning = true;
 
