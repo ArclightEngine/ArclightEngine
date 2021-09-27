@@ -3,7 +3,7 @@
 #include <concepts>
 #include <string>
 
-#ifdef __clang__
+#ifdef _LIBCPP_VERSION
 namespace std {
 
 template <class F, class T>
