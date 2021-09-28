@@ -24,6 +24,8 @@
 #endif
 
 #ifdef ARCLIGHT_OPENGL
+#include <SDL2/SDL_opengles2.h>
+
 #include <Rendering/OpenGL/GLRenderer.h>
 #endif
 
@@ -41,8 +43,10 @@ const Uint32 platformSDLInitFlags =
 const Uint32 platformSDLInitFlags = SDL_INIT_EVERYTHING;
 #endif
 
-#ifdef ARCLIGHT_VULKAN
+#if defined(ARCLIGHT_VULKAN)
 const Uint32 platformSDLWindowFlags = SDL_WINDOW_VULKAN;
+#elif defined(ARCLIGHT_OPENGL)
+const Uint32 platformSDLWindowFlags = SDL_WINDOW_OPENGL;
 #else
 const Uint32 platformSDLWindowFlags = 0;
 #endif

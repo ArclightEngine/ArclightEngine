@@ -2,13 +2,14 @@
 
 #include <GLES3/gl3.h>
 
+#include <Arclight/Core/Fatal.h>
+
 #include <cassert>
 #include <string>
 
 #define glCheck(x)                                                                                 \
     {                                                                                              \
         (x);                                                                                       \
-        if (glGetError() != GL_NO_ERROR)                                                           \
-            assert(!(std::string("[Fatal error]") + __PRETTY_FUNCTION__ + " glCheck failed!")      \
-                        .c_str());                                                                 \
+        if (auto e = glGetError(); e != GL_NO_ERROR)                                               \
+            FatalRuntimeError("glCheck failed with error of ", e);                    \
     }
