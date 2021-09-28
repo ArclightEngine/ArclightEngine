@@ -1,3 +1,4 @@
 option('use_sdl2', type : 'boolean', value : true)
 option('use_vulkan', type : 'boolean', value : false)
-option('use_dummy_renderer', type : 'boolean', value : true)
+option('use_dummy_renderer', type : 'boolean', value : false)
+option('use_opengl', type : 'string', value : 'gles3')

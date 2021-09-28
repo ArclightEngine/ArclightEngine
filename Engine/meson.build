@@ -52,6 +52,17 @@ else
 
         add_global_arguments('-DARCLIGHT_VULKAN=1', language : ['c', 'cpp'])
     endif
+
+    use_opengl = get_option('use_opengl')
+    if use_opengl == 'gles3'
+        deps += dependency('glesv2')
+
+        subdir('Rendering/OpenGL')
+
+        add_global_arguments('-DARCLIGHT_OPENGL="gles3"', language : ['c', 'cpp'])
+    elif not (use_opengl == 'none' or use_opengl == '')
+        error('Unknown option \'' + use_opengl + '\' for use_opengl')
+    endif
 endif
 
 if get_option('use_dummy_renderer')

@@ -23,6 +23,10 @@
 #include <Rendering/Dummy/DummyRenderer.h>
 #endif
 
+#ifdef ARCLIGHT_OPENGL
+#include <Rendering/OpenGL/GLRenderer.h>
+#endif
+
 namespace Arclight::Platform {
 
 std::vector<Rendering::Renderer*> renderers;
@@ -70,6 +74,13 @@ void Initialize() {
     Rendering::DummyRenderer* dummyRenderer = new Rendering::DummyRenderer();
     if (!dummyRenderer->Initialize(windowContext)) {
         renderers.push_back(dummyRenderer);
+    }
+#endif
+
+#ifdef ARCLIGHT_OPENGL
+    Rendering::GLRenderer* glRenderer = new Rendering::GLRenderer();
+    if(!glRenderer->Initialize(windowContext)){
+        renderers.push_back(glRenderer);
     }
 #endif
 
