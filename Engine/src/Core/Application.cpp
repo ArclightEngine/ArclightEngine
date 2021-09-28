@@ -6,6 +6,8 @@
 
 #include <SDL2/SDL.h>
 
+#include <unistd.h>
+
 #include <stdexcept>
 
 #ifdef ARCLIGHT_PLATFORM_WASM
