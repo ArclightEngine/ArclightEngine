@@ -22,16 +22,27 @@ def dump_shader_file(file, name: str) -> str:
     return text
 
 if __name__ == "__main__":
-    subprocess.run(["glslc", path.join(arclight_root, "Data/shaders/default.vert"), "-o", path.join(arclight_root, "Build/default_vert.spv")], check=True)
-    subprocess.run(["glslc", path.join(arclight_root, "Data/shaders/default.frag"), "-o", path.join(arclight_root, "Build/default_frag.spv")], check=True)
+    subprocess.run(["glslc", path.join(arclight_root, "Data/shaders/default_vulkan.vert"), "-o", path.join(arclight_root, "Build/default_vert.spv")], check=True)
+    subprocess.run(["glslc", path.join(arclight_root, "Data/shaders/default_vulkan.frag"), "-o", path.join(arclight_root, "Build/default_frag.spv")], check=True)
     
-    frag = open(path.join(arclight_root, "Build/default_frag.spv"), "rb")
-    vert = open(path.join(arclight_root, "Build/default_vert.spv"), "rb")
-    output = open(path.join(arclight_root, "Engine/Rendering/Vulkan/DefaultShaderBytecode.h"), "w")
+    frag_gl = open(path.join(arclight_root, "Data/shaders/default_gles.frag"), "rb")
+    vert_gl = open(path.join(arclight_root, "Data/shaders/default_gles.vert"), "rb")
+    output_gl = open(path.join(arclight_root, "Engine/Rendering/OpenGL/DefaultShaderSource.h"), "w")
 
-    header_file = dump_shader_file(frag, "defaultFragmentShader") + "\n" + dump_shader_file(vert, "defaultVertexShader")
-    output.write(header_file)
+    gl_header_file = dump_shader_file(frag_gl, "defaultFragmentShader") + "\n" + dump_shader_file(vert_gl, "defaultVertexShader")
+    output_gl.write(gl_header_file)
 
-    frag.close()
-    vert.close()
-    output.close()
+    frag_gl.close()
+    vert_gl.close()
+    output_gl.close()
+
+    frag_spv = open(path.join(arclight_root, "Build/default_frag.spv"), "rb")
+    vert_spv = open(path.join(arclight_root, "Build/default_vert.spv"), "rb")
+    output_spv = open(path.join(arclight_root, "Engine/Rendering/Vulkan/DefaultShaderBytecode.h"), "w")
+
+    vulkan_header_file = dump_shader_file(frag_spv, "defaultFragmentShader") + "\n" + dump_shader_file(vert_spv, "defaultVertexShader")
+    output_spv.write(vulkan_header_file)
+
+    frag_spv.close()
+    vert_spv.close()
+    output_spv.close()
