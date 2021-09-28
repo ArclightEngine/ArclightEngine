@@ -47,11 +47,11 @@ public:
     bool IsEOF() const override { return feof(m_file) != 0; }
 
     int Seek(size_t off) override {
-        return fseeko64(m_file, off, SEEK_SET);
+        return fseeko(m_file, off, SEEK_SET);
     }
 
     ssize_t Tell() const override {
-        return ftello64(m_file);
+        return ftello(m_file);
     }
 
     ssize_t GetSize() const override {
@@ -59,10 +59,10 @@ public:
 
         ssize_t pos = Tell();
 
-        fseeko64(m_file, 0, SEEK_END);
+        fseeko(m_file, 0, SEEK_END);
         ssize_t size = Tell();
 
-        fseeko64(m_file, pos, SEEK_SET);
+        fseeko(m_file, pos, SEEK_SET);
 
         return size;
     }

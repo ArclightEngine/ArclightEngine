@@ -1,6 +1,10 @@
 #pragma once
 
-#ifdef __unix__
+#if defined(__APPLE__)
+#define ARCLIGHT_PLATFORM_MACOS
+#endif
+
+#if defined(unix) || defined(__unix__) || defined(__unix) || defined(ARCLIGHT_PLATFORM_MACOS)
 #define ARCLIGHT_PLATFORM_UNIX
 #endif
 

@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
 #endif
 
     Platform::Initialize();
+    Logger::Debug("Using renderer: ", Rendering::Renderer::Instance()->GetName());
 
     Application app;
 
