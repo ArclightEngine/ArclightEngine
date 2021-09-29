@@ -37,7 +37,7 @@ def rebuild():
 
     builddir = platform_build_dir()
 
-    run_cmake(["-B", builddir, "-G", "Ninja",
+    run_cmake(["-B", builddir, "-GNinja",
                    f"-DARCLIGHT_ENGINE_PATH={arclight_root}"])
     subprocess.run(["ninja", "-C", builddir], check=True)
 
@@ -45,7 +45,7 @@ def rebuild():
 def build():
     builddir = platform_build_dir()
     if not path.isdir(builddir):
-        run_cmake(["-B", builddir, "-G", "Ninja",
+        run_cmake(["-B", builddir, "-GNinja",
                     f"-DARCLIGHT_ENGINE_PATH={arclight_root}"])
 
     subprocess.run(["ninja", "-C", builddir], check=True)
@@ -77,8 +77,11 @@ def package():
 
 def run():
     if build_platform == "wasm":
-        print(f"Open 0.0.0.0:{webserver_port} in your browser")
-        http.server.run('', webserver_port)
+        if not path.isfile("game.html"):
+            shutil.copy(path.join(arclight_root, "Data", "wasm.html"), "game.html")
+        print(f"Open http://0.0.0.0:{webserver_port}/game.html in your browser")
+        server = http.server.HTTPServer(('', webserver_port), http.server.SimpleHTTPRequestHandler)
+        server.serve_forever()
     else:
         engine = path.join(path.dirname(
             path.realpath(__file__)), "Build", "arclight")

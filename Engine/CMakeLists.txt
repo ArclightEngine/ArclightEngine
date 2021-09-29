@@ -60,8 +60,10 @@ endif()
 if(USE_OPENGL)
     add_definitions(-DARCLIGHT_OPENGL=1)
 
-    find_library(OGL_ES_LIBRARY GLESv2)
-    target_link_libraries(libarclight ${OGL_ES_LIBRARY})
+    if(NOT IS_EMSCRIPTEN)
+        find_library(OGL_ES_LIBRARY GLESv2)
+        target_link_libraries(libarclight ${OGL_ES_LIBRARY})
+    endif()
 
     target_sources(libarclight PRIVATE ${OGL_SRC})
 endif()

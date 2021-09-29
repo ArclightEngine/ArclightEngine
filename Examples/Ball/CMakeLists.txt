@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.13)
 
 project(Game)
 
+# Set by arclight-build.py
+option(ARCLIGHT_ENGINE_PATH "Path to Arclight Engine directory" "%ARCLIGHTBUILD_ENGINE_PATH%")
+# Currently Unsupported
 option(STANDALONE "Build game without external dependencies" OFF)
-option(ARCLIGHT_ENGINE_PATH "Path to Arclight Engine directory" "/home/computerfido/ArclightEngine")
 
 # Don't use a prefix to build game.so
 unset(CMAKE_SHARED_LIBRARY_PREFIX)
@@ -41,13 +43,15 @@ set(GAME_SOURCES
     src/Main.cpp
 )
 
-if(IS_STANDALONE)
-    find_library(ENGINE_LIB ${ARCLIGHT_ENGINE_PATH})
-endif()
-
 if(IS_EMSCRIPTEN)
+	message(${ARCLIGHT_ENGINE_PATH}/Build/wasm)
+    # CMake has trouble finding libraries with emscripten
+	file(GLOB libarclight ${ARCLIGHT_ENGINE_PATH}/Build/wasm/libarclight.a)
+
     add_compile_options(-sUSE_SDL=2 -sUSE_ICU=1 -sUSE_FREETYPE=1)
-    add_executable(game.html ${GAME_SOURCES} ${ENGINE_LIB})
+    add_executable(game ${GAME_SOURCES})
+    target_link_options(game PUBLIC -sUSE_SDL=2 -sUSE_ICU=1 -sUSE_FREETYPE=1 -sMAX_WEBGL_VERSION=2)
+    target_link_libraries(game ${libarclight})
 else()
     add_library(game SHARED ${GAME_SOURCES})
 endif()

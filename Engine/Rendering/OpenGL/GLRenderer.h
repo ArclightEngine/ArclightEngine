@@ -2,6 +2,7 @@
 
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Graphics/Transform.h>
+#include <Arclight/Platform/Platform.h>
 
 // OpenGL ES / WebGL Renderer
 // Desktop OpenGL not supported at this time,
@@ -69,7 +70,11 @@ private:
 
     std::mutex m_glMutex;
 
-    const std::string m_name = "OpenGL ES 3";
+#ifdef ARCLIGHT_PLATFORM_WASM
+    const std::string m_name = "WebGL 2 (emulating OpenGL ES 3.0)";
+#else
+    const std::string m_name = "OpenGL ES 3.0";
+#endif
 
     std::unique_ptr<RenderPipeline> m_defaultPipeline;
     std::set<class GLPipeline*> m_pipelines;

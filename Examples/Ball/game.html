@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Arclight Engine</title>
+</head>
+
+<style>
+h1 {
+    padding: 1.5%;
+    margin: 0;
+    color: #cccccc;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+#canvas {
+    margin: 0 auto;
+    display: block;
+    background-color: black;
+}
+
+body {
+    background-color: #2a2631;
+}
+
+textarea {
+    margin: 0 auto;
+    display: block;
+    width: 60%;
+    color: #cccccc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #201f24;
+    border: 0;
+}
+</style>
+
+<body>
+    <h1>
+        Arclight Engine
+    </h1>
+
+    <br>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+    <br>
+
+    <textarea id="output" rows="8"></textarea>
+
+    <script type='text/javascript'>
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function() {
+              var element = document.getElementById('output');
+              if (element) element.value = ''; // clear browser cache
+              return function(text) {
+                  if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                  console.log(text);
+                  if (element) {
+                    element.value += text + "\n";
+                    element.scrollTop = element.scrollHeight; // focus on bottom
+                  }
+              };
+            })(),
+            printErr: function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                console.error(text);
+            },
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+
+                // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+                // application robust, you may want to override this behavior before shipping!
+                // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+                canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+                return canvas;
+            })()
+        };
+    </script>
+    <script async type="text/javascript" src="/Build/wasm/game.js"></script>
+</body>
