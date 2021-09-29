@@ -63,6 +63,8 @@ GLPipeline::GLPipeline(const Shader& vertexShader, const Shader& fragmentShader)
         glCheck(glUniformBlockBinding(m_program, transformBlockIndex, 1));
     }
 
+    m_modelTransformIndex = glGetUniformLocation(m_program, "transform");
+
     // Generate VAO for Pipeline
     glGenVertexArrays(1, &m_vao);
     assert(m_vao);

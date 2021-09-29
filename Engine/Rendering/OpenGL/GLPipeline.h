@@ -19,6 +19,8 @@ public:
     ALWAYS_INLINE GLuint GetGLProgram() { return m_program; }
     ALWAYS_INLINE GLuint GetVAO() { return m_vao; }
 
+    ALWAYS_INLINE GLint ModelTransformIndex() const { return m_modelTransformIndex; }
+
 private:
     static std::string GetShaderCompilationLog(GLuint shader); 
     static std::string GetProgramLinkLog(GLuint prog); 
@@ -28,7 +30,9 @@ private:
 
     GLuint m_program;
 
-    // Vertex
+    GLint m_modelTransformIndex;
+
+    // Vertex array object
     GLuint m_vao;
 };
 

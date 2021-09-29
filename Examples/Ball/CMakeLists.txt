@@ -52,6 +52,8 @@ if(IS_EMSCRIPTEN)
     add_executable(game ${GAME_SOURCES})
     target_link_options(game PUBLIC -sUSE_SDL=2 -sUSE_ICU=1 -sUSE_FREETYPE=1 -sMAX_WEBGL_VERSION=2)
     target_link_libraries(game ${libarclight})
+
+    target_link_options(game PUBLIC --embed-file ${CMAKE_SOURCE_DIR}/ball.png@ball.png)
 else()
     add_library(game SHARED ${GAME_SOURCES})
 endif()

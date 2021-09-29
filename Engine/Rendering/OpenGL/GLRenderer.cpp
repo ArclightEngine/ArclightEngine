@@ -9,6 +9,10 @@
 
 #include <SDL2/SDL_opengles2.h>
 
+#ifdef ARCLIGHT_PLATFORM_WASM
+#include <emscripten/html5.h>
+#endif
+
 #include "GLCheck.h"
 #include "GLPipeline.h"
 
@@ -32,12 +36,29 @@ GLRenderer::~GLRenderer() {
 }
 
 int GLRenderer::Initialize(class WindowContext* context) {
-    // OpenGL ES 3.0
+    m_windowContext = context;
+
+    // OpenGL ES 3
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+#ifdef ARCLIGHT_PLATFORM_WASM
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-    m_windowContext = context;
+    m_glContext = SDL_GL_CreateContext(context->GetWindow());
+    if (!m_glContext) {
+        FatalRuntimeError("Failed to get OpenGL context from SDL: ", SDL_GetError());
+    }
+
+    EmscriptenWebGLContextAttributes attr;
+    emscripten_webgl_init_context_attributes(&attr);
+    attr.majorVersion = 2;
+    attr.minorVersion = 0;
+
+    auto glContext = emscripten_webgl_create_context("#canvas", &attr); 
+    assert(glContext != 0);
+#else
+    // Use OpenGL ES 3.1 on native platforms
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 
     m_glContext = SDL_GL_CreateContext(context->GetWindow());
     if (!m_glContext) {
@@ -48,6 +69,7 @@ int GLRenderer::Initialize(class WindowContext* context) {
     if (!versionString) {
         FatalRuntimeError("Failed to get OpenGL version string!");
     }
+#endif
 
     m_viewportTransform = Transform(
         {-1, 1}, {2.f / m_windowContext->GetSize().x, -2.f / m_windowContext->GetSize().y});
@@ -97,7 +119,9 @@ int GLRenderer::Initialize(class WindowContext* context) {
 
 void GLRenderer::Render() {
     SDL_GL_SwapWindow(m_windowContext->GetWindow());
+}
 
+void GLRenderer::Clear(){
     // Clear screen
     glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -166,8 +190,7 @@ void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix
 
     glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STREAM_DRAW));
 
-    // It is assumed the uniform object for the transform is at location 0
-    glUniformMatrix4fv(0, 1, GL_FALSE, transform.Matrix());
+    glUniformMatrix4fv(glPipeline->ModelTransformIndex(), 1, GL_FALSE, transform.Matrix());
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
 

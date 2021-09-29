@@ -25,6 +25,14 @@ public:
 	virtual void WaitDeviceIdle() const = 0;
 
 	////////////////////////////////////////
+	/// \brief Clear the window using the set clear colour
+	///
+	/// Not necessary on all platforms, with the notable exception of WebGL
+	////////////////////////////////////////
+	virtual void Clear() {}
+	
+
+	////////////////////////////////////////
 	/// \brief Draw
 	///
 	///	Draw a polygon.

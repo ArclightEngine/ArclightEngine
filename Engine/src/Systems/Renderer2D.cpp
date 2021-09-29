@@ -11,6 +11,7 @@ void Renderer2D::Tick() {
     auto& world = app.World();
 
     Rendering::Renderer& renderer = *Rendering::Renderer::Instance();
+    renderer.Clear();
 
     auto view = world.Registry().view<Sprite>();
     for (Entity ent : view) {

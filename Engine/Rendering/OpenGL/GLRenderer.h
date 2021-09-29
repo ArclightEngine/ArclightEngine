@@ -28,6 +28,8 @@ public:
 
     void Render() override;
 
+    void Clear() override;
+
     RenderPipeline::PipelineHandle
     CreatePipeline(const Shader&, const Shader&,
                    const RenderPipeline::PipelineFixedConfig&) override;
