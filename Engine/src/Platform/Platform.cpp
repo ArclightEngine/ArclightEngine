@@ -5,10 +5,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#ifndef ARCLIGHT_SDL2
-#error "No windowing library!"
-#endif
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_video.h>
 

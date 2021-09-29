@@ -41,7 +41,7 @@ else()
     message(FATAL_ERROR "Unsupported platform!")
 endif()
 
-add_library(libarclight SHARED ${ENGINE_SRC})
+add_library(libarclight OBJECT ${ENGINE_SRC})
 
 # Process render sources afterwards
 add_subdirectory(Rendering)
