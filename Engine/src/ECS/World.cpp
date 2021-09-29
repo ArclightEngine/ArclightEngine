@@ -2,6 +2,8 @@
 
 namespace Arclight {
 
+World* World::s_currentWorld = nullptr;
+
 void World::Cleanup() {
     for(void(World::*func)() : m_componentCleanupFunctions){
         (this->*func)();

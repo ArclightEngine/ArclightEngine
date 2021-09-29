@@ -6,7 +6,6 @@ set(ENGINE_SRC
     "src/Core/Resource.cpp"
     "src/Core/ResourceManager.cpp"
     "src/Core/ThreadPool.cpp"
-    "src/ECS/System.cpp"
     "src/ECS/World.cpp"
     "src/Graphics/Font.cpp"
     "src/Graphics/Image.cpp"

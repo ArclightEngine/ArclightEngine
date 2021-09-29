@@ -9,22 +9,8 @@ public:
 
     virtual void Run() = 0;
 
-private:
-};
-
-template<typename T>
-class FunctionJob final
-    : public Job {
-public:
-    inline FunctionJob(T&& func)
-        : m_func(func) {}
-
-    void Run() override {
-        m_func();
-    }
-
-private:
-    T m_func;
+protected:
+    Job() = default;
 };
 
 } // namespace Arclight

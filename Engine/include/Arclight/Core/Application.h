@@ -28,7 +28,6 @@ public:
     // Returns WindowContext for Application
     // Should be used as opposed to WindowContext::Instance();
     static WindowContext& Window() { return *WindowContext::Instance(); }
-    static ::Arclight::World& World() { return s_instance->m_currentWorld; }
 
     void Run();
     void MainLoop();
@@ -42,9 +41,17 @@ public:
         m_states[s]; // Default initialize
     }
 
-    template <State s> void AddSystem(System* sys) { m_states.at(s).systems.push_back(sys); }
+    template<State s, void(*Function)(float, ::Arclight::World&)>
+    ALWAYS_INLINE void AddSystem() { m_states.at(s).systems.push_back(new System<Function>()); }
 
-    void AddSystem(System* sys) { m_globalSystems.push_back(sys); }
+    template<State s, class Clazz, void(Clazz::*Function)(float, ::Arclight::World&)>
+    ALWAYS_INLINE void AddSystem(Clazz& ref) { m_states.at(s).systems.push_back(new ClassSystem<Clazz, Function>(ref)); }
+
+    template<void(*Function)(float, ::Arclight::World&)>
+    ALWAYS_INLINE void AddSystem() { m_globalSystems.push_back(new System<Function>()); }
+
+    template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&)>
+    ALWAYS_INLINE void AddSystem(Clazz& ref) { m_globalSystems.push_back(new ClassSystem<Clazz, Function>(ref)); }
 
     // Command pattern
     // Commands are deferred until end of frame
@@ -74,7 +81,7 @@ private:
     void PopStateImpl();
 
     struct StateData {
-        std::list<System*> systems;
+        std::list<Job*> systems;
     };
 
     // Frame delay in us
@@ -89,8 +96,6 @@ private:
     ResourceManager m_resourceManager;
     StateManager m_stateManager;
 
-    ::Arclight::World m_currentWorld;
-
     std::queue<std::function<void()>> m_deferQueue;
 
     // Enforce a policy where only one system can undergo a state change,
@@ -103,7 +108,7 @@ private:
     StateData* m_currentState = nullptr;
     std::unordered_map<State, StateData> m_states;
 
-    std::list<System*> m_globalSystems;
+    std::list<Job*> m_globalSystems;
 };
 
 } // namespace Arclight

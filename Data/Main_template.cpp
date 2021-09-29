@@ -3,9 +3,7 @@
 extern "C"{
 void GameInit(){
     Arclight::Logger::Debug("Starting Game!");
-}
 
-void GameRun(){
-
+    app.Run();
 }
 }

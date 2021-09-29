@@ -6,10 +6,7 @@
 
 namespace Arclight::Systems {
 
-void Renderer2D::Tick() {
-    auto& app = Application::Instance();
-    auto& world = app.World();
-
+void Renderer2D(float elasped, World& world) {
     Rendering::Renderer& renderer = *Rendering::Renderer::Instance();
     renderer.Clear();
 

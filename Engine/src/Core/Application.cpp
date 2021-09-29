@@ -29,6 +29,7 @@ Application::Application() {
     }
 
     s_instance = this;
+    World::s_currentWorld = new World();
 }
 
 void Application::Run() {
@@ -86,7 +87,7 @@ void Application::MainLoop() {
     while (!m_threadPool.Idle())
         pollEvents(); // We shouldn't really busy wait
 
-    m_currentWorld.Cleanup();
+    World::s_currentWorld->Cleanup();
 
     ProcessDeferQueue();
 

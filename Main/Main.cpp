@@ -32,12 +32,17 @@ int main(int argc, char** argv) {
     char cwd[4096];
     getcwd(cwd, 4096);
 
-    std::string gamePath = std::string(cwd) + "/" + "game.so";
-    Logger::Debug("Loading game executable: ", gamePath);
+    Platform::Initialize();
+    Logger::Debug("Using renderer: ", Rendering::Renderer::Instance()->GetName());
+
+    Application app;
 
 #if defined(ARCLIGHT_PLATFORM_WASM)
     void (*InitFunc)(void) = GameInit;
 #elif defined(ARCLIGHT_PLATFORM_UNIX)
+    std::string gamePath = std::string(cwd) + "/" + "game.so";
+    Logger::Debug("Loading game executable: ", gamePath);
+
     void* game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
     if (!game) {
         // Try Build/game.so instead
@@ -55,16 +60,9 @@ int main(int argc, char** argv) {
     #error "Unsupported platform!"
 #endif
 
-    Platform::Initialize();
-    Logger::Debug("Using renderer: ", Rendering::Renderer::Instance()->GetName());
-
-    Application app;
-
     assert(InitFunc);
 
     InitFunc();
-
-    app.Run();
 
 #if defined(ARCLIGHT_PLATFORM_WASM)
     return 0;

@@ -9,13 +9,13 @@
 #include <Arclight/State/State.h>
 #include <Arclight/Systems/Renderer2D.h>
 
-class TestSystem : public Arclight::System {
+class TestSystem {
 public:
     struct BallData {
         Arclight::Vector2f velocity;
     };
 
-    TestSystem() : System("TestSystem") {
+    TestSystem() {
         std::shared_ptr<Arclight::Image> res =
             Arclight::ResourceManager::Instance().GetResource<Arclight::Image>("ball.png");
         assert(res.get());
@@ -30,20 +30,20 @@ public:
         return {spr.transform.GetPosition(), spr.transform.GetPosition() + spr.size};
     }
 
-    void Tick() override {
+    void Tick(float elapsed, Arclight::World& world) {
         auto& app = Arclight::Application::Instance();
 
         if (Arclight::Input::GetKeyPress(Arclight::KeyCode_E)) {
-            Arclight::Entity newEntity = app.World().CreateEntity();
+            Arclight::Entity newEntity = world.CreateEntity();
 
             Arclight::Sprite spr;
             spr.texture = &tex;
             spr.transform.SetPosition(rand() % app.Window().GetWindowRenderSize().x,
                                         rand() % app.Window().GetWindowRenderSize().y);
 
-            app.World().AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
+            world.AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
                                                                             std::move(spr));
-            app.World().AddComponent<BallData>(
+            world.AddComponent<BallData>(
                 newEntity,
                 BallData{{ballSpeed * ((rand() & 2) - 1), ballSpeed * ((rand() & 2) - 1)}});
 
@@ -52,16 +52,16 @@ public:
         } else if (Arclight::Input::GetKeyPress(Arclight::KeyCode_R)) {
             int i = 1000; // Add 1000 entities
             while (i--) {
-                Arclight::Entity newEntity = app.World().CreateEntity();
+                Arclight::Entity newEntity = world.CreateEntity();
 
                 Arclight::Sprite spr;
                 spr.texture = &tex;
                 spr.transform.SetPosition(rand() % app.Window().GetWindowRenderSize().x,
                                           rand() % app.Window().GetWindowRenderSize().y);
 
-                app.World().AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
+                world.AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
                                                                              std::move(spr));
-                app.World().AddComponent<BallData>(
+                world.AddComponent<BallData>(
                     newEntity,
                     BallData{{ballSpeed * ((rand() & 2) - 1), ballSpeed * ((rand() & 2) - 1)}});
             }
@@ -69,16 +69,16 @@ public:
             ballCount += 1000;
             Arclight::Logger::Debug(ballCount, " balls");
         } else if (Arclight::Input::GetKeyPress(Arclight::KeyCode_Q)) {
-            auto view = app.World().Registry().view<BallData>();
+            auto view = world.Registry().view<BallData>();
             for (Arclight::Entity e : view) {
-                app.World().Registry().destroy(e);
+                world.Registry().destroy(e);
             }
 
             ballCount = 0;
             Arclight::Logger::Debug(ballCount, " balls");
         }
 
-        auto view = app.World().Registry().view<Arclight::Sprite, BallData>();
+        auto view = world.Registry().view<Arclight::Sprite, BallData>();
         for (Arclight::Entity e : view) {
             auto& spr = view.get<Arclight::Sprite>(e);
             auto& data = view.get<BallData>(e);
@@ -119,12 +119,16 @@ extern "C" {
 void GameInit() {
     Arclight::Logger::Debug("Starting Game!");
 
+    TestSystem testSystem;
+
     auto& app = Arclight::Application::Instance();
     app.Window().backgroundColour = {0, 0, 0, 255};
-    app.AddSystem(new Arclight::Systems::Renderer2D());
-    app.AddSystem(new TestSystem());
+    app.AddSystem<Arclight::Systems::Renderer2D>();
+    app.AddSystem<TestSystem, &TestSystem::Tick>(testSystem);
 
     app.AddState<StateDefault>();
     app.commands.LoadState<StateDefault>();
+
+    app.Run();
 }
 }

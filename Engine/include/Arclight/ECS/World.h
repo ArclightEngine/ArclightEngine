@@ -12,8 +12,11 @@
 namespace Arclight {
 
 class World final : NonCopyable {
+    friend class Application;
 public:
     World() = default;
+
+    ALWAYS_INLINE static World& Current() { return *s_currentWorld; }
 
     void Cleanup();
 
@@ -51,6 +54,10 @@ public:
     ALWAYS_INLINE ECSRegistry& Registry() { return m_registry; }
 
 private:
+    // The current world is set by the application,
+    // it is here so prevent circular header dependencies
+    static World* s_currentWorld;
+
     // EnTT registry is not entirely thread-safe.
     // Arclight orders components into pools for cleanup.
     // At the end of each frame,
