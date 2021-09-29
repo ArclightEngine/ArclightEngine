@@ -1,11 +1,5 @@
 #pragma once
 
-#ifndef ARCLIGHT_SDL2
-
-#error "SDL2 not enabled!"
-
-#endif
-
 #include <SDL2/SDL_keycode.h>
 
 namespace Arclight {

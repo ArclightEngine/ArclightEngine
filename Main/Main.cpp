@@ -43,14 +43,14 @@ int main(int argc, char** argv) {
         // Try Build/game.so instead
         gamePath = std::string(cwd) + "/Build/" + "game.so";
         game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
+
+        if (!game) {
+            Logger::Debug("Error loading ", dlerror());
+            return 1;
+        }
     }
 
     void (*InitFunc)(void) = (void (*)())dlsym(game, "GameInit");
-
-    if (!game) {
-        Logger::Debug("Error loading ", dlerror());
-        return 1;
-    }
 #else
     #error "Unsupported platform!"
 #endif

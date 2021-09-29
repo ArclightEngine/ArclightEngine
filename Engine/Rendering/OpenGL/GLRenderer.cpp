@@ -41,7 +41,7 @@ int GLRenderer::Initialize(class WindowContext* context) {
 
     m_glContext = SDL_GL_CreateContext(context->GetWindow());
     if (!m_glContext) {
-        FatalRuntimeError("Failed to get OpenGL context from SDL!");
+        FatalRuntimeError("Failed to get OpenGL context from SDL: ", SDL_GetError());
     }
 
     const GLubyte* versionString = glGetString(GL_VERSION);

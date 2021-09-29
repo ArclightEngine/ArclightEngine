@@ -1,0 +1,71 @@
+cmake_minimum_required(VERSION 3.13)
+
+project(ArclightEngine)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+option(USE_VULKAN "Use Vulkan renderer" OFF)
+option(USE_DUMMY_RENDERER "Use dummy renderer" OFF)
+option(USE_OPENGL "Use OpenGL ES renderer" OFF)
+
+if(CMAKE_SYSTEM_NAME MATCHES emscripten)
+    set(IS_EMSCRIPTEN ON)
+    set(USE_OPENGL CACHE BOOL ON)
+elseif(UNIX)
+    set(IS_UNIX ON)
+    if(CMAKE_SYSTEM_NAME MATCHES Darwin)
+        set(IS_MACOS ON)
+        set(USE_VULKAN CACHE BOOL ON)
+    elseif(CMAKE_SYSTEM_NAME MATCHES Linux)
+        set(IS_LINUX ON)
+        set(USE_VULKAN CACHE BOOL ON)
+    else() # Currently we do not support FreeBSD, etc.
+        message(FATAL_ERROR "Unknown UNIX system ${CMAKE_SYSTEM_NAME}")
+    endif()
+elseif(CMAKE_SYSTEM_NAME MATCHES Windows)
+    set(IS_WINDOWS ON)
+    set(USE_VULKAN ON)
+endif()
+
+# When using emscripten, the library is linked into the game
+if(NOT IS_EMSCRIPTEN)
+    add_executable(arclight Main/Main.cpp)
+    target_link_libraries(arclight libarclight)
+
+    if(UNIX)
+        target_link_libraries(arclight dl)
+        target_link_libraries(arclight pthread)
+    endif()
+endif()
+
+include_directories(thirdparty)
+include_directories(Engine/include)
+
+find_package(SDL2 REQUIRED)
+if(SDL2_FOUND)
+    target_link_libraries(arclight SDL2)
+
+    add_definitions(-DARCLIGHT_SDL2=1)
+else()
+    message(FATAL_ERROR "Failed to find SDL2!")
+endif()
+
+find_package(Freetype REQUIRED)
+if(Freetype_FOUND)
+    target_link_libraries(arclight ${FREETYPE_LIBRARIES})
+    include_directories(${FREETYPE_INCLUDE_DIRS})
+    include_directories(${FREETYPE_INCLUDE_DIR_ft2build})
+else()
+    message(FATAL_ERROR "Failed to find freetype!")
+endif()
+
+find_package(ICU 69 COMPONENTS uc i81n REQUIRED)
+if(ICU_FOUND)
+    include_directories(${ICU_INCLUDE_DIRS})
+    target_link_libraries(arclight ${ICU_LIBRARIES})
+else()
+    message(FATAL_ERROR "Failed to find ICU!")
+endif()
+
+add_subdirectory(Engine)
