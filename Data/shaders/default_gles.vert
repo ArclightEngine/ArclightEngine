@@ -2,10 +2,11 @@
 
 precision mediump float;
 
-uniform Transform {
+layout(binding = 1) uniform Transform {
     mat4 viewport;
-    mat4 transform;
 };
+
+layout(location = 0) uniform mat4 transform;
 
 layout(location = 0) in vec2 position;
 layout(location = 1) in vec2 texCoord;

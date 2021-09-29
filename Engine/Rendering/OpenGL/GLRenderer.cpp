@@ -1,6 +1,7 @@
 #include <Rendering/OpenGL/GLRenderer.h>
 
 #include <Arclight/Core/Fatal.h>
+#include <Arclight/Graphics/Transform.h>
 #include <Arclight/Platform/Platform.h>
 #include <Arclight/Window/WindowContext.h>
 
@@ -48,6 +49,37 @@ int GLRenderer::Initialize(class WindowContext* context) {
         FatalRuntimeError("Failed to get OpenGL version string!");
     }
 
+    m_viewportTransform = Transform(
+        {-1, 1}, {2.f / m_windowContext->GetSize().x, -2.f / m_windowContext->GetSize().y});
+
+    glGenBuffers(1, &m_transformUBO);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, m_transformUBO);
+    // Should only be updated when window is resized,
+    // will be used many times
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4::s_identityMatrix), Matrix4::s_identityMatrix,
+                 GL_STATIC_DRAW);
+
+    // Bind a range in the buffer to an index
+    // We have a uniform buffer,
+    // Binding to index 1,
+    // Using buffer m_transform
+    // Offset of 0
+    // Size of one matrix
+    glBindBufferRange(GL_UNIFORM_BUFFER, 1, m_transformUBO, 0, sizeof(Matrix4::s_identityMatrix));
+
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Matrix4::s_identityMatrix),
+                    m_viewportTransform.Matrix().Matrix());
+
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glGenBuffers(1, &m_vbo);
+    assert(m_vbo);
+
+    // Enable alpha blending
+    glEnable(GL_BLEND);  
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     s_rendererInstance = this;
 
     {
@@ -64,10 +96,10 @@ int GLRenderer::Initialize(class WindowContext* context) {
 }
 
 void GLRenderer::Render() {
+    SDL_GL_SwapWindow(m_windowContext->GetWindow());
+
     // Clear screen
     glClear(GL_COLOR_BUFFER_BIT);
-
-    SDL_GL_SwapWindow(m_windowContext->GetWindow());
 }
 
 RenderPipeline::PipelineHandle
@@ -98,6 +130,50 @@ void GLRenderer::DestroyPipeline(RenderPipeline::PipelineHandle pipelineHandle) 
 RenderPipeline& GLRenderer::DefaultPipeline() {
     assert(m_defaultPipeline.get());
     return *m_defaultPipeline;
+}
+
+void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform,
+                      Texture::TextureHandle texture, RenderPipeline& pipeline) {
+    GLPipeline* glPipeline = reinterpret_cast<GLPipeline*>(pipeline.Handle());
+
+    if (texture) {
+        GLTexture* tex = reinterpret_cast<GLTexture*>(texture);
+        glActiveTexture(GL_TEXTURE0);
+        glCheck(glBindTexture(GL_TEXTURE_2D, tex->id));
+    }
+
+    if(glPipeline->GetGLProgram() != m_lastProgram){
+        glCheck(glUseProgram(glPipeline->GetGLProgram()));
+
+        m_lastProgram = glPipeline->GetGLProgram();
+    }
+
+    auto vbo = GetVertexBufferObject(vertexCount);
+    // GL_STREAM_DRAW - "Data modified once and used a few times"
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo.id));
+
+    glBindVertexArray(glPipeline->GetVAO());
+
+    // Position
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
+    glEnableVertexAttribArray(0);
+    // Texture Coordinates
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, texCoord));
+    glEnableVertexAttribArray(1);
+    // Vertex Colour
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, colour));
+    glEnableVertexAttribArray(2);
+
+    glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STREAM_DRAW));
+
+    // It is assumed the uniform object for the transform is at location 0
+    glUniformMatrix4fv(0, 1, GL_FALSE, transform.Matrix());
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
+
+    if (texture) { 
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }
 
 Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size) {
@@ -150,6 +226,12 @@ void GLRenderer::DestroyTexture(Texture::TextureHandle texHandle) {
 
     // Delete our texture object
     delete tex;
+}
+
+GLRenderer::GLVBO GLRenderer::GetVertexBufferObject(unsigned vertexCount) {
+    // For now, we only use one VBO, this is subject to change
+    assert(vertexCount <= 4);
+    return {m_vbo};
 }
 
 } // namespace Arclight::Rendering
