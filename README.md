@@ -5,13 +5,13 @@ A lightweight 2D game engine written in C++20 using Vulkan and SDL.
 Features:
 - Multithreaded
 - Unicode support
-- Vulkan rendering
+- Supports Vulkan and WebGL
 - ECS architecture
 
 Platforms:
 - Linux
+- Emscripten
 - Windows (WIP)
-- Emscripten (WIP, no WebGL)
 
 Future goals:
 - Clean API
@@ -20,20 +20,43 @@ Future goals:
 - Networking support
 - Multiplatform support (Linux, Windows, WebAssembly, macOS, FreeBSD, Android?)
 
-## Building
+## Building The Engine
 Requirements:
-- Meson
-- Ninja
-- Vulkan SDK
+- CMake
+- Ninja (optional, highly recommended)
+
+Native build:
 - SDL2
 - ICU
 - Freetype
-- Emscripten (optional)
+- Vulkan SDK
+
+WebAssembly build:
+- Emscripten
 
 ### Linux
+**Host Build**
 ```shell
-CC=clang CXX=clang++ meson build
-ninja -C build
+cmake -B Build -G Ninja -DUSE_VULKAN=ON
+ninja -C Build
+```
+
+**WASM/Emscripten Build**
+```shell
+cmake -B Build/wasm -G Ninja -DUSE_OPENGL=ON
+ninja -C Build/wasm
+```
+
+## Building The Examples
+**Host Build**
+```
+./arclight-build.py --dir Examples/Ball build
+./arclight-build.py --dir Examples/Ball run
+```
+**WASM/Emscripten Build**
+```
+./arclight-build.py --platform wasm --dir Examples/Ball build
+./arclight-build.py --platform wasm --dir Examples/Ball run
 ```
 
 ## Third Party
