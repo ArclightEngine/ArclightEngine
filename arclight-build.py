@@ -4,52 +4,91 @@ from os import chdir, mkdir, path
 import shutil
 import subprocess
 import sys
+import platform
 import json
+import http.server
 from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS
 
 arclight_root = path.dirname(path.realpath(__file__))
+build_platform = "host"
+# Only applies to wasm platform
+webserver_port = 8001
+
+# Get build directory for platform
+def platform_build_dir():
+    if build_platform == "host":
+        return "Build"
+
+    return path.join("Build", build_platform)
+
+# Function to run the relevant cmake command
+def run_cmake(args):
+    if build_platform == "wasm":
+        subprocess.run(["emcmake", "cmake"] + args, check=True)
+    else:
+        assert(build_platform == "host")
+        subprocess.run(["cmake"] + args, check=True)
+        
 
 def rebuild():
     if path.exists("Build"):
         shutil.rmtree("Build")
+        mkdir("Build")
 
-    subprocess.run(["meson", "setup", "Build", f"-Darclight_engine_path={arclight_root}"], check=True)
+    builddir = platform_build_dir()
 
-    subprocess.run(["ninja", "-CBuild"], check=True)
+    run_cmake(["-B", builddir, "-G", "Ninja",
+                   f"-DARCLIGHT_ENGINE_PATH={arclight_root}"])
+    subprocess.run(["ninja", "-C", builddir], check=True)
+
 
 def build():
-    if not path.isdir("Build"):
-        subprocess.run(["meson", "setup", "Build", f"-Darclight_engine_path={arclight_root}"], check=True)
+    builddir = platform_build_dir()
+    if not path.isdir(builddir):
+        run_cmake(["-B", builddir, "-G", "Ninja",
+                    f"-DARCLIGHT_ENGINE_PATH={arclight_root}"])
 
-    subprocess.run(["ninja", "-CBuild"], check=True)
+    subprocess.run(["ninja", "-C", builddir], check=True)
 
 def create_project():
     project_file = open("project.arcproj", "w")
-    meson_file = open("meson.build", "w")
-    meson_options_file = open("meson_options.txt", "w")
+    cmake_file = open("CMakeLists.txt", "w")
 
     mkdir("src")
     main_file = open("src/Main.cpp", "w")
 
     main_template = open(path.join(arclight_root, "Data", "Main_template.cpp"))
-    meson_template = open(path.join(arclight_root, "Data", "project_template.meson"))
-    meson_options_template = open(path.join(arclight_root, "Data", "project_template_meson_options.txt"))
+    cmake_template = open(path.join(arclight_root, "Data", "CMakeLists.txt"))
 
     project = {
         "name": "Arclight Project",
     }
 
+    cmake_contents = str(cmake_template.read()).replace("%ARCLIGHTBUILD_ENGINE_PATH%", arclight_root)
+
     project_file.write(json.dumps(project))
-    meson_file.write(meson_template.read())
-    meson_options_file.write(meson_options_template.read())
+    cmake_file.write(cmake_contents)
     main_file.write(main_template.read())
+
 
 def package():
     pass
 
+
 def run():
-    engine = path.join(path.dirname(path.realpath(__file__)), "Build", "arclight")
-    subprocess.run([engine], check=True)
+    if build_platform == "wasm":
+        print(f"Open 0.0.0.0:{webserver_port} in your browser")
+        http.server.run('', webserver_port)
+    else:
+        engine = path.join(path.dirname(
+            path.realpath(__file__)), "Build", "arclight")
+        subprocess.run([engine], check=True)
+
+
+platforms = {
+    "host": f"Host platform ({platform.system().lower()})",
+    "wasm": "HTML5/WebAssembly (emscripten)"
+}
 
 commands = {
     "build": (build, "Build project"),
@@ -58,25 +97,41 @@ commands = {
     "run": (run, "Run project")
 }
 
+
 def command_descriptions():
-    text = "commands:\n"
+    text = "platforms:\n"
+    for name, plat in platforms.items():
+        text += f"  { name.ljust(12) }{ plat }\n"
+
+    text += "\ncommands:\n"
     for name, cmd in commands.items():
-        text += f"  { name.ljust(12) }{ cmd[1] }\n";
+        text += f"  { name.ljust(12) }{ cmd[1] }\n"
 
     return text
 
+
 if __name__ == "__main__":
-    parser = ArgumentParser(formatter_class=RawTextHelpFormatter, epilog=command_descriptions())
+    parser = ArgumentParser(
+        formatter_class=RawTextHelpFormatter, epilog=command_descriptions())
     parser.add_argument("command", help=SUPPRESS)
-    parser.add_argument("--dir", action='store', type=str)
+    parser.add_argument("--dir", action='store', type=str,
+                        help="Set project directory")
+    parser.add_argument("--platform", action='store',
+                        type=str, help="Build for PLATFORM")
 
     args = parser.parse_args(sys.argv[1:])
     if args.dir != None:
         if not path.isdir(args.dir):
-            print(f"Invalid game directory '{args.dir}'");
+            print(f"Invalid game directory '{args.dir}'")
             exit(1)
         else:
             chdir(args.dir)
+
+    if args.platform != None:
+        build_platform = args.platform
+        if not build_platform in platforms:
+            print(f"arclight-build: Invalid platform '{args.platform}'")
+            exit(1)
 
     try:
         commands[args.command][0]()

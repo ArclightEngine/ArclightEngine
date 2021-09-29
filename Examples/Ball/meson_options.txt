@@ -1,1 +1,0 @@
-option('arclight_engine_path', type: 'string', description: 'Root of Arclight Engine installation')
