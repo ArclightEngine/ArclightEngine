@@ -13,10 +13,15 @@
 
 namespace Arclight {
 
+struct SystemGroup {
+    std::list<Job*> init;
+    std::list<Job*> tick;
+    std::list<Job*> exit;
+};
+
 template <void (*Function)(float, World&)>
 class System final : public Job, public Object, NonCopyable {
     ARCLIGHT_OBJECT(System, Object);
-
 public:
     void Run() final override {
         m_elapsedTime = m_timer.Elapsed() / 1000000.f;

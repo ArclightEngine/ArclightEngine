@@ -10,7 +10,7 @@ Features:
 
 Platforms:
 - Linux
-- Emscripten
+- WebAssembly/Emscripten
 - Windows (WIP)
 
 Future goals:
@@ -18,7 +18,7 @@ Future goals:
 - Multi-language/Scripting support
 - Heavily multithreaded
 - Networking support
-- Multiplatform support (Linux, Windows, WebAssembly, macOS, FreeBSD, Android?)
+- Multiplatform support (Windows, macOS, FreeBSD, Android?)
 
 ## Building The Engine
 Requirements:

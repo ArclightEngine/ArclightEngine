@@ -10,10 +10,12 @@
 
 #include <stdexcept>
 
+//#define ARCLIGHT_STATE_DEBUG
+
 #ifdef ARCLIGHT_PLATFORM_WASM
 #include <emscripten.h>
 
-static void emscripten_main_loop(){
+static void emscripten_main_loop() {
     static Arclight::Application* appInstance = &Arclight::Application::Instance();
     appInstance->MainLoop();
 }
@@ -33,6 +35,11 @@ Application::Application() {
 }
 
 void Application::Run() {
+    for (auto& sys : m_globalSystems.init) {
+        m_threadPool.Schedule(*sys);
+    }
+
+    // A system may have queued a world or state change
     ProcessDeferQueue();
 
     Rendering::Renderer::Instance()->Render();
@@ -78,20 +85,29 @@ void Application::MainLoop() {
     m_input.Tick();
     pollEvents();
 
-    for (auto& sys : m_globalSystems) {
+    for (auto* sys : m_globalSystems.tick) {
         m_threadPool.Schedule(*sys);
     }
 
-    m_threadPool.Run();
+    if(m_currentState){
+        for (auto* sys : m_currentState->tick) {
+            m_threadPool.Schedule(*sys);
+        }
+    }
 
-    while (!m_threadPool.Idle())
-        pollEvents(); // We shouldn't really busy wait
-
+    ProcessJobQueue();
     World::s_currentWorld->Cleanup();
-
     ProcessDeferQueue();
 
-    if (m_pendingStateChange) {
+    while (m_pendingStateChange) {
+#ifdef ARCLIGHT_STATE_DEBUG
+        Logger::Debug("Running exit systems!");
+#endif
+        RunStateExitSystems();
+
+#ifdef ARCLIGHT_STATE_DEBUG
+        Logger::Debug("Processing state change!");
+#endif
         if (m_stateManager.IsEmpty()) {
             m_currentState = nullptr;
         } else {
@@ -99,10 +115,44 @@ void Application::MainLoop() {
         }
 
         m_pendingStateChange.s = -1;
+
+        // A system may have queued a world or state change
+        RunStateInitSystems();
     }
 }
 
 void Application::Exit() { m_isRunning = false; }
+
+void Application::RunStateInitSystems(){
+    if(m_currentState){
+        for (auto& sys : m_currentState->init) {
+            m_threadPool.Schedule(*sys);
+        }
+
+        ProcessJobQueue();
+        World::s_currentWorld->Cleanup();
+        ProcessDeferQueue();
+    }
+}
+
+void Application::RunStateExitSystems(){
+    if(m_currentState){
+        for (auto& sys : m_currentState->exit) {
+            m_threadPool.Schedule(*sys);
+        }
+        
+        ProcessJobQueue();
+        World::s_currentWorld->Cleanup();
+        ProcessDeferQueue();
+    }
+}
+
+void Application::ProcessJobQueue() {
+    m_threadPool.Run();
+
+    while (!m_threadPool.Idle())
+        ; // We shouldn't really busy wait
+}
 
 void Application::ProcessDeferQueue() {
     while (!m_deferQueue.empty()) {

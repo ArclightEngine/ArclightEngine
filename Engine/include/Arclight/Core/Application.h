@@ -21,6 +21,12 @@ namespace Arclight {
 
 class Application : NonCopyable {
 public:
+    enum class When {
+        Init, // Enter state or enter program
+        Tick, // Run each tick
+        Exit, // Run on state change or exit program
+    };
+
     Application();
 
     static ALWAYS_INLINE Application& Instance() { return *s_instance; }
@@ -41,17 +47,47 @@ public:
         m_states[s]; // Default initialize
     }
 
-    template<State s, void(*Function)(float, ::Arclight::World&)>
-    ALWAYS_INLINE void AddSystem() { m_states.at(s).systems.push_back(new System<Function>()); }
+    template<void(*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
+    ALWAYS_INLINE void AddSystem() {
+        if constexpr(s == StateNone){
+            if constexpr(when == When::Init) {
+                m_globalSystems.init.push_back(new System<Function>());
+            } else if constexpr(when == When::Tick) {
+                m_globalSystems.tick.push_back(new System<Function>());
+            } else if constexpr(when == When::Exit) {
+                m_globalSystems.exit.push_back(new System<Function>());
+            }
+        } else {
+            if constexpr(when == When::Init) {
+                m_states.at(s).init.push_back(new System<Function>());
+            } else if constexpr(when == When::Tick) {
+                m_states.at(s).tick.push_back(new System<Function>());
+            } else if constexpr(when == When::Exit) {
+                m_states.at(s).exit.push_back(new System<Function>());
+            }
+        }
+    }
 
-    template<State s, class Clazz, void(Clazz::*Function)(float, ::Arclight::World&)>
-    ALWAYS_INLINE void AddSystem(Clazz& ref) { m_states.at(s).systems.push_back(new ClassSystem<Clazz, Function>(ref)); }
-
-    template<void(*Function)(float, ::Arclight::World&)>
-    ALWAYS_INLINE void AddSystem() { m_globalSystems.push_back(new System<Function>()); }
-
-    template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&)>
-    ALWAYS_INLINE void AddSystem(Clazz& ref) { m_globalSystems.push_back(new ClassSystem<Clazz, Function>(ref)); }
+    template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
+    ALWAYS_INLINE void AddSystem(Clazz& ref) {
+        if constexpr(s == StateNone){
+            if constexpr(when == When::Init) {
+                m_globalSystems.init.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == When::Tick) {
+                m_globalSystems.tick.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == When::Exit) {
+                m_globalSystems.exit.push_back(new ClassSystem<Clazz, Function>(ref));
+            }
+        } else {
+            if constexpr(when == When::Init) {
+                m_states.at(s).init.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == When::Tick) {
+                m_states.at(s).tick.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == When::Exit) {
+                m_states.at(s).exit.push_back(new ClassSystem<Clazz, Function>(ref));
+            }
+        }
+    }
 
     // Command pattern
     // Commands are deferred until end of frame
@@ -74,15 +110,14 @@ public:
 private:
     static Application* s_instance;
 
+    void RunStateInitSystems();
+    void RunStateExitSystems();
+    void ProcessJobQueue();
     void ProcessDeferQueue();
 
     void LoadStateImpl(State s);
     void PushStateImpl(State s);
     void PopStateImpl();
-
-    struct StateData {
-        std::list<Job*> systems;
-    };
 
     // Frame delay in us
     const long m_frameDelay = 1000000 / 60;
@@ -105,10 +140,10 @@ private:
 
         operator bool() { return s >= 0; }
     } m_pendingStateChange = {-1};
-    StateData* m_currentState = nullptr;
-    std::unordered_map<State, StateData> m_states;
+    SystemGroup* m_currentState = nullptr;
+    std::unordered_map<State, SystemGroup> m_states;
 
-    std::list<Job*> m_globalSystems;
+    SystemGroup m_globalSystems;
 };
 
 } // namespace Arclight
