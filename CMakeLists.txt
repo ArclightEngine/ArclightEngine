@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_ENABLE_EXPORTS ON)
 
+add_compile_options(-Wall -Wextra)
+
 option(USE_VULKAN "Use Vulkan renderer")
 option(USE_DUMMY_RENDERER "Use dummy renderer")
 option(USE_OPENGL "Use OpenGL ES renderer")
