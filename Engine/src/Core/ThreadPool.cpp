@@ -3,6 +3,7 @@
 #include <Arclight/Platform/Platform.h>
 #include <Arclight/Core/Logger.h>
 
+#include <cstdlib>
 #include <stdexcept>
 
 namespace Arclight {
@@ -36,13 +37,24 @@ ThreadPool::ThreadPool(){
         return;
     }
 
-#ifdef ARCLIGHT_PLATFORM_WASM
     long cpuCount = 0;
-#else
-    // Hint of hardware threads
-    long cpuCount = static_cast<long>(std::thread::hardware_concurrency()) - 1; // Prevent overflow
-    if(cpuCount < 1){ // Failed to query hardware thread count
-        cpuCount = 1;
+
+    // Force 0 threads in WebAssembly
+#ifndef ARCLIGHT_PLATFORM_WASM
+    #ifdef ARCLIGHT_PLATFORM_UNIX
+    // Allow runtime disabling of threads
+    // Check if the first character of ARCLIGHT_DISABLE_THREADING is 1
+    const char* env = getenv("ARCLIGHT_DISABLE_THREADING");
+    if(env && *env == '1'){
+        Logger::Debug("[ThreadPool] ARCLIGHT_DISABLE_THREADING is 1, disabling threading.");
+    } else
+    #endif
+    {
+        // Hint of hardware threads
+        cpuCount = static_cast<long>(std::thread::hardware_concurrency()) - 1; // Prevent overflow
+        if(cpuCount < 1){ // Failed to query hardware thread count
+            cpuCount = 1;
+        }
     }
 #endif
 
