@@ -8,9 +8,9 @@ template <typename T> struct Vector2 {
     T x;
     T y;
 
-    Vector2() = default;
-    Vector2(T v) : x(v), y(v) {}
-    Vector2(T x, T y) : x(x), y(y) {}
+    constexpr Vector2() = default;
+    constexpr Vector2(T v) : x(v), y(v) {}
+    constexpr Vector2(T x, T y) : x(x), y(y) {}
 
     ALWAYS_INLINE Vector2<T>& Scale(const Vector2<T>& scaleVector) {
         x *= scaleVector.x;
