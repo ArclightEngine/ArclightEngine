@@ -21,6 +21,11 @@ struct Rect {
 		};
 	};
 
+	Rect() = default;
+	Rect(const Vector2<T>& origin, const Vector2<T>& end) : origin(origin), end(end) {}
+	Rect(const Vector2<T>& size)
+		: origin(0, 0), end(size) {}
+
 	inline T Width() { return right - left; }
 	inline T Height() { return bottom - top; }
 

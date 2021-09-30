@@ -8,6 +8,10 @@ template <typename T> struct Vector2 {
     T x;
     T y;
 
+    Vector2() = default;
+    Vector2(T v) : x(v), y(v) {}
+    Vector2(T x, T y) : x(x), y(y) {}
+
     ALWAYS_INLINE Vector2<T>& Scale(const Vector2<T>& scaleVector) {
         x *= scaleVector.x;
         y *= scaleVector.y;
@@ -18,6 +22,11 @@ template <typename T> struct Vector2 {
         return Vector2<T>{l.x * r.x, l.y * r.y};
     }
 };
+
+template<typename T, typename F>
+constexpr Vector2<T> vector_static_cast(const Vector2<F>& from){
+    return Vector2<T>{static_cast<T>(from.x), static_cast<T>(from.y)};
+}
 
 template <typename T> inline Vector2<T> operator*(const Vector2<T>& vector, T magnitude) {
     return Vector2<T>{vector.x * magnitude, vector.y * magnitude};
