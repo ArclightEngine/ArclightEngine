@@ -34,6 +34,11 @@ public:
         m_registry.emplace<C>(ent, args...);
     }
 
+    template <Component C>
+    ALWAYS_INLINE C& GetComponent(Entity ent){
+        return m_registry.get<C>(ent);
+    }
+
     template <Component... C> ALWAYS_INLINE size_t RemoveComponents(Entity ent) {
         // Check if valid ourselves as the removal is being deferred
         assert(m_registry.valid(ent));
@@ -49,6 +54,10 @@ public:
 
     template <Component... C> ALWAYS_INLINE bool HasAnyOf(Entity ent) {
         return m_registry.any_of<C...>(ent);
+    }
+
+    template <Component... C> ALWAYS_INLINE auto View() {
+        return m_registry.view<C...>();
     }
 
     ALWAYS_INLINE ECSRegistry& Registry() { return m_registry; }

@@ -114,6 +114,8 @@ int GLRenderer::Initialize(class WindowContext* context) {
 
     auto& clearColour = context->backgroundColour;
     glClearColor(clearColour.r, clearColour.g, clearColour.b, clearColour.a);
+
+    glEnable(GL_DEPTH_TEST);  
     return 0;
 }
 
@@ -123,7 +125,7 @@ void GLRenderer::Render() {
 
 void GLRenderer::Clear(){
     // Clear screen
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 RenderPipeline::PipelineHandle
@@ -164,6 +166,8 @@ void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix
         GLTexture* tex = reinterpret_cast<GLTexture*>(texture);
         glActiveTexture(GL_TEXTURE0);
         glCheck(glBindTexture(GL_TEXTURE_2D, tex->id));
+    } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     if(glPipeline->GetGLProgram() != m_lastProgram){

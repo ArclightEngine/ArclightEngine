@@ -39,6 +39,13 @@ void Transform::SetPosition(const Vector2f& position) {
 	m_matrixDirty = true;
 }
 
+void Transform::SetZIndex(float z) {
+	std::unique_lock acq(m_matrixLock);
+	m_zIndex = z;
+
+	m_matrixDirty = true;
+}
+
 void Transform::SetPosition(float x, float y) {
 	return SetPosition({x, y});
 }
@@ -67,7 +74,7 @@ const Matrix4& Transform::Matrix() {
 		m_matrix = Matrix4(
 						cos * m_scale.x, -sin * m_scale.y, 0, m_position.x,
 						sin * m_scale.x, cos * m_scale.y, 0, m_position.y,
-						0,    0,   1, 0,
+						0,    0,   1, m_zIndex,
 						0,    0,   0, 1);
 
 		m_matrixDirty = false;

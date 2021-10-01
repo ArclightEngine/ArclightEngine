@@ -1,5 +1,6 @@
 #include <Arclight/Systems/Renderer2D.h>
 
+#include <Arclight/Core/Logger.h>
 #include <Arclight/Core/Application.h>
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Graphics/Sprite.h>
@@ -14,8 +15,11 @@ void Renderer2D(float elasped, World& world) {
     for (Entity ent : view) {
         Sprite& sprite = view.get<Sprite>(ent);
 
-        assert(sprite.texture);
-        renderer.Draw(sprite.vertices, 4, sprite.transform.Matrix(), sprite.texture->Handle());
+        Texture::TextureHandle tex = nullptr;
+        if(sprite.texture)
+            tex = sprite.texture->Handle();
+
+        renderer.Draw(sprite.vertices, 4, sprite.transform.Matrix(), tex);
     }
 
     renderer.Render();
