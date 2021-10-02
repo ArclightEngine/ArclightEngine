@@ -142,6 +142,7 @@ void GameInit() {
 
     auto& app = Arclight::Application::Instance();
     app.Window().backgroundColour = {0, 0, 0, 255};
+    app.Window().SetSize({640, 480});
     app.AddSystem<Arclight::Systems::Renderer2D>();
     app.AddSystem<StdoutFPSCounter, &StdoutFPSCounter::Tick>(fpsCounter);
     app.AddSystem<TestSystem, &TestSystem::Tick>(testSystem);

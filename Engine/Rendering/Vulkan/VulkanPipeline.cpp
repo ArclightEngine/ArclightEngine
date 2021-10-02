@@ -108,9 +108,26 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
         .pNext = nullptr,
         .flags = 0,
         .viewportCount = 1,
-        .pViewports = &viewport,
+        .pViewports = nullptr, // Otherwise, &viewport, however we set this dyanimically
         .scissorCount = 1,
-        .pScissors = &scissor,
+        .pScissors = nullptr, // Otherwise, &scissor, however we set this dynamically
+    };
+
+    // VK_DYNAMIC_STATE_VIEWPORT specifies that the pViewports state in
+    // VkPipelineViewportStateCreateInfo will be ignored Must be set with vkCmdSetViewport before
+    // any drawing commands Same goes with VK_DYNAMIC_STATE_SCISSOR This allows us to resize the
+    // viewport without having to recreate the pipeline
+    VkDynamicState dynamicStates[] = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .dynamicStateCount = sizeof(dynamicStates) / sizeof(VkDynamicState),
+        .pDynamicStates = dynamicStates,
     };
 
     VkGraphicsPipelineCreateInfo gfxPipelineCreateInfo = {
@@ -127,7 +144,7 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
         .pMultisampleState = &multisampling,
         .pDepthStencilState = nullptr,
         .pColorBlendState = &colourBlending,
-        .pDynamicState = nullptr,
+        .pDynamicState = &dynamicStateCreateInfo,
         .layout = m_pipelineLayout,
         .renderPass = m_renderPass,
         .subpass = 0,
@@ -140,6 +157,14 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
         throw std::runtime_error(
             "VulkanRenderer::Initialize: Failed to create Vulkan graphics pipeline!");
     }
+
+    auto cmdBuf = m_renderer.CreateOneTimeCommandBuffer();
+
+    // Bind our pipeline and set the viewport and scissor
+    vkCmdBindPipeline(cmdBuf.Buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    vkCmdSetViewport(cmdBuf.Buffer(), 0, 1, &viewport);
+    vkCmdSetScissor(cmdBuf.Buffer(), 0, 1, &scissor);
+    // Our buffer will be submitted on destruction, so we don't need to do anything here
 
     vkDestroyShaderModule(m_device, vertexModule, nullptr);
     vkDestroyShaderModule(m_device, fragmentModule, nullptr);

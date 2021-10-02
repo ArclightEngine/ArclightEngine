@@ -71,29 +71,16 @@ int GLRenderer::Initialize(class WindowContext* context) {
     }
 #endif
 
-    m_viewportTransform = Transform(
-        {-1, 1}, {2.f / m_windowContext->GetSize().x, -2.f / m_windowContext->GetSize().y});
-
     glGenBuffers(1, &m_transformUBO);
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_transformUBO);
+    
     // Should only be updated when window is resized,
     // will be used many times
     glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4::s_identityMatrix), Matrix4::s_identityMatrix,
                  GL_STATIC_DRAW);
 
-    // Bind a range in the buffer to an index
-    // We have a uniform buffer,
-    // Binding to index 1,
-    // Using buffer m_transform
-    // Offset of 0
-    // Size of one matrix
-    glBindBufferRange(GL_UNIFORM_BUFFER, 1, m_transformUBO, 0, sizeof(Matrix4::s_identityMatrix));
-
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Matrix4::s_identityMatrix),
-                    m_viewportTransform.Matrix().Matrix());
-
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    UpdateViewportTransform();
 
     glGenBuffers(1, &m_vbo);
     assert(m_vbo);
@@ -126,6 +113,11 @@ void GLRenderer::Render() {
 void GLRenderer::Clear(){
     // Clear screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void GLRenderer::ResizeViewport(const Vector2i& newPixelSize) {
+    glViewport(0, 0, newPixelSize.x, newPixelSize.y);
+    UpdateViewportTransform();
 }
 
 RenderPipeline::PipelineHandle
@@ -253,6 +245,24 @@ void GLRenderer::DestroyTexture(Texture::TextureHandle texHandle) {
 
     // Delete our texture object
     delete tex;
+}
+
+void GLRenderer::UpdateViewportTransform() {
+    m_viewportTransform = Transform(
+        {-1, 1}, {2.f / m_windowContext->GetSize().x, -2.f / m_windowContext->GetSize().y});
+
+    // Bind a range in the buffer to an index
+    // We have a uniform buffer,
+    // Binding to index 1,
+    // Using buffer m_transform
+    // Offset of 0
+    // Size of one matrix
+    glBindBufferRange(GL_UNIFORM_BUFFER, 1, m_transformUBO, 0, sizeof(Matrix4::s_identityMatrix));
+
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Matrix4::s_identityMatrix),
+                    m_viewportTransform.Matrix().Matrix());
+
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 GLRenderer::GLVBO GLRenderer::GetVertexBufferObject(unsigned vertexCount) {

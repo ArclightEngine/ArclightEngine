@@ -30,6 +30,8 @@ public:
 
     void Clear() override;
 
+    void ResizeViewport(const Vector2i& pixelSize) override;
+
     RenderPipeline::PipelineHandle
     CreatePipeline(const Shader&, const Shader&,
                    const RenderPipeline::PipelineFixedConfig&) override;
@@ -55,6 +57,10 @@ private:
     struct GLVBO {
         GLuint id;
     };
+
+    // Update the viewport transform,
+    // called on init and resize
+    void UpdateViewportTransform();
 
     // Helps prevent rebinding the program across draw calls
     GLuint m_lastProgram;

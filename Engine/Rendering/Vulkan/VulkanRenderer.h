@@ -19,7 +19,7 @@
 #define RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT 2
 #define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 0
 
-//#define RENDERING_VULKANRENDERER_ENABLE_VALIDATION_LAYERS
+#define RENDERING_VULKANRENDERER_ENABLE_VALIDATION_LAYERS
 
 namespace Arclight::Rendering {
 
@@ -33,7 +33,9 @@ public:
     int Initialize(WindowContext* windowContext);
 
     void Render();
-    void WaitDeviceIdle() const;
+    void WaitDeviceIdle() const; 
+
+    void ResizeViewport(const Vector2i& pixelSize) override;
 
     // Get the default RenderPipeline
     RenderPipeline& DefaultPipeline();
@@ -110,6 +112,12 @@ private:
         VkCommandBuffer commandBuffer;
     };
 
+    struct PipelineViewportInfo {
+        VkExtent2D screenExtent;
+        VkViewport viewport;
+        VkRect2D scissor;
+    } m_viewportInfo;
+
     // Ready frame for drawing
     void BeginFrame();
     // Finish drawing frame
@@ -149,6 +157,8 @@ private:
 
     VkRenderPass m_renderPass;
 
+    VkSurfaceCapabilitiesKHR m_swapchainSurfaceCapabilities;
+    VkPresentModeKHR m_swapchainPresentMode;
     VkFormat m_swapImageFormat = VK_FORMAT_UNDEFINED;
     VkColorSpaceKHR m_swapColourSpace;
     VkExtent2D m_swapExtent;

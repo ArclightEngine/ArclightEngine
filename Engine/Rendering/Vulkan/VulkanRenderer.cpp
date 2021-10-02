@@ -17,6 +17,7 @@ namespace Arclight::Rendering {
 
 VulkanRenderer::~VulkanRenderer() {
     EndRenderPass();
+    EndFrame();
 
     vkQueueWaitIdle(m_graphicsQueue);
 
@@ -127,7 +128,8 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
     SwapChainInfo scInfo = GetSwapChainInfo();
     assert(scInfo.presentModes.size() && scInfo.surfaceFormats.size());
 
-    VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // Surface present mode
+    m_swapchainSurfaceCapabilities = scInfo.surfaceCapabilites;
+    m_swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR; // Surface present mode
     // It is required that VK_PRESENT_MODE_FIFO_KHR be supported
     // Essentially VSync, blocks the GPU when the image queue is full
 
@@ -135,7 +137,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
             // VK_PRESENT_MODE_MAILBOX_KHR replaces existing images instead of blocking when the
             // queue is full
-            presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+            m_swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
             break;
         }
     }
@@ -184,9 +186,10 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
             VK_SHARING_MODE_EXCLUSIVE, // Our graphics and present queues are the same
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
-        .preTransform = scInfo.surfaceCapabilites.currentTransform, // Use the current transform
+        .preTransform =
+            m_swapchainSurfaceCapabilities.currentTransform, // Use the current transform
         .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // We do not need a transparent window
-        .presentMode = presentMode,
+        .presentMode = m_swapchainPresentMode,
         .clipped = VK_TRUE, // Our window can be clipped
         .oldSwapchain = VK_NULL_HANDLE,
     };
@@ -311,6 +314,28 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
     m_viewportTransform =
         Transform({-1, -1}, {2.f / m_swapExtent.width, 2.f / m_swapExtent.height});
+
+    // Pipelines use a dynamic viewport state,
+    // so this data needs to be sent each time a new pipeline is bound
+    VkExtent2D extent = GetScreenExtent();
+    VkViewport viewport = {
+        .x = 0.f,
+        .y = 0.f,
+        .width = static_cast<float>(extent.width),
+        .height = static_cast<float>(extent.height),
+        .minDepth = 0.f,
+        .maxDepth = 1.f,
+    };
+
+    VkRect2D scissor = {
+        .offset = {0, 0},
+        .extent = extent,
+    };
+
+    m_viewportInfo.screenExtent = extent;
+    m_viewportInfo.viewport = viewport;
+    m_viewportInfo.scissor = scissor;
+
     s_rendererInstance = this;
 
     CreateDescriptorSetLayout();
@@ -436,6 +461,163 @@ void VulkanRenderer::WaitDeviceIdle() const { vkDeviceWaitIdle(m_device); }
 
 RenderPipeline& VulkanRenderer::DefaultPipeline() { return *m_defaultPipeline; }
 
+void VulkanRenderer::ResizeViewport(const Vector2i&) {
+    // Recreate the swapchain
+    vkDeviceWaitIdle(m_device);
+    vkQueueWaitIdle(m_graphicsQueue);
+
+    EndRenderPass();
+    EndFrame();
+
+    vkQueueWaitIdle(m_graphicsQueue);
+
+    for (VkFramebuffer fb : m_framebuffers) {
+        vkDestroyFramebuffer(m_device, fb, nullptr);
+    }
+
+    for (VkImageView v : m_imageViews) {
+        vkDestroyImageView(m_device, v, nullptr);
+    }
+
+    if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_renderGPU, m_surface,
+                                                  &m_swapchainSurfaceCapabilities) != VK_SUCCESS) {
+        throw std::runtime_error("VulkanRenderer::ResizeViewport: Failed to get surface "
+                                 "capabilities!"); // This function does not return on failure,
+                                                   // throw an exception
+    }
+
+    Vector2i windowSize = m_windowContext->GetWindowRenderSize();
+    m_swapExtent.width = std::clamp(static_cast<uint32_t>(windowSize.x),
+                                    m_swapchainSurfaceCapabilities.minImageExtent.width,
+                                    m_swapchainSurfaceCapabilities.maxImageExtent.width);
+    m_swapExtent.height = std::clamp(static_cast<uint32_t>(windowSize.y),
+                                     m_swapchainSurfaceCapabilities.minImageExtent.height,
+                                     m_swapchainSurfaceCapabilities.maxImageExtent.height);
+
+    // Size of m_imageViews is the swapchain image count
+    uint32_t imageCount = m_images.size();
+
+    VkSwapchainKHR oldSwapchain = m_swapchain;
+    VkSwapchainCreateInfoKHR swapchainCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .surface = m_surface,
+        .minImageCount = imageCount,
+        .imageFormat = m_swapImageFormat,
+        .imageColorSpace = m_swapColourSpace,
+        .imageExtent = m_swapExtent,
+        .imageArrayLayers = 1,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageSharingMode =
+            VK_SHARING_MODE_EXCLUSIVE, // Our graphics and present queues are the same
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
+        .preTransform =
+            m_swapchainSurfaceCapabilities.currentTransform, // Use the current transform
+        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // We do not need a transparent window
+        .presentMode = m_swapchainPresentMode,
+        .clipped = VK_TRUE, // Our window can be clipped
+        .oldSwapchain = oldSwapchain,
+    };
+
+    // The old swap chain will be 'retired' but not entirely destroyed
+    vkCheck(vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, nullptr, &m_swapchain));
+    vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
+
+    uint32_t checkImageCount;
+    vkGetSwapchainImagesKHR(m_device, m_swapchain, &checkImageCount, nullptr);
+    assert(checkImageCount == imageCount); // Make sure the image count is still the same
+    vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_images.data());
+
+    for (unsigned i = 0; i < m_images.size(); i++) {
+        VkImageViewCreateInfo ivCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .image = m_images[i],
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = m_swapImageFormat,
+            .components =
+                {
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                },
+            .subresourceRange =
+                {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+        };
+
+        vkCheck(vkCreateImageView(m_device, &ivCreateInfo, nullptr, &m_imageViews[i]));
+    }
+
+    for (unsigned i = 0; i < m_imageViews.size(); i++) {
+        VkFramebufferCreateInfo framebufferInfo = {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .renderPass = m_renderPass,
+            .attachmentCount = 1,
+            .pAttachments = &m_imageViews[i],
+            .width = m_swapExtent.width,
+            .height = m_swapExtent.height,
+            .layers = 1,
+        };
+
+        vkCheck(vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_framebuffers[i]));
+    }
+
+    m_viewportTransform =
+        Transform({-1, -1}, {2.f / m_swapExtent.width, 2.f / m_swapExtent.height});
+
+    VkExtent2D extent = GetScreenExtent();
+    VkViewport viewport = {
+        .x = 0.f,
+        .y = 0.f,
+        .width = static_cast<float>(extent.width),
+        .height = static_cast<float>(extent.height),
+        .minDepth = 0.f,
+        .maxDepth = 1.f,
+    };
+
+    VkRect2D scissor = {
+        .offset = {0, 0},
+        .extent = extent,
+    };
+
+    m_viewportInfo.screenExtent = extent;
+    m_viewportInfo.viewport = viewport;
+    m_viewportInfo.scissor = scissor;
+
+    {
+        auto cmdBuf = CreateOneTimeCommandBuffer();
+        for (VulkanPipeline* pipeline : m_pipelines) {
+            // Bind our pipeline and set the viewport and scissor
+            vkCmdBindPipeline(cmdBuf.Buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              pipeline->GetPipelineHandle());
+            vkCmdSetViewport(cmdBuf.Buffer(), 0, 1, &m_viewportInfo.viewport);
+            vkCmdSetScissor(cmdBuf.Buffer(), 0, 1, &m_viewportInfo.scissor);
+
+            // Update the viewport transform
+            pipeline->UpdatePushConstant(
+                cmdBuf.Buffer(), offsetof(VulkanPipeline::PushConstant2DTransform, viewport),
+                16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
+
+            // Our buffer will be submitted on destruction, so we don't need to do anything here
+        }
+    }
+
+    BeginFrame();
+    BeginRenderPass();
+}
+
 void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform,
                           Texture::TextureHandle texture, RenderPipeline& pipeline) {
     if (vertexCount > m_vertexBuffers[m_currentFrame].size) {
@@ -471,6 +653,10 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 
         vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipelineObj->GetPipelineHandle());
+
+        vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &m_viewportInfo.viewport);
+        vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &m_viewportInfo.scissor);
+
         vkCmdBindDescriptorSets(
             m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
             reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->PipelineLayout(), 0, 1,
@@ -489,6 +675,8 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
     VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, vertexBuffers, offsets);
+
+    vmaFlushAllocation(m_alloc, vertexBuffer.allocation, 0, vertexBuffer.size);
 
     reinterpret_cast<VulkanPipeline*>(pipeline.Handle())
         ->UpdatePushConstant(m_commandBuffers[m_currentFrame],

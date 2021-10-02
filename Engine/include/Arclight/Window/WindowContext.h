@@ -36,7 +36,7 @@ public:
         return ret;
     }
 
-    void SetSize(const Vector2i& size) { SDL_SetWindowSize(m_window, size.x, size.y); }
+    void SetSize(const Vector2i& size);
 
     void SetTitle(const UnicodeString& title){
 		std::string utf8Title;
