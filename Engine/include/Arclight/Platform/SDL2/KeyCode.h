@@ -51,5 +51,8 @@ namespace Arclight {
         KeyCode_Right = SDLK_RIGHT,
 
         KeyCode_Space = SDLK_SPACE,
+
+        KeyCode_LShift = SDLK_LSHIFT,
+        KeyCode_RShift = SDLK_RSHIFT,
     };
 };
