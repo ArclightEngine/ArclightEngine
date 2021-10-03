@@ -150,10 +150,16 @@ RenderPipeline& GLRenderer::DefaultPipeline() {
     return *m_defaultPipeline;
 }
 
-void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform,
-                      Texture::TextureHandle texture, RenderPipeline& pipeline) {
-    GLPipeline* glPipeline = reinterpret_cast<GLPipeline*>(pipeline.Handle());
+void GLRenderer::BindPipeline(RenderPipeline::PipelineHandle pipeline) {
+    m_boundPipeline = reinterpret_cast<GLPipeline*>(pipeline);
+    if(m_boundPipeline->GetGLProgram() != m_lastProgram){
+        glCheck(glUseProgram(m_boundPipeline->GetGLProgram()));
 
+        m_lastProgram = m_boundPipeline->GetGLProgram();
+    }
+}
+
+void GLRenderer::BindTexture(Texture::TextureHandle texture) {
     if (texture) {
         GLTexture* tex = reinterpret_cast<GLTexture*>(texture);
         glActiveTexture(GL_TEXTURE0);
@@ -161,18 +167,14 @@ void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix
     } else {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+}
 
-    if(glPipeline->GetGLProgram() != m_lastProgram){
-        glCheck(glUseProgram(glPipeline->GetGLProgram()));
-
-        m_lastProgram = glPipeline->GetGLProgram();
-    }
-
+void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
     auto vbo = GetVertexBufferObject(vertexCount);
     // GL_STREAM_DRAW - "Data modified once and used a few times"
     glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo.id));
 
-    glBindVertexArray(glPipeline->GetVAO());
+    glBindVertexArray(m_boundPipeline->GetVAO());
 
     // Position
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
@@ -186,13 +188,9 @@ void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix
 
     glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STREAM_DRAW));
 
-    glUniformMatrix4fv(glPipeline->ModelTransformIndex(), 1, GL_FALSE, transform.Matrix());
+    glUniformMatrix4fv(m_boundPipeline->ModelTransformIndex(), 1, GL_FALSE, transform.Matrix());
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
-
-    if (texture) { 
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
 }
 
 Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size) {

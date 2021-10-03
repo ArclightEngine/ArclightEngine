@@ -63,6 +63,8 @@ private:
 
 	VkImageView m_imageView; // Needs an image view
 	VkSampler m_texSampler; // Image sampler (allows us to apply filters, etc.)
+
+	VkDescriptorSet m_textureDescriptorSet; // Descriptor set for the texture
 };
 
 } // namespace Arclight

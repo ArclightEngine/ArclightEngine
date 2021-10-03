@@ -39,9 +39,10 @@ public:
     void DestroyPipeline(RenderPipeline::PipelineHandle) override;
     RenderPipeline& DefaultPipeline() override;
 
-    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(),
-              Texture::TextureHandle texture = nullptr,
-              RenderPipeline& pipeline = RenderPipeline::Default());
+    void BindPipeline(RenderPipeline::PipelineHandle pipeline) override;
+    void BindTexture(Texture::TextureHandle texture) override;
+
+    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
     Texture::TextureHandle AllocateTexture(const Vector2u&) override;
     void UpdateTexture(Texture::TextureHandle, const void*) override;
     void DestroyTexture(Texture::TextureHandle) override;
@@ -64,6 +65,7 @@ private:
 
     // Helps prevent rebinding the program across draw calls
     GLuint m_lastProgram;
+    class GLPipeline* m_boundPipeline;
 
     // Uniform Buffer Object for the viewport transform
     GLuint m_transformUBO;

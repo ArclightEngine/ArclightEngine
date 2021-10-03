@@ -12,6 +12,8 @@ void Renderer2D(float elasped, World& world) {
     renderer.Clear();
 
     auto view = world.Registry().view<Sprite>();
+
+    renderer.BindPipeline(renderer.DefaultPipeline().Handle());
     for (Entity ent : view) {
         Sprite& sprite = view.get<Sprite>(ent);
 
@@ -19,7 +21,8 @@ void Renderer2D(float elasped, World& world) {
         if(sprite.texture)
             tex = sprite.texture->Handle();
 
-        renderer.Draw(sprite.vertices, 4, sprite.transform.Matrix(), tex);
+        renderer.BindTexture(tex);
+        renderer.Draw(sprite.vertices, 4, sprite.transform.Matrix());
     }
 
     renderer.Render();

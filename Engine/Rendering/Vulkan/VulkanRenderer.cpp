@@ -21,10 +21,9 @@ VulkanRenderer::~VulkanRenderer() {
 
     vkQueueWaitIdle(m_graphicsQueue);
 
-    vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
-
     for (int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroyDescriptorPool(m_device, m_descriptorPools[i].handle, nullptr);
+
         vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
         vkDestroyCommandPool(m_device, m_commandPools[i], nullptr);
 
@@ -34,6 +33,8 @@ VulkanRenderer::~VulkanRenderer() {
         vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
         vkDestroyFence(m_device, m_frameFences[i], nullptr);
     }
+
+    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
     for (VulkanTexture* texture : m_textures) {
         delete texture;
@@ -105,6 +106,10 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
         vkGetPhysicalDeviceProperties(m_renderGPU, &p);
 
         Logger::Debug("Using GPU: ", p.deviceName);
+
+        const VkPhysicalDeviceLimits& limits = p.limits;
+        Logger::Debug("Maximum bound descriptor sets: ", limits.maxBoundDescriptorSets,
+                      ", Push constant size: ", limits.maxPushConstantsSize);
     }
 
     if (CreateLogicalDevice()) {
@@ -339,7 +344,9 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
     s_rendererInstance = this;
 
     CreateDescriptorSetLayout();
-    CreateDescriptorPool();
+    for (unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
+        m_descriptorPools[i] = std::move(CreateDescriptorPool());
+    }
 
     CreateCommandPools();
 
@@ -439,6 +446,7 @@ void VulkanRenderer::DestroyTexture(Texture::TextureHandle texture) {
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
 
     for (unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
+        m_textureDescriptorSets.erase(reinterpret_cast<VulkanTexture*>(texture));
         if (m_lastTextures[i] == texture) {
             m_lastTextures[i] = nullptr; // Invalidate m_lastTexture if relevant
         }
@@ -618,55 +626,77 @@ void VulkanRenderer::ResizeViewport(const Vector2i&) {
     BeginRenderPass();
 }
 
-void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform,
-                          Texture::TextureHandle texture, RenderPipeline& pipeline) {
+void VulkanRenderer::BindTexture(Texture::TextureHandle texture) {
+    m_boundTexture = reinterpret_cast<VulkanTexture*>(texture);
+
+    if (texture) {
+        VkDescriptorSet pDescriptorSets[] = {VK_NULL_HANDLE};
+
+        auto tex = reinterpret_cast<VulkanTexture*>(texture);
+        if (auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()) {
+            pDescriptorSets[0] = it->second;
+        } else {
+            VkDescriptorSet descriptorSet = AllocateDescriptorSet();
+            m_textureDescriptorSets[tex] = descriptorSet;
+            pDescriptorSets[0] = descriptorSet;
+
+            VkWriteDescriptorSet descriptorWrite = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = descriptorSet,
+                .dstBinding = RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &reinterpret_cast<VulkanTexture*>(texture)->DescriptorImageInfo(),
+                .pBufferInfo = nullptr,
+                .pTexelBufferView = nullptr,
+            };
+
+            vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0,
+                                   nullptr); // Update sampler descriptor
+        }
+
+        vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_boundPipeline->PipelineLayout(), 0, 1, pDescriptorSets, 0,
+                                nullptr);
+    }
+}
+
+void VulkanRenderer::BindPipeline(RenderPipeline::PipelineHandle pipeline) {
+    m_boundPipeline = reinterpret_cast<VulkanPipeline*>(pipeline);
+}
+
+void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
     if (vertexCount > m_vertexBuffers[m_currentFrame].size) {
         throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
-    }
-
-    if (texture && texture != m_lastTextures[m_currentFrame]) {
-        m_lastTextures[m_currentFrame] = reinterpret_cast<VulkanTexture*>(texture);
-
-        VkWriteDescriptorSet descriptorWrite = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .pNext = nullptr,
-            .dstSet = m_descriptorSets[m_currentFrame],
-            .dstBinding = RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &reinterpret_cast<VulkanTexture*>(texture)->DescriptorImageInfo(),
-            .pBufferInfo = nullptr,
-            .pTexelBufferView = nullptr,
-        };
-
-        vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0,
-                               nullptr); // Update sampler descriptor
     }
 
     // Only rebind the pipeline and descriptor sets
     // and update the viewport transform
     // when the pipeline has changed.
-    VulkanPipeline* pipelineObj = reinterpret_cast<VulkanPipeline*>(m_defaultPipeline->Handle());
-    if (pipelineObj != m_lastPipelines[m_currentFrame]) {
-        m_lastPipelines[m_currentFrame] = pipelineObj;
+    if (m_boundPipeline != m_lastPipelines[m_currentFrame]) {
+        m_lastPipelines[m_currentFrame] = m_boundPipeline;
 
         vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          pipelineObj->GetPipelineHandle());
+                          m_boundPipeline->GetPipelineHandle());
 
         vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &m_viewportInfo.viewport);
         vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &m_viewportInfo.scissor);
 
-        vkCmdBindDescriptorSets(
-            m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            reinterpret_cast<VulkanPipeline*>(pipeline.Handle())->PipelineLayout(), 0, 1,
-            &m_descriptorSets[m_currentFrame], 0, nullptr);
+        m_boundPipeline->UpdatePushConstant(
+            m_commandBuffers[m_currentFrame],
+            offsetof(VulkanPipeline::PushConstant2DTransform, viewport),
+            16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
+    }
 
-        reinterpret_cast<VulkanPipeline*>(pipeline.Handle())
-            ->UpdatePushConstant(m_commandBuffers[m_currentFrame],
-                                 offsetof(VulkanPipeline::PushConstant2DTransform, viewport),
-                                 16 * sizeof(float) /* 4x4 float matrix */,
-                                 m_viewportTransform.Matrix().Matrix());
+    if (m_boundTexture && m_boundTexture != m_lastTextures[m_currentFrame]) {
+        VkDescriptorSet pDescriptorSets[] = {m_textureDescriptorSets.at(m_boundTexture)};
+        vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_boundPipeline->PipelineLayout(), 0, 1, pDescriptorSets, 0,
+                                nullptr);
+
+        m_lastTextures[m_currentFrame] = m_boundTexture;
     }
 
     VertexBuffer& vertexBuffer = m_vertexBuffers[m_currentFrame];
@@ -678,10 +708,10 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 
     vmaFlushAllocation(m_alloc, vertexBuffer.allocation, 0, vertexBuffer.size);
 
-    reinterpret_cast<VulkanPipeline*>(pipeline.Handle())
-        ->UpdatePushConstant(m_commandBuffers[m_currentFrame],
-                             offsetof(VulkanPipeline::PushConstant2DTransform, transform),
-                             16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
+    m_boundPipeline->UpdatePushConstant(
+        m_commandBuffers[m_currentFrame],
+        offsetof(VulkanPipeline::PushConstant2DTransform, transform),
+        16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
 
     vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
 }
@@ -1050,35 +1080,39 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
                                         &m_descriptorSetLayout));
 }
 
-void VulkanRenderer::CreateDescriptorPool() {
+VulkanRenderer::DescriptorPool VulkanRenderer::CreateDescriptorPool() {
+    DescriptorPool pool;
+
+    uint32_t samplerCount = 100;
     VkDescriptorPoolSize samplerSize = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .descriptorCount = RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT, // One set for each frame
+        .descriptorCount = samplerCount, // Amount of descriptor sets
     };
 
     VkDescriptorPoolCreateInfo poolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .maxSets = RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT,
+        .maxSets = samplerCount,
         .poolSizeCount = 1,
         .pPoolSizes = &samplerSize,
     };
 
-    // TODO: This is VERY wasteful, we need a layout in an array for each set, find a better way to
-    // do this
-    std::vector<VkDescriptorSetLayout> layouts(RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT,
-                                               m_descriptorSetLayout);
-    vkCheck(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &m_descriptorPool));
+    std::vector<VkDescriptorSetLayout> layouts(samplerCount, m_descriptorSetLayout);
+    vkCheck(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &pool.handle));
 
     VkDescriptorSetAllocateInfo setAllocInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .pNext = nullptr,
-        .descriptorPool = m_descriptorPool,
-        .descriptorSetCount = RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT,
+        .descriptorPool = pool.handle,
+        .descriptorSetCount = samplerCount,
         .pSetLayouts = layouts.data(),
     };
-    vkCheck(vkAllocateDescriptorSets(m_device, &setAllocInfo, m_descriptorSets));
+
+    pool.sets.resize(samplerCount);
+    vkCheck(vkAllocateDescriptorSets(m_device, &setAllocInfo, pool.sets.data()));
+
+    return pool;
 }
 
 void VulkanRenderer::BeginCommandBuffer() {
@@ -1165,6 +1199,19 @@ VulkanRenderer::VertexBuffer VulkanRenderer::CreateVertexBuffer(uint32_t vertexC
     };
 
     return vertexBuffer;
+}
+
+VkDescriptorSet VulkanRenderer::AllocateDescriptorSet() {
+    DescriptorPool& pool = m_descriptorPools[m_currentFrame];
+
+    VkDescriptorSet set = pool.sets[pool.nextSet];
+
+    if (pool.nextSet + 1 >= pool.sets.size()) {
+        Logger::Error("VulkanRenderer::AllocateDescriptorSet: Ran out of texture descriptor sets!");
+    }
+    pool.nextSet = (pool.nextSet + 1) % pool.sets.size();
+
+    return set;
 }
 
 } // namespace Arclight::Rendering

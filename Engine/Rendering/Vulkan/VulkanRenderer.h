@@ -15,6 +15,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <unordered_map>
 
 #define RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT 2
 #define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 0
@@ -40,10 +41,11 @@ public:
     // Get the default RenderPipeline
     RenderPipeline& DefaultPipeline();
 
+    void BindPipeline(RenderPipeline::PipelineHandle pipeline) override;
+    void BindTexture(Texture::TextureHandle texture) override;
+
     // Draw Primitives
-    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(),
-              Texture::TextureHandle texture = nullptr,
-              RenderPipeline& pipeline = RenderPipeline::Default());
+    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
 
     const std::string& GetName() const { return m_rendererName; }
 
@@ -118,6 +120,14 @@ private:
         VkRect2D scissor;
     } m_viewportInfo;
 
+    struct DescriptorPool {
+        std::vector<VkDescriptorSet> sets;
+        VkDescriptorPool handle;
+
+        // Index of the next set
+        int nextSet = 0;
+    };
+
     // Ready frame for drawing
     void BeginFrame();
     // Finish drawing frame
@@ -136,7 +146,7 @@ private:
     void CreateCommandPools();
 
     void CreateDescriptorSetLayout();
-    void CreateDescriptorPool();
+    DescriptorPool CreateDescriptorPool();
 
     // Begin recording command buffer
     void BeginCommandBuffer();
@@ -147,6 +157,8 @@ private:
     void EndRenderPass();
 
     VertexBuffer CreateVertexBuffer(uint32_t vertexCount);
+
+    VkDescriptorSet AllocateDescriptorSet();
 
     const std::string m_rendererName = "Vulkan";
 
@@ -182,14 +194,17 @@ private:
     VkFence m_frameFences[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
     VertexBuffer m_vertexBuffers[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 
-    // Last used texture
+    VulkanPipeline* m_lastPipelines[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+    VulkanPipeline* m_boundPipeline = nullptr;
+
+    // Last used texture per pipeline
     // If the texture of the vertices being rendered is the same as the previous,
     // We do not need to update descriptor sets
+    std::unordered_map<VulkanTexture*, VkDescriptorSet> m_textureDescriptorSets;
     VulkanTexture* m_lastTextures[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
-    VulkanPipeline* m_lastPipelines[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+    VulkanTexture* m_boundTexture = nullptr;
 
-    VkDescriptorSet m_descriptorSets[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
-    VkDescriptorPool m_descriptorPool;
+    DescriptorPool m_descriptorPools[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 
     std::vector<VkImage> m_images; // Swapchain image handles
     std::vector<VkImageView> m_imageViews;

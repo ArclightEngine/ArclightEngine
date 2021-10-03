@@ -39,9 +39,23 @@ public:
 	virtual void ResizeViewport(const Vector2i& newPixelSize) = 0;
 
 	////////////////////////////////////////
+	/// \brief BInd texture to renderer
+	///
+	/// Bind texture to be used on next draw call.
+	////////////////////////////////////////
+	virtual void BindTexture(Texture::TextureHandle texture = nullptr) = 0;
+
+	////////////////////////////////////////
+	/// \brief BInd pipeline to renderer
+	///
+	/// Bind pipeline to be used on next draw call.
+	////////////////////////////////////////
+	virtual void BindPipeline(RenderPipeline::PipelineHandle pipeline = Instance()->DefaultPipeline().Handle()) = 0;
+
+	////////////////////////////////////////
 	/// \brief Draw
 	///
-	///	Draw a polygon.
+	///	Draw a polygon. Generally corresponds to a draw call.
 	///
 	/// \param vertices Array of vertices
 	/// \param vertexCount Amount of elements in vertices, amount of vertices to draw
@@ -49,7 +63,7 @@ public:
 	/// \param texture Texture to use in shader
 	/// \param renderPipeline Render pipeline to use
 	////////////////////////////////////////
-	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4(), Texture::TextureHandle texture = nullptr, RenderPipeline& pipeline = RenderPipeline::Default()) = 0;
+	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) = 0;
 
 	////////////////////////////////////////
 	/// \brief CreatePipeline
