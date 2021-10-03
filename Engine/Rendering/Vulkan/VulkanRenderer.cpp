@@ -27,14 +27,16 @@ VulkanRenderer::~VulkanRenderer() {
     for (int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroyDescriptorPool(m_device, m_descriptorPools[i].handle, nullptr);
 
+        Frame& frame = m_frames[i];
+
         vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
         vkDestroyCommandPool(m_device, m_commandPools[i], nullptr);
 
-        vmaDestroyBuffer(m_alloc, m_vertexBuffers[i].buffer, m_vertexBuffers[i].allocation);
+        vmaDestroyBuffer(m_alloc, frame.vertexBuffer.vertexBuffer.buffer, frame.vertexBuffer.vertexBuffer.allocation);
 
-        vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
-        vkDestroyFence(m_device, m_frameFences[i], nullptr);
+        vkDestroySemaphore(m_device, frame.imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(m_device, frame.renderFinishedSemaphore, nullptr);
+        vkDestroyFence(m_device, frame.fence, nullptr);
     }
 
     vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
@@ -420,16 +422,23 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
     }
 
     for (int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
-        vkCheck(
-            vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
+        Frame& frame = m_frames[i];
 
         vkCheck(
-            vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
+            vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &frame.imageAvailableSemaphore));
 
-        vkCheck(vkCreateFence(m_device, &fenceInfo, nullptr, &m_frameFences[i]));
+        vkCheck(
+            vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &frame.renderFinishedSemaphore));
 
-        m_vertexBuffers[i] =
-            CreateVertexBuffer(4); // Each frame gets a default vertex buffer of 4 vertices
+        vkCheck(vkCreateFence(m_device, &fenceInfo, nullptr, &frame.fence));
+
+        // Each frame gets a default vertex buffer of 65536 vertices
+        // In total should be 2MB/frame for 4MB in total when double buffered
+        m_frames[i].vertexBuffer = FrameVertexBuffer{
+            .vertexBuffer = CreateVertexBuffer(65536),
+            .nextIndex = 0,
+            .reallocationSize = 0,
+        };
         m_lastTextures[i] = nullptr;
     }
 
@@ -708,7 +717,7 @@ void VulkanRenderer::BindPipeline(RenderPipeline::PipelineHandle pipeline) {
 }
 
 void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
-    if (vertexCount > m_vertexBuffers[m_currentFrame].size) {
+    if (vertexCount > 4) {
         throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
     }
 
@@ -739,21 +748,26 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
         m_lastTextures[m_currentFrame] = m_boundTexture;
     }
 
-    VertexBuffer& vertexBuffer = m_vertexBuffers[m_currentFrame];
-    memcpy(vertexBuffer.hostMapping, vertices, sizeof(Vertex) * vertexCount);
+    FrameVertexBuffer& vBuffer = m_frames[m_currentFrame].vertexBuffer;
+    if(vBuffer.nextIndex + vertexCount > vBuffer.vertexBuffer.size){
+        Logger::Warning("VulkanRenderer::Draw: Vertex buffer full!");
+        vBuffer.nextIndex = 0;
+        vBuffer.reallocationSize = vBuffer.vertexBuffer.size * 2;
+    }
+    assert(vBuffer.nextIndex + vertexCount <= vBuffer.vertexBuffer.size);
 
-    VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
+    memcpy(reinterpret_cast<Vertex*>(vBuffer.vertexBuffer.hostMapping) + vBuffer.nextIndex, vertices, sizeof(Vertex) * vertexCount);
+
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, vertexBuffers, offsets);
-
-    vmaFlushAllocation(m_alloc, vertexBuffer.allocation, 0, vertexBuffer.size);
+    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &vBuffer.vertexBuffer.buffer, offsets);
 
     m_boundPipeline->UpdatePushConstant(
         m_commandBuffers[m_currentFrame],
         offsetof(VulkanPipeline::PushConstant2DTransform, transform),
         16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
 
-    vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, 0, 0);
+    vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, vBuffer.nextIndex, 0);
+    vBuffer.nextIndex += vertexCount;
 }
 
 VulkanRenderer::OneTimeCommandBuffer::OneTimeCommandBuffer(VulkanRenderer& renderer,
@@ -818,45 +832,51 @@ VulkanRenderer::OneTimeCommandBuffer::~OneTimeCommandBuffer() {
 }
 
 void VulkanRenderer::BeginFrame() {
+    Frame& frame = m_frames[m_currentFrame];
     VkResult result = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX,
-                                            m_imageAvailableSemaphores[m_currentFrame],
+                                            frame.imageAvailableSemaphore,
                                             VK_NULL_HANDLE, &m_imageIndex);
     assert(result == VK_SUCCESS);
 
-    vkWaitForFences(m_device, 1, &m_frameFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(m_device, 1, &m_frameFences[m_currentFrame]);
+
+    vkWaitForFences(m_device, 1, &frame.fence, VK_TRUE, UINT64_MAX);
+    vkResetFences(m_device, 1, &frame.fence);
 
     vkCheck(vkResetCommandPool(m_device, m_commandPools[m_currentFrame],
                                0)); // Apparently resetting the whole command pool is faster
     BeginCommandBuffer();
 
+    m_lastTextures[m_currentFrame] = nullptr;
     m_lastPipelines[m_currentFrame] = 0;
+    // Reset vertex buffer index
+    frame.vertexBuffer.nextIndex = 0;
 }
 
 void VulkanRenderer::EndFrame() {
     EndCommandBuffer();
 
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    Frame& frame = m_frames[m_currentFrame];
 
     VkSubmitInfo submitInfo = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &m_imageAvailableSemaphores[m_currentFrame],
+        .pWaitSemaphores = &frame.imageAvailableSemaphore,
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
         .pCommandBuffers = &m_commandBuffers[m_currentFrame],
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &m_renderFinishedSemaphores[m_currentFrame],
+        .pSignalSemaphores = &frame.renderFinishedSemaphore,
     };
 
-    vkCheck(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[m_currentFrame]));
+    vkCheck(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, frame.fence));
 
     VkPresentInfoKHR presentInfo = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &m_renderFinishedSemaphores[m_currentFrame],
+        .pWaitSemaphores = &frame.renderFinishedSemaphore,
         .swapchainCount = 1,
         .pSwapchains = &m_swapchain,
         .pImageIndices = &m_imageIndex,

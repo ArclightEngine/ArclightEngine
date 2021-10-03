@@ -105,13 +105,21 @@ private:
         uint32_t size;     // How many vertexes can fit in buffer
     };
 
+    struct FrameVertexBuffer {
+        VertexBuffer vertexBuffer;
+        uint32_t nextIndex = 0;
+        uint32_t reallocationSize = 0;
+    };
+
     struct Frame {
         VkSemaphore imageAvailableSemaphore;
         VkSemaphore renderFinishedSemaphore;
-        VkSemaphore fence;
+        VkFence fence;
 
         VkCommandPool commandPool;
         VkCommandBuffer commandBuffer;
+
+        FrameVertexBuffer vertexBuffer;
     };
 
     struct PipelineViewportInfo {
@@ -199,10 +207,7 @@ private:
 
     uint32_t m_imageIndex = 0;   // Vulkan image index of frame being rendered
     unsigned m_currentFrame = 0; // Our index of current frame being rendered
-    VkSemaphore m_imageAvailableSemaphores[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
-    VkSemaphore m_renderFinishedSemaphores[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
-    VkFence m_frameFences[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
-    VertexBuffer m_vertexBuffers[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+    Frame m_frames[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 
     VulkanPipeline* m_lastPipelines[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
     VulkanPipeline* m_boundPipeline = nullptr;
