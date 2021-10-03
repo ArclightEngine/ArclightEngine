@@ -8,6 +8,7 @@
 #include <Arclight/Graphics/Texture.h>
 #include <Arclight/State/State.h>
 #include <Arclight/Systems/Renderer2D.h>
+#include <Arclight/Systems/StdoutFPSCounter.h>
 
 #define BALL_SIZE 32
 
@@ -113,24 +114,6 @@ public:
     int ballCount = 0;
 };
 
-struct StdoutFPSCounter {
-    void Tick(float elasped, Arclight::World&) {
-        accum += elasped;
-        fCount++;
-
-        // Print the framerate every 2 seconds
-        if(accum > 2.f && fCount){
-            Arclight::Logger::Debug(fCount / accum, " fps");
-
-            fCount = 0;
-            accum = 0;
-        }
-    }
-
-    float accum = 0.f;
-    int fCount = 0;
-};
-
 enum { StateDefault };
 
 extern "C" {
@@ -138,13 +121,13 @@ void GameInit() {
     Arclight::Logger::Debug("Starting Game!");
 
     TestSystem testSystem;
-    StdoutFPSCounter fpsCounter;
+    Arclight::StdoutFPSCounter fpsCounter;
 
     auto& app = Arclight::Application::Instance();
     app.Window().backgroundColour = {0, 0, 0, 255};
     app.Window().SetSize({640, 480});
     app.AddSystem<Arclight::Systems::Renderer2D>();
-    app.AddSystem<StdoutFPSCounter, &StdoutFPSCounter::Tick>(fpsCounter);
+    app.AddSystem<Arclight::StdoutFPSCounter, &Arclight::StdoutFPSCounter::Tick>(fpsCounter);
     app.AddSystem<TestSystem, &TestSystem::Tick>(testSystem);
 
     app.AddState<StateDefault>();
