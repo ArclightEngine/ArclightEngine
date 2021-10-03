@@ -77,6 +77,7 @@ private:
     static const VkPipelineRasterizationStateCreateInfo rasterizationStateDefault;
     static const VkPipelineColorBlendAttachmentState colourBlendAttachmentStateDefault;
     static const VkPipelineColorBlendStateCreateInfo colourBlendStateDefault;
+    static const VkPipelineDepthStencilStateCreateInfo depthStencilStateDefault;
 };
 
 } // namespace Arclight::Rendering

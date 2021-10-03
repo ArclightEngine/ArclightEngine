@@ -1,6 +1,7 @@
 set(VULKAN_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/Vulkan/VulkanMemory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Vulkan/VulkanPipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Vulkan/VulkanPrivate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Vulkan/VulkanRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Vulkan/VulkanTexture.cpp
     PARENT_SCOPE

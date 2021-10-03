@@ -11,3 +11,10 @@
             assert(!(std::string("[Fatal error]") + __PRETTY_FUNCTION__ + " vkCheck failed!")      \
                         .c_str());                                                                 \
     }
+
+namespace Arclight::Rendering{
+
+void VulkanImageLayoutTransition(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout,
+                                 VkImageLayout newLayout);
+
+} // namespace Arclight::Rendering

@@ -128,6 +128,13 @@ private:
         int nextSet = 0;
     };
 
+    struct DepthBuffer {
+        VkFormat depthFormat;
+        VkImage depthImage;
+        VmaAllocation depthImageAllocation;
+        VkImageView depthImageView;
+    } m_depthBuffer;
+
     // Ready frame for drawing
     void BeginFrame();
     // Finish drawing frame
@@ -155,6 +162,9 @@ private:
 
     void BeginRenderPass();
     void EndRenderPass();
+
+    void CreateDepthBuffer();
+    void DestroyDepthBuffer();
 
     VertexBuffer CreateVertexBuffer(uint32_t vertexCount);
 

@@ -62,6 +62,8 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
     colourBlending.attachmentCount = 1;
     colourBlending.pAttachments = &colourBlendAttachment;
 
+    VkPipelineDepthStencilStateCreateInfo depthStencil = depthStencilStateDefault;
+
     VkShaderModule vertexModule = CreateShaderModule(vertexShader);
     VkShaderModule fragmentModule = CreateShaderModule(fragmentShader);
 
@@ -142,7 +144,7 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
         .pViewportState = &viewportState,
         .pRasterizationState = &rasterizer,
         .pMultisampleState = &multisampling,
-        .pDepthStencilState = nullptr,
+        .pDepthStencilState = &depthStencil,
         .pColorBlendState = &colourBlending,
         .pDynamicState = &dynamicStateCreateInfo,
         .layout = m_pipelineLayout,
@@ -299,5 +301,22 @@ const VkPipelineColorBlendStateCreateInfo VulkanPipeline::colourBlendStateDefaul
         0.f,
         0.f,
     }};
+
+const VkPipelineDepthStencilStateCreateInfo VulkanPipeline::depthStencilStateDefault = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .depthTestEnable = VK_TRUE,
+    .depthWriteEnable = VK_TRUE,
+    .depthCompareOp = VK_COMPARE_OP_LESS,
+    .depthBoundsTestEnable = VK_FALSE,
+    .stencilTestEnable = VK_FALSE,
+    .front = {},
+    .back = {},
+    // This option allows fragments falling outside these values to be discarded,
+    // not in use
+    .minDepthBounds = 0.f,
+    .maxDepthBounds = 1.f,
+};
 
 } // namespace Arclight::Rendering
