@@ -13,6 +13,7 @@
 
 #include <cassert>
 #include <mutex>
+#include <vector>
 
 class FreeType {
 public:
@@ -24,7 +25,7 @@ public:
     }
 
     // Thread-safe wrapper functions for FreeType
-    FT_Error NewFace(class Arclight::File* file, FT_Long index, FT_Face* outFace);
+    FT_Error NewFace(class Arclight::File* file, FT_Long index, FT_Face* outFace, std::vector<uint8_t>& outData);
     FT_Error DoneFace(FT_Face face);
 
 private:

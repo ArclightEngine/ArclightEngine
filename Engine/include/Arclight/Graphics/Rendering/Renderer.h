@@ -95,7 +95,7 @@ public:
 	///
 	/// \return Handle to texture, texture handles are specific to the renderer and are no more than a way to unqiuely identify textures internally
 	////////////////////////////////////////
-	virtual Texture::TextureHandle AllocateTexture(const Vector2u& bounds) = 0;
+	virtual Texture::TextureHandle AllocateTexture(const Vector2u& bounds, Texture::Format texFormat) = 0;
 
 	////////////////////////////////////////
 	/// \brief UpdateTexture

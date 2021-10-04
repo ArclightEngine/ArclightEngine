@@ -127,7 +127,6 @@ GLRenderer::CreatePipeline(const Shader& vertexShader, const Shader& fragmentSha
            fragmentShader.GetStage() == Shader::FragmentShader);
 
     std::unique_lock lockGL(m_glMutex);
-    Logger::Debug("creating pipeline!");
 
     GLPipeline* pipeline = new GLPipeline(vertexShader, fragmentShader);
 
@@ -202,7 +201,6 @@ Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size, Texture
     glCheck(glBindTexture(GL_TEXTURE_2D, texID));
 
     GLenum glFormat = TextureToGLFormat(format);
-    Logger::Debug("fmt", glFormat);
 
     // TODO: Allow configuration of texture filtering and mipmapping
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));

@@ -2,7 +2,9 @@
 
 #include <Arclight/Colour.h>
 #include <Arclight/Core/UnicodeString.h>
+#include <Arclight/Core/Util.h>
 #include <Arclight/Graphics/Font.h>
+#include <Arclight/Graphics/Rect.h>
 #include <Arclight/Graphics/Texture.h>
 #include <Arclight/Graphics/Transform.h>
 #include <Arclight/Graphics/Vertex.h>
@@ -12,28 +14,30 @@
 
 namespace Arclight {
 
-class Text {
+class Text final : NonCopyable {
 public:
-    enum {
-        FontSize_Pixels,
-        FontSize_Pt,
-    };
-
     Text();
+    //Text(Text&& other);
+    Text(Text&& other) = default;
     Text(const UnicodeString& text);
 
-    void SetColour(const Colour& colour);
-    void SetText(const UnicodeString& text);
-    void SetFontSize(int size, int type = FontSize_Pixels);
+    Text& operator=(Text&& other) = default;
 
-    const Texture& Tex() const { return m_texture; }
+    void SetFont(std::shared_ptr<Font> font);
+    void SetColour(const Colour& colour);
+    void SetText(UnicodeString text);
+    void SetFontSize(int size);
+
+    ALWAYS_INLINE Texture& Tex() { return m_texture; }
+    ALWAYS_INLINE const Vertex* Vertices() const { return m_vertices; }
+    ALWAYS_INLINE const Vector2f Bounds() const { return m_bounds.end; }
 
     Transform transform;
 
 private:
-    void Draw();
+    void Render();
 
-    Font* font;
+    std::shared_ptr<Font> m_font = nullptr;
 
     // Freetype is used to render the text to this texture
     // The texture contains the final result of what is rendered on screen
@@ -46,8 +50,8 @@ private:
     };
 
     UnicodeString m_text; // Text to render
-    int m_fontSize = 12;
-    int m_fontSizeType = FontSize_Pixels;
+    Rectf m_bounds;       // Bounds of the text
+    int m_pixelSize = 24;
 };
 
 } // namespace Arclight

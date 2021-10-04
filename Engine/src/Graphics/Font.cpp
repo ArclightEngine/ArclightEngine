@@ -36,7 +36,7 @@ int Font::LoadImpl() {
         return -1;
     }
 
-    FT_Error e = FreeType::Instance().NewFace(file, 0, reinterpret_cast<FT_Face*>(&m_handle));
+    FT_Error e = FreeType::Instance().NewFace(file, 0, reinterpret_cast<FT_Face*>(&m_handle), m_fontData);
     delete file;
 
     if (e) {
