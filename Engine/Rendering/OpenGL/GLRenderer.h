@@ -13,6 +13,7 @@
 #include <SDL2/SDL_opengles2.h>
 #include <SDL2/SDL_video.h>
 
+#include <cassert>
 #include <mutex>
 
 namespace Arclight::Rendering {
@@ -43,16 +44,32 @@ public:
     void BindTexture(Texture::TextureHandle texture) override;
 
     void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
-    Texture::TextureHandle AllocateTexture(const Vector2u&) override;
+    Texture::TextureHandle AllocateTexture(const Vector2u& size, Texture::Format format) override;
     void UpdateTexture(Texture::TextureHandle, const void*) override;
     void DestroyTexture(Texture::TextureHandle) override;
 
     const std::string& GetName() const override { return m_name; }
+    
+    constexpr GLenum TextureToGLFormat(Texture::Format format) {
+        switch (format) {
+        case Texture::Format_RGBA8_SRGB:
+            return GL_RGBA8;
+        case Texture::Format_RGB8_SRGB:
+            return GL_RGB8;
+        case Texture::Format_A8_SRGB:
+            return GL_R8;
+        default:
+            assert(!"Invalid texture format");
+            return GL_RGBA8;
+        }
+    }
 
 private:
     struct GLTexture {
         GLuint id;
+
         Vector2u size;
+        GLenum format;
     };
 
     struct GLVBO {

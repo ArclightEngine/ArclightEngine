@@ -4,13 +4,14 @@
 #include "VulkanRenderer.h"
 
 #include <Arclight/Colour.h>
+#include <Arclight/Core/Logger.h>
 
 #include <stdexcept>
 
 namespace Arclight::Rendering {
 
-VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
-    : m_renderer(renderer), m_bounds(bounds) {
+VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds, VkFormat texFormat)
+    : m_renderer(renderer), m_bounds(bounds), m_format(texFormat) {
     VkBufferCreateInfo stagingBufferCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = nullptr,
@@ -49,7 +50,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
         .pNext = nullptr,
         .flags = 0,
         .imageType = VK_IMAGE_TYPE_2D,
-        .format = VK_FORMAT_R8G8B8A8_SRGB,
+        .format = texFormat,
         .extent =
             {
                 m_bounds.x, // Width
@@ -84,20 +85,43 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     requireLayoutTransition = true;
     UpdateTextureImage();
 
+    VkComponentMapping componentMapping;
+    if(texFormat == VK_FORMAT_R8G8B8A8_SRGB){
+        componentMapping =
+            {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            };
+    } else if(texFormat == VK_FORMAT_R8G8B8_SRGB){
+        componentMapping =
+            {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_ONE,
+            };
+    } else if(texFormat == VK_FORMAT_R8_SRGB){
+        Logger::Debug("r8 srgb");
+        // Use red as alpha
+        componentMapping =
+            {
+                .r = VK_COMPONENT_SWIZZLE_ONE,
+                .g = VK_COMPONENT_SWIZZLE_ONE,
+                .b = VK_COMPONENT_SWIZZLE_ONE,
+                .a = VK_COMPONENT_SWIZZLE_R,
+            };
+    }
+
     VkImageViewCreateInfo imageViewCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .image = m_image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = imageCreateInfo.format, // Use the same format
-        .components =
-            {
-                VK_COMPONENT_SWIZZLE_IDENTITY,
-                VK_COMPONENT_SWIZZLE_IDENTITY,
-                VK_COMPONENT_SWIZZLE_IDENTITY,
-                VK_COMPONENT_SWIZZLE_IDENTITY,
-            },
+        .format = texFormat, // Use the same format
+        .components = componentMapping,
         .subresourceRange =
             {
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -109,6 +133,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds)
     };
 
     vkCheck(vkCreateImageView(m_renderer.GetDevice(), &imageViewCreateInfo, nullptr, &m_imageView));
+    Logger::Debug("Created VkImageView ", m_imageView);
 
     // TODO: Filter and address mode configuration
     VkSamplerCreateInfo samplerCreateInfo = {
@@ -160,7 +185,23 @@ void VulkanTexture::LayoutTransition(VkCommandBuffer commandBuffer, VkImageLayou
 }
 
 void VulkanTexture::UpdateTextureBuffer(const void* data) {
-    memcpy(m_stagingMap, data, sizeof(RGBAColour) * m_bounds.x * m_bounds.y);
+    int formatSize = 4;
+    switch (m_format) {
+    case VK_FORMAT_R8G8B8A8_SRGB:
+        formatSize = 4;
+        break;
+    case VK_FORMAT_R8G8B8_SRGB:
+        formatSize = 3;
+        break;
+    case VK_FORMAT_R8_SRGB:
+        formatSize = 1;
+        break;
+    default:
+        assert(!"Invalid texture VkFormat");
+        break;
+    }
+
+    memcpy(m_stagingMap, data, formatSize * m_bounds.x * m_bounds.y);
 }
 
 void VulkanTexture::UpdateTextureImage() {

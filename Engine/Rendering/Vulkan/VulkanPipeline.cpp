@@ -276,9 +276,9 @@ const VkPipelineRasterizationStateCreateInfo VulkanPipeline::rasterizationStateD
 };
 
 const VkPipelineColorBlendAttachmentState VulkanPipeline::colourBlendAttachmentStateDefault = {
-    .blendEnable = VK_FALSE,
-    .srcColorBlendFactor = VK_BLEND_FACTOR_ONE, // No colour blending
-    .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+    .blendEnable = VK_TRUE,
+    .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA, // Use colour blending using alpha
+    .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
     .colorBlendOp = VK_BLEND_OP_ADD,
     .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE, // No colour blending
     .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,

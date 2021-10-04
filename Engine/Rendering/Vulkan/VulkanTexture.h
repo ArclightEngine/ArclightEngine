@@ -10,7 +10,7 @@ namespace Arclight::Rendering {
 
 class VulkanTexture final {
 public:
-	VulkanTexture(class VulkanRenderer& renderer, const Vector2u& bounds);
+	VulkanTexture(class VulkanRenderer& renderer, const Vector2u& bounds, VkFormat texFormat);
 	~VulkanTexture();
 
 	////////////////////////////////////////
@@ -56,6 +56,8 @@ private:
 
 	VkBuffer m_staging; // Staging buffer (CPU to GPU)
 	VmaAllocation m_stagingAllocation;
+
+	VkFormat m_format; // Texture format
 
 	VkImage m_image; // Vulkan image object (GPU only, more efficient)
 	VmaAllocation m_imageAllocation;

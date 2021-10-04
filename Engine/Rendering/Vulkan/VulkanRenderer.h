@@ -12,10 +12,11 @@
 #include "VulkanPipeline.h"
 #include "VulkanTexture.h"
 
+#include <cassert>
 #include <optional>
 #include <set>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #define RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT 2
 #define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 0
@@ -34,7 +35,7 @@ public:
     int Initialize(WindowContext* windowContext);
 
     void Render();
-    void WaitDeviceIdle() const; 
+    void WaitDeviceIdle() const;
 
     void ResizeViewport(const Vector2i& pixelSize) override;
 
@@ -54,9 +55,23 @@ public:
                    const RenderPipeline::PipelineFixedConfig& config);
     void DestroyPipeline(RenderPipeline::PipelineHandle handle);
 
-    Texture::TextureHandle AllocateTexture(const Vector2u& bounds);
+    Texture::TextureHandle AllocateTexture(const Vector2u& bounds, Texture::Format format);
     void UpdateTexture(Texture::TextureHandle texture, const void* data);
     void DestroyTexture(Texture::TextureHandle texture);
+
+    constexpr VkFormat TextureToVkFormat(Texture::Format format) {
+        switch (format) {
+        case Texture::Format_RGBA8_SRGB:
+            return VK_FORMAT_R8G8B8A8_SRGB;
+        case Texture::Format_RGB8_SRGB:
+            return VK_FORMAT_R8G8B8_SRGB;
+        case Texture::Format_A8_SRGB:
+            return VK_FORMAT_R8_SRGB;
+        default:
+            assert(!"Invalid texture format");
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
 
 protected:
     // RAII Command Buffer wrapper

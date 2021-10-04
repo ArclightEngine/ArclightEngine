@@ -193,7 +193,7 @@ void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix
     glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
 }
 
-Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size) {
+Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size, Texture::Format format) {
     std::unique_lock lockGL(m_glMutex);
 
     GLuint texID;
@@ -201,13 +201,24 @@ Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size) {
 
     glCheck(glBindTexture(GL_TEXTURE_2D, texID));
 
+    GLenum glFormat = TextureToGLFormat(format);
+    Logger::Debug("fmt", glFormat);
+
     // TODO: Allow configuration of texture filtering and mipmapping
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    glCheck(glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, size.x, size.y));
+    glCheck(glTexStorage2D(GL_TEXTURE_2D, 1, glFormat, size.x, size.y));
 
-    GLTexture* tex = new GLTexture{texID, size};
+    GLTexture* tex = new GLTexture{texID, size, glFormat};
     m_textures.insert(tex);
+
+    if(format == Texture::Format_A8_SRGB){
+        // Swizzle alpha textures
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+    }
 
     // Unbind texture
     glCheck(glBindTexture(GL_TEXTURE_2D, 0));
@@ -221,9 +232,23 @@ void GLRenderer::UpdateTexture(Texture::TextureHandle texHandle, const void* dat
     assert(m_textures.contains(tex));
 
     glCheck(glBindTexture(GL_TEXTURE_2D, tex->id));
+    GLuint nonSizedFormat;
+    switch (tex->format) {
+    case GL_RGBA8:
+        nonSizedFormat = GL_RGBA;
+        break;
+    case GL_RGB8:
+        nonSizedFormat = GL_RGB;
+        break;
+    case GL_R8:
+        nonSizedFormat = GL_RED;
+        break;
+    default:
+        FatalRuntimeError("Invalid texture format");
+    }
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex->size.x, tex->size.y, GL_RGBA, GL_UNSIGNED_BYTE,
-                    data);
+    glCheck(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex->size.x, tex->size.y, nonSizedFormat, GL_UNSIGNED_BYTE,
+                    data));
 
     // Unbind texture
     glCheck(glBindTexture(GL_TEXTURE_2D, 0));

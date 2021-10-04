@@ -465,8 +465,8 @@ void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle) {
     delete reinterpret_cast<VulkanPipeline*>(handle);
 }
 
-Texture::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds) {
-    VulkanTexture* texture = new VulkanTexture(*this, bounds);
+Texture::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds, Texture::Format format) {
+    VulkanTexture* texture = new VulkanTexture(*this, bounds, TextureToVkFormat(format));
 
     m_textures.insert(texture);
 
@@ -483,6 +483,10 @@ void VulkanRenderer::UpdateTexture(Texture::TextureHandle texture, const void* d
 }
 
 void VulkanRenderer::DestroyTexture(Texture::TextureHandle texture) {
+    if(texture == nullptr) {
+        return;
+    }
+
     size_t erased = m_textures.erase(reinterpret_cast<VulkanTexture*>(texture));
     assert(erased ==
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
@@ -702,6 +706,8 @@ void VulkanRenderer::BindTexture(Texture::TextureHandle texture) {
                 .pTexelBufferView = nullptr,
             };
 
+            Logger::Debug("Using VkImageView ", tex->DescriptorImageInfo().imageView);
+
             vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0,
                                    nullptr); // Update sampler descriptor
         }
@@ -739,13 +745,15 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
             16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
     }
 
-    if (m_boundTexture && m_boundTexture != m_lastTextures[m_currentFrame]) {
+    if (m_boundTexture /*&& m_boundTexture != m_lastTextures[m_currentFrame]*/) {
         VkDescriptorSet pDescriptorSets[] = {m_textureDescriptorSets.at(m_boundTexture)};
         vkCmdBindDescriptorSets(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 m_boundPipeline->PipelineLayout(), 0, 1, pDescriptorSets, 0,
                                 nullptr);
 
         m_lastTextures[m_currentFrame] = m_boundTexture;
+    } else {
+        Logger::Debug("tex not bound!");
     }
 
     FrameVertexBuffer& vBuffer = m_frames[m_currentFrame].vertexBuffer;
