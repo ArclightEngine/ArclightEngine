@@ -31,7 +31,7 @@ public:
 
     template <Component C, typename... Args>
     ALWAYS_INLINE void AddComponent(Entity ent, Args&&... args) {
-        m_registry.emplace<C>(ent, args...);
+        m_registry.emplace<C>(ent, std::move(args)...);
     }
 
     template <Component C>
