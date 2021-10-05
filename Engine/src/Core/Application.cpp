@@ -31,7 +31,8 @@ Application::Application() {
     }
 
     s_instance = this;
-    World::s_currentWorld = new World();
+    m_currentWorld = std::shared_ptr<World>(new World());
+    World::s_currentWorld = m_currentWorld.get();
 }
 
 void Application::Run() {
@@ -126,7 +127,13 @@ void Application::Exit() { m_isRunning = false; }
 void Application::RunStateInitSystems(){
     if(m_currentState){
         for (auto& sys : m_currentState->init) {
+            sys->Init();
             m_threadPool.Schedule(*sys);
+        }
+
+        // Ensure any timers get reset
+        for (auto& sys : m_currentState->tick) {
+            sys->Init();
         }
 
         ProcessJobQueue();
@@ -187,6 +194,13 @@ void Application::LoadStateImpl(State s) {
     m_pendingStateChange = {s};
 
     m_deferQueue.push([this] { m_stateManager.Swap(m_pendingStateChange.s); });
+}
+
+void Application::LoadWorldImpl(std::shared_ptr<World> world) {
+    m_deferQueue.push([this, world] {
+        m_currentWorld = std::move(world);
+        World::s_currentWorld = m_currentWorld.get();
+    });
 }
 
 } // namespace Arclight

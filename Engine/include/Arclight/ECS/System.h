@@ -23,6 +23,10 @@ template <void (*Function)(float, World&)>
 class System final : public Job, public Object, NonCopyable {
     ARCLIGHT_OBJECT(System, Object);
 public:
+    void Init() final override {
+        m_timer.Reset();
+    }
+
     void Run() final override {
         m_elapsedTime = m_timer.Elapsed() / 1000000.f;
 
@@ -32,7 +36,7 @@ public:
 protected:
     ALWAYS_INLINE float Elapsed() const { return m_elapsedTime; }
 
-    float m_elapsedTime;
+    float m_elapsedTime = 0;
     Timer m_timer;
 };
 
@@ -42,6 +46,10 @@ class ClassSystem final : public Job, public Object, NonCopyable {
 
 public:
     ClassSystem(Clazz& clazz) : m_data(&clazz) {}
+    
+    void Init() final override {
+        m_timer.Reset();
+    }
 
     void Run() final override {
         m_elapsedTime = m_timer.Elapsed() / 1000000.f;
@@ -54,7 +62,7 @@ protected:
 
     Clazz* m_data;
 
-    float m_elapsedTime;
+    float m_elapsedTime = 0;
     Timer m_timer;
 };
 

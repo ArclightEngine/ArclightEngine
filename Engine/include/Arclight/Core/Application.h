@@ -103,6 +103,8 @@ public:
 
         ALWAYS_INLINE void PopState() { m_app.PopStateImpl(); }
 
+        ALWAYS_INLINE void LoadWorld(std::shared_ptr<World> newWorld) { m_app.LoadWorldImpl(newWorld); }
+
     private:
         Application& m_app;
     } commands = Commands(*this);
@@ -118,6 +120,7 @@ private:
     void LoadStateImpl(State s);
     void PushStateImpl(State s);
     void PopStateImpl();
+    void LoadWorldImpl(std::shared_ptr<World> world);
 
     // Frame delay in us
     const long m_frameDelay = 1000000 / 60;
@@ -130,6 +133,8 @@ private:
     ThreadPool m_threadPool;
     ResourceManager m_resourceManager;
     StateManager m_stateManager;
+
+    std::shared_ptr<World> m_currentWorld;
 
     std::queue<std::function<void()>> m_deferQueue;
 
