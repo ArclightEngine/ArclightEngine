@@ -73,26 +73,29 @@ void Text::Render() {
         return;
     }
 
-    // Compose a vector of glyphs
-    std::vector<unsigned int> glyphs;
-    icu::StringCharacterIterator it(m_text);
-    UChar32 codepoint = it.next32PostInc();
-    while (codepoint != icu::StringCharacterIterator::DONE) {
-        glyphs.push_back(FT_Get_Char_Index(face, codepoint));
-        codepoint = it.next32PostInc();
-    }
-
     bool useKerning = FT_HAS_KERNING(face);
     // In 64ths of a pixel so r shift by 6
     int pixelLineHeight = face->size->metrics.height >> 6;
     Vector2u texBounds = {0, pixelLineHeight};
 
+    // Compose a vector of glyphs
+    std::vector<unsigned int> glyphs;
+    icu::StringCharacterIterator it(m_text);
+    UChar32 codepoint = it.next32PostInc();
+    while (codepoint != icu::StringCharacterIterator::DONE) {
+        if(codepoint == '\n'){
+            texBounds.y += pixelLineHeight;
+            glyphs.push_back('\n');
+        } else if(codepoint != '\r') { // Ignore carriage returns
+            glyphs.push_back(FT_Get_Char_Index(face, codepoint));
+        }
+
+        codepoint = it.next32PostInc();
+    }
+
     unsigned int prevGlyph = 0;
     for (unsigned int glyph : glyphs) {
-        if(glyph == '\r'){
-            continue;
-        } else if(glyph == '\n'){
-            texBounds.y += pixelLineHeight;
+        if(glyph == '\n'){
             continue;
         }
 
@@ -108,6 +111,9 @@ void Text::Render() {
 
         prevGlyph = glyph;
     }
+
+    // Round up to multiple of 4 bytes
+    texBounds.x = (texBounds.x + 3) & (~3U);
 
     // Unlock the font face whilst we reallocate texture
     fontLock.unlock();
@@ -133,6 +139,7 @@ void Text::Render() {
     for (unsigned int glyph : glyphs) {
         if(glyph == '\n'){
             yPos += pixelLineHeight;
+            xPos = 0;
             continue;
         }
 
@@ -174,14 +181,18 @@ void Text::Render() {
     // No longer need the face
     fontLock.unlock();
 
-    m_vertices[0].position = Vector2f{0, m_bounds.Height()};
-    m_vertices[1].position = Vector2f{0, 0};
-    m_vertices[2].position = Vector2f{m_bounds.Width(), m_bounds.Height()};
-    m_vertices[3].position = Vector2f{m_bounds.Width(), 0};
-
     // Copy the pixel buffer into the texture
     m_texture.Update(pixelBuffer);
     delete pixelBuffer;
+
+    m_vertices[0].position = Vector2f{0, m_bounds.Height()};
+    m_vertices[0].texCoord = Vector2f{0, 1.f};
+    m_vertices[1].position = Vector2f{0, 0};
+    m_vertices[1].texCoord = Vector2f{0, 0};
+    m_vertices[2].position = Vector2f{m_bounds.Width(), m_bounds.Height()};
+    m_vertices[2].texCoord = Vector2f{1.f, 1.f};
+    m_vertices[3].position = Vector2f{m_bounds.Width(), 0};
+    m_vertices[3].texCoord = Vector2f{1.f, 0};
 }
 
 void Text::SetFont(std::shared_ptr<Font> font) {
