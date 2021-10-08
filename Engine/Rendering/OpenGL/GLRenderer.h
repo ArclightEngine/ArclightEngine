@@ -43,7 +43,7 @@ public:
     void BindPipeline(RenderPipeline::PipelineHandle pipeline) override;
     void BindTexture(Texture::TextureHandle texture) override;
 
-    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
+    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) override;
     Texture::TextureHandle AllocateTexture(const Vector2u& size, Texture::Format format) override;
     void UpdateTexture(Texture::TextureHandle, const void*) override;
     void DestroyTexture(Texture::TextureHandle) override;
@@ -70,6 +70,8 @@ private:
 
         Vector2u size;
         GLenum format;
+
+        Texture::Format arclightFormat;
     };
 
     struct GLVBO {

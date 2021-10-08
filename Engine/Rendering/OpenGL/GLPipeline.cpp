@@ -64,6 +64,8 @@ GLPipeline::GLPipeline(const Shader& vertexShader, const Shader& fragmentShader)
     }
 
     m_modelTransformIndex = glGetUniformLocation(m_program, "transform");
+    // WebGL does not support texture swizzle, use a uniform to indicate tex format
+    m_textureFormatIndex = glGetUniformLocation(m_program, "textureFormat");
 
     // Generate VAO for Pipeline
     glGenVertexArrays(1, &m_vao);

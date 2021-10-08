@@ -3,6 +3,7 @@
 precision mediump float;
 
 uniform sampler2D texSampler; // Texture sampler
+uniform int textureFormat;
 
 in vec4 fragColour; // Fragment colour
 in vec2 fragTexCoord; // Texture coordinate
@@ -10,5 +11,10 @@ in vec2 fragTexCoord; // Texture coordinate
 out vec4 outColour; // Output colour
 
 void main() {
-    outColour = fragColour * texture(texSampler, fragTexCoord);
+    if(textureFormat == 0){
+        outColour = fragColour * texture(texSampler, fragTexCoord);
+    } else {
+        outColour = fragColour;
+        outColour.a = texture(texSampler, fragTexCoord).x;
+    }
 }

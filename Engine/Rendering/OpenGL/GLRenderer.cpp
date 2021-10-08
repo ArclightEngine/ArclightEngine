@@ -163,6 +163,12 @@ void GLRenderer::BindTexture(Texture::TextureHandle texture) {
         GLTexture* tex = reinterpret_cast<GLTexture*>(texture);
         glActiveTexture(GL_TEXTURE0);
         glCheck(glBindTexture(GL_TEXTURE_2D, tex->id));
+
+        if(tex->arclightFormat == Texture::Format_A8_SRGB){
+            glUniform1i(m_boundPipeline->TextureFormatIndex(), 1);
+        } else {
+            glUniform1i(m_boundPipeline->TextureFormatIndex(), 0);
+        }
     } else {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -207,15 +213,19 @@ Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size, Texture
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
     glCheck(glTexStorage2D(GL_TEXTURE_2D, 1, glFormat, size.x, size.y));
 
-    GLTexture* tex = new GLTexture{texID, size, glFormat};
+    GLTexture* tex = new GLTexture{texID, size, glFormat, format};
     m_textures.insert(tex);
 
+    // WEBGL DOES NOT SUPPORT TEXTURE SWIZZLE!
     if(format == Texture::Format_A8_SRGB){
         // Swizzle alpha textures
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+
+        if (auto e = glGetError(); e != GL_NO_ERROR)
+            FatalRuntimeError("glCheck failed with error of ", GLErrorString(e), " (", e, ")");
     }
 
     // Unbind texture

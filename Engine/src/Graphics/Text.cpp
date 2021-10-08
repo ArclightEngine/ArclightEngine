@@ -61,10 +61,6 @@ void Text::Render() {
         return;
     }
 
-    if (m_text.isEmpty()) {
-        return;
-    }
-
     std::unique_lock fontLock(m_font->m_lock);
     FT_Face face = reinterpret_cast<FT_Face>(m_font->m_handle);
 
@@ -75,7 +71,7 @@ void Text::Render() {
 
     bool useKerning = FT_HAS_KERNING(face);
     // In 64ths of a pixel so r shift by 6
-    int pixelLineHeight = face->size->metrics.height >> 6;
+    unsigned int pixelLineHeight = face->size->metrics.height >> 6;
     Vector2u texBounds = {0, pixelLineHeight};
 
     // Compose a vector of glyphs
@@ -91,6 +87,10 @@ void Text::Render() {
         }
 
         codepoint = it.next32PostInc();
+    }
+
+    if (glyphs.size() == 0) {
+        return;
     }
 
     unsigned int prevGlyph = 0;
@@ -138,7 +138,7 @@ void Text::Render() {
     prevGlyph = 0;
     for (unsigned int glyph : glyphs) {
         if(glyph == '\n'){
-            yPos += pixelLineHeight;
+            yPos += static_cast<int>(pixelLineHeight);
             xPos = 0;
             continue;
         }
@@ -167,7 +167,7 @@ void Text::Render() {
         }
 
         // Copy the glyph into the texture
-        for (int y = 0; y < slot->bitmap.rows; y++) {
+        for (unsigned int y = 0; y < slot->bitmap.rows; y++) {
             assert(yOffset + y <= texBounds.y);
 
             memcpy(&pixelBuffer[(yOffset + y) * texBounds.x + xPos + xOffset],

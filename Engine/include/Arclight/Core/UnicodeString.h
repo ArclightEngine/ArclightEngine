@@ -6,11 +6,6 @@
 #define U_CHARSET_IS_UTF8 1
 #endif
 
-// TODO: Fix ICU in emscripten
-#ifdef ARCLIGHT_PLATFORM_WASM
-#define NO_ICU
-#endif
-
 #ifndef NO_ICU
 
 #include <unicode/unistr.h>

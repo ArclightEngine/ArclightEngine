@@ -20,6 +20,7 @@ public:
     ALWAYS_INLINE GLuint GetVAO() { return m_vao; }
 
     ALWAYS_INLINE GLint ModelTransformIndex() const { return m_modelTransformIndex; }
+    ALWAYS_INLINE GLint TextureFormatIndex() const { return m_textureFormatIndex; }
 
 private:
     static std::string GetShaderCompilationLog(GLuint shader); 
@@ -31,6 +32,7 @@ private:
     GLuint m_program;
 
     GLint m_modelTransformIndex;
+    GLint m_textureFormatIndex;
 
     // Vertex array object
     GLuint m_vao;
