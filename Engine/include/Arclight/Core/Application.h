@@ -123,7 +123,7 @@ private:
     void LoadWorldImpl(std::shared_ptr<World> world);
 
     // Frame delay in us
-    const long m_frameDelay = 1000000 / 60;
+    const long m_frameDelay = 1000000 / 120;
 
     bool m_isRunning = true;
 
