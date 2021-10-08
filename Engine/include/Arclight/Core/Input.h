@@ -29,7 +29,14 @@ public:
     static inline int GetKeyPress(KeyCode key) { return m_instance->m_keyMap[key] == KeyState_Pressed; }
     static inline int GetKeyRelease(KeyCode key) { return m_instance->m_keyMap[key] == KeyState_Released; }
 
-    inline void OnKey(KeyCode key, KeyState state) { m_keyMap[key] = state; }
+    inline void OnKey(KeyCode key, KeyState state) { 
+        // Prevent key repeat
+        if(state == KeyState_Pressed && m_keyMap[key] != KeyState_Down){
+            m_keyMap[key] = state;
+        } else {
+            m_keyMap[key] = state;
+        }
+    }
 
     void Tick();
 
