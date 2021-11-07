@@ -40,11 +40,11 @@ const Uint32 platformSDLInitFlags = SDL_INIT_EVERYTHING;
 #endif
 
 #if defined(ARCLIGHT_VULKAN)
-const Uint32 platformSDLWindowFlags = SDL_WINDOW_VULKAN;
+const Uint32 platformSDLWindowFlags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
 #elif defined(ARCLIGHT_OPENGL)
-const Uint32 platformSDLWindowFlags = SDL_WINDOW_OPENGL;
+const Uint32 platformSDLWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 #else
-const Uint32 platformSDLWindowFlags = 0;
+const Uint32 platformSDLWindowFlags = SDL_WINDOW_RESIZABLE;
 #endif
 
 void Initialize() {
