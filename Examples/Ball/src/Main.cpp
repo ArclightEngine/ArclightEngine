@@ -20,7 +20,7 @@ public:
 
     TestSystem() {
         std::shared_ptr<Arclight::Image> res =
-            Arclight::ResourceManager::Instance().GetResource<Arclight::Image>("ball.png");
+            Arclight::ResourceManager::instance().GetResource<Arclight::Image>("ball.png");
         assert(res.get());
 
         tex.Load(*res);
@@ -32,15 +32,15 @@ public:
     }
 
     void Tick(float elapsed, Arclight::World& world) {
-        auto& app = Arclight::Application::Instance();
+        auto& app = Arclight::Application::instance();
 
         if (Arclight::Input::GetKeyPress(Arclight::KeyCode_E)) {
             Arclight::Entity newEntity = world.CreateEntity();
 
             Arclight::Sprite spr = Arclight::CreateSprite({BALL_SIZE});
             spr.texture = &tex;
-            spr.transform.SetPosition(rand() % app.Window().GetWindowRenderSize().x,
-                                        rand() % app.Window().GetWindowRenderSize().y);
+            spr.transform.SetPosition(rand() % app.window().GetWindowRenderSize().x,
+                                        rand() % app.window().GetWindowRenderSize().y);
 
             world.AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
                                                                             std::move(spr));
@@ -57,8 +57,8 @@ public:
 
                 Arclight::Sprite spr = Arclight::CreateSprite({BALL_SIZE});
                 spr.texture = &tex;
-                spr.transform.SetPosition(rand() % app.Window().GetWindowRenderSize().x,
-                                            rand() % app.Window().GetWindowRenderSize().y);
+                spr.transform.SetPosition(rand() % app.window().GetWindowRenderSize().x,
+                                            rand() % app.window().GetWindowRenderSize().y);
 
                 world.AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
                                                                              std::move(spr));
@@ -87,19 +87,19 @@ public:
             spr.transform.SetPosition(spr.transform.GetPosition() + data.velocity);
 
             Arclight::Rect bounds = SpriteBounds(spr);
-            if (bounds.right >= app.Window().GetWindowRenderSize().x) {
+            if (bounds.right >= app.window().GetWindowRenderSize().x) {
                 data.velocity.x = -ballSpeed;
-                spr.transform.SetPosition(app.Window().GetWindowRenderSize().x - bounds.Width(),
+                spr.transform.SetPosition(app.window().GetWindowRenderSize().x - bounds.Width(),
                                           bounds.top);
             } else if (bounds.left <= 0) {
                 data.velocity.x = ballSpeed;
                 spr.transform.SetPosition(0, bounds.top);
             }
 
-            if (bounds.bottom >= app.Window().GetWindowRenderSize().y) {
+            if (bounds.bottom >= app.window().GetWindowRenderSize().y) {
                 data.velocity.y = -ballSpeed;
                 spr.transform.SetPosition(bounds.left,
-                                          app.Window().GetWindowRenderSize().y - bounds.Height());
+                                          app.window().GetWindowRenderSize().y - bounds.Height());
             } else if (bounds.top <= 0) {
                 data.velocity.y = ballSpeed;
                 spr.transform.SetPosition(bounds.left, 0);
@@ -123,16 +123,16 @@ void GameInit() {
     TestSystem testSystem;
     Arclight::StdoutFPSCounter fpsCounter;
 
-    auto& app = Arclight::Application::Instance();
-    app.Window().backgroundColour = {0, 0, 0, 255};
-    app.Window().SetSize({640, 480});
-    app.AddSystem<Arclight::Systems::Renderer2D>();
-    app.AddSystem<Arclight::StdoutFPSCounter, &Arclight::StdoutFPSCounter::Tick>(fpsCounter);
-    app.AddSystem<TestSystem, &TestSystem::Tick>(testSystem);
+    auto& app = Arclight::Application::instance();
+    app.window().backgroundColour = {0, 0, 0, 255};
+    app.window().SetSize({640, 480});
+    app.add_system<Arclight::Systems::Renderer2D>();
+    app.add_system<Arclight::StdoutFPSCounter, &Arclight::StdoutFPSCounter::Tick>(fpsCounter);
+    app.add_system<TestSystem, &TestSystem::Tick>(testSystem);
 
-    app.AddState<StateDefault>();
-    app.commands.LoadState<StateDefault>();
+    app.add_state<StateDefault>();
+    app.commands.load_state<StateDefault>();
 
-    app.Run();
+    app.run();
 }
 }

@@ -84,7 +84,7 @@ void Initialize() {
     }
 #endif
 
-    if (!renderers.size() || !Rendering::Renderer::Instance()) {
+    if (!renderers.size() || !Rendering::Renderer::instance()) {
         Logger::Error("No available rendering API!");
         exit(2);
     }

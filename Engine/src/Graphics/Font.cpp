@@ -15,7 +15,7 @@ Font::Font() : Resource() {}
 
 Font::~Font() {
     if (m_handle) {
-        FT_Error e = FreeType::Instance().DoneFace(reinterpret_cast<FT_Face>(m_handle));
+        FT_Error e = FreeType::instance().DoneFace(reinterpret_cast<FT_Face>(m_handle));
         assert(!e);
     }
 }
@@ -24,7 +24,7 @@ int Font::Load() { return LoadImpl(); }
 
 int Font::LoadImpl() {
     if (m_handle) {
-        FT_Error e = FreeType::Instance().DoneFace(reinterpret_cast<FT_Face>(m_handle));
+        FT_Error e = FreeType::instance().DoneFace(reinterpret_cast<FT_Face>(m_handle));
         assert(!e);
     }
 
@@ -36,7 +36,7 @@ int Font::LoadImpl() {
         return -1;
     }
 
-    FT_Error e = FreeType::Instance().NewFace(file, 0, reinterpret_cast<FT_Face*>(&m_handle), m_fontData);
+    FT_Error e = FreeType::instance().NewFace(file, 0, reinterpret_cast<FT_Face*>(&m_handle), m_fontData);
     delete file;
 
     if (e) {

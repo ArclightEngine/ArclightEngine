@@ -19,7 +19,7 @@ WindowContext::~WindowContext(){
 
 void WindowContext::SetSize(const Vector2i& size) {
 	SDL_SetWindowSize(m_window, size.x, size.y);
-	Rendering::Renderer::Instance()->ResizeViewport(size);
+	Rendering::Renderer::instance()->ResizeViewport(size);
 }
 
 } // namespace Arclight

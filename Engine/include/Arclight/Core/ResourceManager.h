@@ -24,7 +24,7 @@ public:
     ResourceManager();
     ~ResourceManager();
 
-    static inline ResourceManager& Instance() {
+    static inline ResourceManager& instance() {
         assert(s_instance);
         return *s_instance;
     }

@@ -22,7 +22,7 @@ public:
     Input();
     ~Input();
 
-    inline Input* Instance() { return m_instance; }
+    inline Input* instance() { return m_instance; }
 
     static inline KeyState GetKey(KeyCode key) { return m_instance->m_keyMap[key]; }
     static inline int GetKeyDown(KeyCode key) { return m_instance->m_keyMap[key] & 0x1; }

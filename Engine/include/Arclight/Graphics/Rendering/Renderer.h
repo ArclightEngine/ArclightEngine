@@ -19,7 +19,7 @@ public:
 	virtual ~Renderer() = default;
 
 	virtual int Initialize(class WindowContext* context) = 0;
-	static inline Renderer* Instance() { return s_rendererInstance; }
+	static inline Renderer* instance() { return s_rendererInstance; }
 
 	virtual void Render();
 	virtual void WaitDeviceIdle() const = 0;
@@ -50,7 +50,7 @@ public:
 	///
 	/// Bind pipeline to be used on next draw call.
 	////////////////////////////////////////
-	virtual void BindPipeline(RenderPipeline::PipelineHandle pipeline = Instance()->DefaultPipeline().Handle()) = 0;
+	virtual void BindPipeline(RenderPipeline::PipelineHandle pipeline = instance()->DefaultPipeline().Handle()) = 0;
 
 	////////////////////////////////////////
 	/// \brief Draw

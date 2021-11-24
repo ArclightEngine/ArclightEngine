@@ -9,7 +9,7 @@
 namespace Arclight::Systems {
 
 void Renderer2D(float, World& world) {
-    Rendering::Renderer& renderer = *Rendering::Renderer::Instance();
+    Rendering::Renderer& renderer = *Rendering::Renderer::instance();
     renderer.Clear();
 
     auto spriteView = world.Registry().view<Sprite>();
