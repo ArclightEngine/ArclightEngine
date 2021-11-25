@@ -23,32 +23,32 @@ public:
     GLRenderer() = default;
     ~GLRenderer() override;
 
-    int Initialize(class WindowContext* context) override;
+    int initialize(class WindowContext* context) override;
 
-    void WaitDeviceIdle() const override { glFinish(); }
+    void wait_device_idle() const override { glFinish(); }
 
-    void Render() override;
+    void render() override;
 
-    void Clear() override;
+    void clear() override;
 
-    void ResizeViewport(const Vector2i& pixelSize) override;
+    void resize_viewport(const Vector2i& pixelSize) override;
 
     RenderPipeline::PipelineHandle
-    CreatePipeline(const Shader&, const Shader&,
+    create_pipeline(const Shader&, const Shader&,
                    const RenderPipeline::PipelineFixedConfig&) override;
 
-    void DestroyPipeline(RenderPipeline::PipelineHandle) override;
-    RenderPipeline& DefaultPipeline() override;
+    void destroy_pipeline(RenderPipeline::PipelineHandle) override;
+    RenderPipeline& default_pipeline() override;
 
-    void BindPipeline(RenderPipeline::PipelineHandle pipeline) override;
-    void BindTexture(Texture::TextureHandle texture) override;
+    void bind_pipeline(RenderPipeline::PipelineHandle pipeline) override;
+    void bind_texture(Texture::TextureHandle texture) override;
 
-    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) override;
-    Texture::TextureHandle AllocateTexture(const Vector2u& size, Texture::Format format) override;
-    void UpdateTexture(Texture::TextureHandle, const void*) override;
-    void DestroyTexture(Texture::TextureHandle) override;
+    void draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) override;
+    Texture::TextureHandle allocate_texture(const Vector2u& size, Texture::Format format) override;
+    void update_texture(Texture::TextureHandle, const void*) override;
+    void destroy_texture(Texture::TextureHandle) override;
 
-    const std::string& GetName() const override { return m_name; }
+    const std::string& get_name() const override { return m_name; }
     
     constexpr GLenum TextureToGLFormat(Texture::Format format) {
         switch (format) {

@@ -170,7 +170,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds, V
 VulkanTexture::~VulkanTexture() {
     // We need to wait for command buffer completion
     // TODO: Use another thread?
-    m_renderer.WaitDeviceIdle();
+    m_renderer.wait_device_idle();
 
     vkDestroySampler(m_renderer.GetDevice(), m_texSampler, nullptr);
     vkDestroyImageView(m_renderer.GetDevice(), m_imageView, nullptr);

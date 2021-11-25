@@ -42,13 +42,15 @@ public:
 
     // For now we do not allow runtime definition of states
     // Ensure states are statically defined by using templates
-    template <State s> void add_state() {
+    template <State s> Application& add_state() {
         static_assert(s >= 0);
         m_states[s]; // Default initialize
+
+        return *this;
     }
 
     template<void(*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
-    ALWAYS_INLINE void add_system() {
+    ALWAYS_INLINE Application& add_system() {
         if constexpr(s == StateNone){
             if constexpr(when == When::Init) {
                 m_globalSystems.init.push_back(new System<Function>());
@@ -66,10 +68,12 @@ public:
                 m_states.at(s).exit.push_back(new System<Function>());
             }
         }
+
+        return *this;
     }
 
     template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
-    ALWAYS_INLINE void add_system(Clazz& ref) {
+    ALWAYS_INLINE Application& add_system(Clazz& ref) {
         if constexpr(s == StateNone){
             if constexpr(when == When::Init) {
                 m_globalSystems.init.push_back(new ClassSystem<Clazz, Function>(ref));
@@ -87,6 +91,8 @@ public:
                 m_states.at(s).exit.push_back(new ClassSystem<Clazz, Function>(ref));
             }
         }
+
+        return *this;
     }
 
     // Command pattern

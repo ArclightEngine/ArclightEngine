@@ -157,7 +157,7 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
     if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &gfxPipelineCreateInfo, nullptr,
                                   &m_pipeline) != VK_SUCCESS) {
         throw std::runtime_error(
-            "VulkanRenderer::Initialize: Failed to create Vulkan graphics pipeline!");
+            "VulkanRenderer::initialize: Failed to create Vulkan graphics pipeline!");
     }
 
     auto cmdBuf = m_renderer.CreateOneTimeCommandBuffer();

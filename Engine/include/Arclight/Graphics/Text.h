@@ -35,7 +35,7 @@ public:
     Transform transform;
 
 private:
-    void Render();
+    void render();
 
     std::shared_ptr<Font> m_font = nullptr;
 

@@ -65,21 +65,21 @@ void Initialize() {
 
 #ifdef ARCLIGHT_VULKAN
     Rendering::VulkanRenderer* vkRenderer = new Rendering::VulkanRenderer();
-    if (!vkRenderer->Initialize(windowContext)) {
+    if (!vkRenderer->initialize(windowContext)) {
         renderers.push_back(vkRenderer);
     }
 #endif
 
 #ifdef ARCLIGHT_DUMMY_RENDERER
     Rendering::DummyRenderer* dummyRenderer = new Rendering::DummyRenderer();
-    if (!dummyRenderer->Initialize(windowContext)) {
+    if (!dummyRenderer->initialize(windowContext)) {
         renderers.push_back(dummyRenderer);
     }
 #endif
 
 #ifdef ARCLIGHT_OPENGL
     Rendering::GLRenderer* glRenderer = new Rendering::GLRenderer();
-    if(!glRenderer->Initialize(windowContext)){
+    if(!glRenderer->initialize(windowContext)){
         renderers.push_back(glRenderer);
     }
 #endif

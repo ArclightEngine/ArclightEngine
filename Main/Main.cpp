@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     getcwd(cwd, 4096);
 
     Platform::Initialize();
-    Logger::Debug("Using renderer: ", Rendering::Renderer::instance()->GetName());
+    Logger::Debug("Using renderer: ", Rendering::Renderer::instance()->get_name());
 
     Application app;
 
