@@ -12,8 +12,8 @@ void Renderer2D(float, World& world) {
     Rendering::Renderer& renderer = *Rendering::Renderer::instance();
     renderer.clear();
 
-    auto spriteView = world.Registry().view<Sprite>();
-    auto textView = world.Registry().view<Text>();
+    auto spriteView = world.registry().view<Sprite>();
+    auto textView = world.registry().view<Text>();
 
     renderer.bind_pipeline(renderer.default_pipeline().Handle());
     for (Entity ent : spriteView) {

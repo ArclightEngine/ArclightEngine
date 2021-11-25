@@ -160,7 +160,7 @@ inline Vector2f BlockToPixelCoords(const Vector2i& blockCoords) {
 }
 
 Entity ConstructBlockSprite(World& world, int block, int x, int y) {
-    Entity entity = world.CreateEntity();
+    Entity entity = world.create_entity();
 
     // Make sure it is a valid block type
     assert(block > 0 && block < 8);
@@ -172,7 +172,7 @@ Entity ConstructBlockSprite(World& world, int block, int x, int y) {
     spr.transform.SetZIndex(1.f);
 
     // Add the Sprite and Block to the block as a component
-    world.AddComponent<Sprite>(entity, spr);
+    world.add_component<Sprite>(entity, spr);
     return entity;
 }
 
@@ -202,14 +202,14 @@ Entity ConstructPiece(World& world, int piece, int x, int y) {
         }
     }
 
-    Entity entity = world.CreateEntity();
-    world.AddComponent<Piece>(entity, std::move(p));
+    Entity entity = world.create_entity();
+    world.add_component<Piece>(entity, std::move(p));
 
     return entity;
 }
 
 PieceQueue& GetPieceQueue(World& world) {
-    auto queueView = world.View<PieceQueue>();
+    auto queueView = world.view<PieceQueue>();
     assert(queueView.size() == 1);
 
     return queueView.get<PieceQueue>(queueView.front());
@@ -217,9 +217,9 @@ PieceQueue& GetPieceQueue(World& world) {
 
 void DestroyPiece(World& world, Piece& piece, Entity entityID) {
     for (Entity sprite : piece.sprites) {
-        world.DestroyEntity(sprite);
+        world.destroy_entity(sprite);
     }
-    world.DestroyEntity(entityID);
+    world.destroy_entity(entityID);
 
     // If the piece is destroyed,
     // allow the player to swap places again
@@ -228,9 +228,9 @@ void DestroyPiece(World& world, Piece& piece, Entity entityID) {
 }
 
 void MenuInit(float, World& world) {
-    Entity titleEntity = world.CreateEntity();
-    Entity footnoteEntity = world.CreateEntity();
-    Entity controlsEntity = world.CreateEntity();
+    Entity titleEntity = world.create_entity();
+    Entity footnoteEntity = world.create_entity();
+    Entity controlsEntity = world.create_entity();
 
     WindowContext* window = WindowContext::instance();
 
@@ -258,9 +258,9 @@ void MenuInit(float, World& world) {
     controls.SetFont(font);
     controls.transform.SetPosition({36, window->GetSize().y / 2.f});
 
-    world.AddComponent<Text>(titleEntity, std::move(text));
-    world.AddComponent<Text>(footnoteEntity, std::move(text2));
-    world.AddComponent<Text>(controlsEntity, std::move(controls));
+    world.add_component<Text>(titleEntity, std::move(text));
+    world.add_component<Text>(footnoteEntity, std::move(text2));
+    world.add_component<Text>(controlsEntity, std::move(controls));
 }
 
 void MenuSystem(float, World& world) {
@@ -291,7 +291,7 @@ std::list<int> GeneratePieceBag() {
 }
 
 void BoardInit(float, World& world) {
-    Entity boardEntity = world.CreateEntity();
+    Entity boardEntity = world.create_entity();
     Board board;
     for (unsigned i = 0; i < board.size(); i++) {
         board.at(i).fill(entt::null);
@@ -309,10 +309,10 @@ void BoardInit(float, World& world) {
     boardSprite.transform.SetPosition(boardScreenPos - Vector2f{BLOCK_SIZE, 0});
     boardSprite.transform.SetZIndex(-10);
 
-    world.AddComponent<PieceQueue>(boardEntity, PieceQueue{GeneratePieceBag()});
-    world.AddComponent<Board>(boardEntity, std::move(board));
-    world.AddComponent<Sprite>(boardEntity, std::move(boardSprite));
-    world.AddComponent<GameState>(boardEntity);
+    world.add_component<PieceQueue>(boardEntity, PieceQueue{GeneratePieceBag()});
+    world.add_component<Board>(boardEntity, std::move(board));
+    world.add_component<Sprite>(boardEntity, std::move(boardSprite));
+    world.add_component<GameState>(boardEntity);
 
     ConstructPiece(world, GetNextPiece(world), 2, 20);
 }
@@ -321,7 +321,7 @@ void ClearBoard(World& world, Board& board) {
     for (auto& row : board) {
         for (auto& block : row) {
             if (block != entt::null) {
-                world.DestroyEntity(block);
+                world.destroy_entity(block);
             }
         }
 
@@ -348,7 +348,7 @@ std::vector<Piece::Block> MovePieceAndCopy(std::vector<Piece::Block> blocks,
 
 void UpdatePieceBlocks(World& world, Piece& piece) {
     for (auto& block : piece.blocks) {
-        auto& sprite = world.GetComponent<Sprite>(block.sprite);
+        auto& sprite = world.get_component<Sprite>(block.sprite);
         sprite.transform.SetPosition(BlockToPixelCoords(piece.origin + block.position));
     }
 }
@@ -379,7 +379,7 @@ void MoveBlocksToBoard(World& world, Board& board, Piece& piece) {
             board[piece.origin.y + block.position.y][piece.origin.x + block.position.x] =
                 block.sprite;
         } else {
-            world.DestroyEntity(block.sprite);
+            world.destroy_entity(block.sprite);
         }
     }
     piece.blocks.clear();
@@ -499,7 +499,7 @@ void RotatePieceCounterClockwise(Board& board, Piece& piece, float lockDelay) {
 void DestroyLineEntities(World& world, std::array<Entity, BOARD_WIDTH>& line) {
     for (Entity ent : line) {
         if (ent != entt::null) {
-            world.DestroyEntity(ent);
+            world.destroy_entity(ent);
         }
     }
 }
@@ -536,7 +536,7 @@ void ClearLinesIfNeeded(World& world, Board& board) {
             for (int x = 0; x < BOARD_WIDTH; x++) {
                 Entity block = board[y][x];
                 if (block != entt::null)
-                    world.GetComponent<Sprite>(block).transform.SetPosition(
+                    world.get_component<Sprite>(block).transform.SetPosition(
                         BlockToPixelCoords(Vector2i{x, y}));
             }
         }
@@ -545,13 +545,13 @@ void ClearLinesIfNeeded(World& world, Board& board) {
 
 void BoardSystem(float elapsed, World& world) {
     // Get Board Data
-    auto boardView = world.View<Board>();
+    auto boardView = world.view<Board>();
     assert(boardView.size() == 1);
     PieceQueue& queue = GetPieceQueue(world);
     Board& board = boardView.get<Board>(boardView.front());
-    GameState& gameState = world.GetComponent<GameState>(boardView.front());
+    GameState& gameState = world.get_component<GameState>(boardView.front());
 
-    auto pieceView = world.View<Piece>();
+    auto pieceView = world.view<Piece>();
     if (Input::GetKeyPress(KeyCode_R)) { // Reset game
         ClearBoard(world, board);
         if (!pieceView.empty()) {
@@ -678,7 +678,7 @@ void BoardSystem(float elapsed, World& world) {
 }
 
 void QueueSystem(float, World& world) {
-    auto queueView = world.View<PieceQueue>();
+    auto queueView = world.view<PieceQueue>();
     assert(queueView.size() == 1);
 
     auto& queue = queueView.get<PieceQueue>(queueView.front());

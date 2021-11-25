@@ -15,8 +15,11 @@ namespace Arclight {
 
 struct SystemGroup {
     std::list<Job*> init;
-    std::list<Job*> tick;
     std::list<Job*> exit;
+    
+    std::list<Job*> pretick;
+    std::list<Job*> tick;
+    std::list<Job*> posttick;
 };
 
 template <void (*Function)(float, World&)>

@@ -18,28 +18,28 @@ public:
 
     ALWAYS_INLINE static World& Current() { return *s_currentWorld; }
 
-    void Cleanup();
+    void cleanup();
 
-    ALWAYS_INLINE Entity CreateEntity() {
+    ALWAYS_INLINE Entity create_entity() {
         Entity ent = m_registry.create();
         return ent;
     }
 
-    ALWAYS_INLINE void DestroyEntity(Entity entity) {
+    ALWAYS_INLINE void destroy_entity(Entity entity) {
         m_registry.emplace<Components::RemovalTag>(entity);
     }
 
     template <Component C, typename... Args>
-    ALWAYS_INLINE void AddComponent(Entity ent, Args&&... args) {
-        m_registry.emplace<C>(ent, std::move(args)...);
+    ALWAYS_INLINE C& add_component(Entity ent, Args&&... args) {
+        return m_registry.emplace<C>(ent, std::move(args)...);
     }
 
     template <Component C>
-    ALWAYS_INLINE C& GetComponent(Entity ent){
+    ALWAYS_INLINE C& get_component(Entity ent){
         return m_registry.get<C>(ent);
     }
 
-    template <Component... C> ALWAYS_INLINE size_t RemoveComponents(Entity ent) {
+    template <Component... C> ALWAYS_INLINE size_t remove_components(Entity ent) {
         // Check if valid ourselves as the removal is being deferred
         assert(m_registry.valid(ent));
         // Needs to be deferred
@@ -48,19 +48,19 @@ public:
         m_registry.emplace<Components::ComponentRemovalTag<C>...>(ent);
     }
 
-    template <Component... C> ALWAYS_INLINE bool HasAllOf(Entity ent) {
+    template <Component... C> ALWAYS_INLINE bool has_all_of(Entity ent) {
         return m_registry.all_of<C...>(ent);
     }
 
-    template <Component... C> ALWAYS_INLINE bool HasAnyOf(Entity ent) {
+    template <Component... C> ALWAYS_INLINE bool has_any_of(Entity ent) {
         return m_registry.any_of<C...>(ent);
     }
 
-    template <Component... C> ALWAYS_INLINE auto View() {
+    template <Component... C> ALWAYS_INLINE auto view() {
         return m_registry.view<C...>();
     }
 
-    ALWAYS_INLINE ECSRegistry& Registry() { return m_registry; }
+    ALWAYS_INLINE ECSRegistry& registry() { return m_registry; }
 
 private:
     // The current world is set by the application,
@@ -83,11 +83,11 @@ private:
 
         auto& func = m_componentCleanupFunctions[index];
         if (!func) {
-            func = &RemoveComponentImpl<C>;
+            func = &remove_component_impl<C>;
         }
     }
 
-    template <Component C> void RemoveComponentImpl() {
+    template <Component C> void remove_component_impl() {
         auto view = m_registry.view<const Components::ComponentRemovalTag<C>>();
         for (Entity entity : view) {
             m_registry.remove<Components::ComponentRemovalTag<C>, C>(entity);
