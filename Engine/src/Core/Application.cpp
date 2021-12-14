@@ -77,6 +77,11 @@ void Application::main_loop() {
             case SDL_KEYUP:
                 m_input.OnKey((KeyCode)event.key.keysym.sym, Input::KeyState_Released);
                 break;
+            case SDL_WINDOWEVENT:
+                if(event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+	                Rendering::Renderer::Instance()->ResizeViewport({ event.window.data1, event.window.data2 });
+                }
+                break;
             default:
                 break;
             }
