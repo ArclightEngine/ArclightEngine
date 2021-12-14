@@ -18,39 +18,39 @@ class Renderer {
 public:
 	virtual ~Renderer() = default;
 
-	virtual int Initialize(class WindowContext* context) = 0;
-	static inline Renderer* Instance() { return s_rendererInstance; }
+	virtual int initialize(class WindowContext* context) = 0;
+	static inline Renderer* instance() { return s_rendererInstance; }
 
-	virtual void Render();
-	virtual void WaitDeviceIdle() const = 0;
+	virtual void render();
+	virtual void wait_device_idle() const = 0;
 
 	////////////////////////////////////////
 	/// \brief Clear the window using the set clear colour
 	///
 	/// Not necessary on all platforms, with the notable exception of WebGL
 	////////////////////////////////////////
-	virtual void Clear() {}
+	virtual void clear() {}
 	
 	////////////////////////////////////////
 	/// \brief Resize the render viewport
 	///
 	/// Called on window resize
 	////////////////////////////////////////
-	virtual void ResizeViewport(const Vector2i& newPixelSize) = 0;
+	virtual void resize_viewport(const Vector2i& newPixelSize) = 0;
 
 	////////////////////////////////////////
 	/// \brief BInd texture to renderer
 	///
 	/// Bind texture to be used on next draw call.
 	////////////////////////////////////////
-	virtual void BindTexture(Texture::TextureHandle texture = nullptr) = 0;
+	virtual void bind_texture(Texture::TextureHandle texture = nullptr) = 0;
 
 	////////////////////////////////////////
 	/// \brief BInd pipeline to renderer
 	///
 	/// Bind pipeline to be used on next draw call.
 	////////////////////////////////////////
-	virtual void BindPipeline(RenderPipeline::PipelineHandle pipeline = Instance()->DefaultPipeline().Handle()) = 0;
+	virtual void bind_pipeline(RenderPipeline::PipelineHandle pipeline = instance()->default_pipeline().Handle()) = 0;
 
 	////////////////////////////////////////
 	/// \brief Draw
@@ -63,10 +63,10 @@ public:
 	/// \param texture Texture to use in shader
 	/// \param renderPipeline Render pipeline to use
 	////////////////////////////////////////
-	virtual void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) = 0;
+	virtual void draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) = 0;
 
 	////////////////////////////////////////
-	/// \brief CreatePipeline
+	/// \brief create_pipeline
 	///
 	///	Create a new render pipeline.
 	///
@@ -76,7 +76,7 @@ public:
 	///
 	/// \return Handle to pipeline, pipeline handles are specific to the renderer and are no more than a way to unqiuely identify pipelines internally
 	////////////////////////////////////////
-	virtual RenderPipeline::PipelineHandle CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config) = 0;
+	virtual RenderPipeline::PipelineHandle create_pipeline(const Shader& vertexShader, const Shader& fragmentShader, const RenderPipeline::PipelineFixedConfig& config) = 0;
 
 	////////////////////////////////////////
 	/// \brief DestroyPipeline
@@ -85,17 +85,17 @@ public:
 	///
 	/// \param handle Valid pipeline handle
 	////////////////////////////////////////
-	virtual void DestroyPipeline(RenderPipeline::PipelineHandle handle) = 0;
-	virtual RenderPipeline& DefaultPipeline() = 0;
+	virtual void destroy_pipeline(RenderPipeline::PipelineHandle handle) = 0;
+	virtual RenderPipeline& default_pipeline() = 0;
 
 	////////////////////////////////////////
-	/// \brief AllocateTexture
+	/// \brief allocate_texture
 	///
 	/// \param bounds Texture bounds. Enough space to store pixels in RGBA format is allocated
 	///
 	/// \return Handle to texture, texture handles are specific to the renderer and are no more than a way to unqiuely identify textures internally
 	////////////////////////////////////////
-	virtual Texture::TextureHandle AllocateTexture(const Vector2u& bounds, Texture::Format texFormat) = 0;
+	virtual Texture::TextureHandle allocate_texture(const Vector2u& bounds, Texture::Format texFormat) = 0;
 
 	////////////////////////////////////////
 	/// \brief UpdateTexture
@@ -103,18 +103,18 @@ public:
 	/// \param texture Texture handle. MUST be valid
 	/// \param data Pointer to pixel data in RGBA format. MUST be large enough to contain full texture data.
 	////////////////////////////////////////
-	virtual void UpdateTexture(Texture::TextureHandle texture, const void* data) = 0;
+	virtual void update_texture(Texture::TextureHandle texture, const void* data) = 0;
 	
 	////////////////////////////////////////
-	/// \brief DestroyTexture
+	/// \brief destroy_texture
 	///
 	///	Destroy texture. MUST be a valid handle.
 	///
 	/// \param texture Valid texture handle
 	////////////////////////////////////////
-	virtual void DestroyTexture(Texture::TextureHandle texture) = 0;
+	virtual void destroy_texture(Texture::TextureHandle texture) = 0;
 
-	virtual const std::string& GetName() const = 0;
+	virtual const std::string& get_name() const = 0;
 protected:
 	static Renderer* s_rendererInstance;
 };

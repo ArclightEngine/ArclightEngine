@@ -12,25 +12,25 @@ class DummyRenderer final : public Renderer {
 public:
     DummyRenderer() = default;
 
-    int Initialize(class WindowContext* context) override {
+    int initialize(class WindowContext* context) override {
         s_rendererInstance = this;
 
         m_defaultPipeline = std::make_unique<RenderPipeline>(m_vertShader, m_fragShader);
         return 0;
     }
 
-    void WaitDeviceIdle() const override {}
+    void wait_device_idle() const override {}
 
     RenderPipeline::PipelineHandle
-    CreatePipeline(const Shader&, const Shader&,
+    create_pipeline(const Shader&, const Shader&,
                    const RenderPipeline::PipelineFixedConfig&) override {
         return nullptr;
     }
 
-    void DestroyPipeline(RenderPipeline::PipelineHandle) override {}
-    RenderPipeline& DefaultPipeline() override { return *m_defaultPipeline; }
+    void destroy_pipeline(RenderPipeline::PipelineHandle) override {}
+    RenderPipeline& default_pipeline() override { return *m_defaultPipeline; }
 
-    void Draw(const Vertex*, unsigned, const Matrix4& transform = Matrix4(),
+    void draw(const Vertex*, unsigned, const Matrix4& transform = Matrix4(),
               Texture::TextureHandle texture = nullptr,
               RenderPipeline& pipeline = RenderPipeline::Default()) {
         (void)transform;
@@ -38,11 +38,11 @@ public:
         (void)pipeline;
     }
 
-    Texture::TextureHandle AllocateTexture(const Vector2u&) { return nullptr; }
-    void UpdateTexture(Texture::TextureHandle, const void*) override {}
-    void DestroyTexture(Texture::TextureHandle) override{};
+    Texture::TextureHandle allocate_texture(const Vector2u&) { return nullptr; }
+    void update_texture(Texture::TextureHandle, const void*) override {}
+    void destroy_texture(Texture::TextureHandle) override{};
 
-    const std::string& GetName() const override { return m_name; }
+    const std::string& get_name() const override { return m_name; }
 
 private:
     const std::string m_name = "Dummy";

@@ -35,7 +35,7 @@ GLRenderer::~GLRenderer() {
     SDL_GL_DeleteContext(m_glContext);
 }
 
-int GLRenderer::Initialize(class WindowContext* context) {
+int GLRenderer::initialize(class WindowContext* context) {
     m_windowContext = context;
 
     // OpenGL ES 3
@@ -106,22 +106,22 @@ int GLRenderer::Initialize(class WindowContext* context) {
     return 0;
 }
 
-void GLRenderer::Render() {
+void GLRenderer::render() {
     SDL_GL_SwapWindow(m_windowContext->GetWindow());
 }
 
-void GLRenderer::Clear(){
+void GLRenderer::clear(){
     // Clear screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GLRenderer::ResizeViewport(const Vector2i& newPixelSize) {
+void GLRenderer::resize_viewport(const Vector2i& newPixelSize) {
     glViewport(0, 0, newPixelSize.x, newPixelSize.y);
     UpdateViewportTransform();
 }
 
 RenderPipeline::PipelineHandle
-GLRenderer::CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader,
+GLRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
                            const RenderPipeline::PipelineFixedConfig&) {
     assert(vertexShader.GetStage() == Shader::VertexShader &&
            fragmentShader.GetStage() == Shader::FragmentShader);
@@ -134,7 +134,7 @@ GLRenderer::CreatePipeline(const Shader& vertexShader, const Shader& fragmentSha
     return pipeline;
 }
 
-void GLRenderer::DestroyPipeline(RenderPipeline::PipelineHandle pipelineHandle) {
+void GLRenderer::destroy_pipeline(RenderPipeline::PipelineHandle pipelineHandle) {
     std::unique_lock lockGL(m_glMutex);
 
     size_t erased = m_pipelines.erase(reinterpret_cast<GLPipeline*>(pipelineHandle));
@@ -144,12 +144,12 @@ void GLRenderer::DestroyPipeline(RenderPipeline::PipelineHandle pipelineHandle) 
     delete reinterpret_cast<GLPipeline*>(pipelineHandle);
 }
 
-RenderPipeline& GLRenderer::DefaultPipeline() {
+RenderPipeline& GLRenderer::default_pipeline() {
     assert(m_defaultPipeline.get());
     return *m_defaultPipeline;
 }
 
-void GLRenderer::BindPipeline(RenderPipeline::PipelineHandle pipeline) {
+void GLRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
     m_boundPipeline = reinterpret_cast<GLPipeline*>(pipeline);
     if(m_boundPipeline->GetGLProgram() != m_lastProgram){
         glCheck(glUseProgram(m_boundPipeline->GetGLProgram()));
@@ -158,7 +158,7 @@ void GLRenderer::BindPipeline(RenderPipeline::PipelineHandle pipeline) {
     }
 }
 
-void GLRenderer::BindTexture(Texture::TextureHandle texture) {
+void GLRenderer::bind_texture(Texture::TextureHandle texture) {
     if (texture) {
         GLTexture* tex = reinterpret_cast<GLTexture*>(texture);
         glActiveTexture(GL_TEXTURE0);
@@ -174,7 +174,7 @@ void GLRenderer::BindTexture(Texture::TextureHandle texture) {
     }
 }
 
-void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
+void GLRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
     auto vbo = GetVertexBufferObject(vertexCount);
     // GL_STREAM_DRAW - "Data modified once and used a few times"
     glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo.id));
@@ -198,7 +198,7 @@ void GLRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix
     glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
 }
 
-Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size, Texture::Format format) {
+Texture::TextureHandle GLRenderer::allocate_texture(const Vector2u& size, Texture::Format format) {
     std::unique_lock lockGL(m_glMutex);
 
     GLuint texID;
@@ -233,7 +233,7 @@ Texture::TextureHandle GLRenderer::AllocateTexture(const Vector2u& size, Texture
     return tex;
 }
 
-void GLRenderer::UpdateTexture(Texture::TextureHandle texHandle, const void* data) {
+void GLRenderer::update_texture(Texture::TextureHandle texHandle, const void* data) {
     std::unique_lock lockGL(m_glMutex);
 
     GLTexture* tex = reinterpret_cast<GLTexture*>(texHandle);
@@ -262,7 +262,7 @@ void GLRenderer::UpdateTexture(Texture::TextureHandle texHandle, const void* dat
     glCheck(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
-void GLRenderer::DestroyTexture(Texture::TextureHandle texHandle) {
+void GLRenderer::destroy_texture(Texture::TextureHandle texHandle) {
     std::unique_lock lockGL(m_glMutex);
 
     GLTexture* tex = reinterpret_cast<GLTexture*>(texHandle);

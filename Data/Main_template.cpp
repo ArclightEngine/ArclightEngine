@@ -3,7 +3,7 @@
 
 extern "C" {
 void GameInit() {
-    auto& app = Arclight::Application::Instance();
+    auto& app = Arclight::Application::instance();
     Arclight::Logger::Debug("Starting Game!");
 
     app.Run();

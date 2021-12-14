@@ -34,7 +34,7 @@ public:
     ////////////////////////////////////////
     bool Idle() const;
 
-    inline static ThreadPool* Instance() { return m_instance; }
+    inline static ThreadPool* instance() { return m_instance; }
 
 private:
     static ThreadPool* m_instance;

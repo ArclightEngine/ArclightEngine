@@ -9,13 +9,13 @@
 namespace Arclight::Systems {
 
 void Renderer2D(float, World& world) {
-    Rendering::Renderer& renderer = *Rendering::Renderer::Instance();
-    renderer.Clear();
+    Rendering::Renderer& renderer = *Rendering::Renderer::instance();
+    renderer.clear();
 
     auto spriteView = world.Registry().view<Sprite>();
     auto textView = world.Registry().view<Text>();
 
-    renderer.BindPipeline(renderer.DefaultPipeline().Handle());
+    renderer.bind_pipeline(renderer.default_pipeline().Handle());
     for (Entity ent : spriteView) {
         Sprite& sprite = spriteView.get<Sprite>(ent);
 
@@ -23,18 +23,18 @@ void Renderer2D(float, World& world) {
         if(sprite.texture)
             tex = sprite.texture->Handle();
 
-        renderer.BindTexture(tex);
-        renderer.Draw(sprite.vertices, 4, sprite.transform.Matrix());
+        renderer.bind_texture(tex);
+        renderer.draw(sprite.vertices, 4, sprite.transform.Matrix());
     }
 
     for(Entity ent : textView) {
         Text& text = textView.get<Text>(ent);
 
-        renderer.BindTexture(text.Tex().Handle());
-        renderer.Draw(text.Vertices(), 4, text.transform.Matrix());
+        renderer.bind_texture(text.Tex().Handle());
+        renderer.draw(text.Vertices(), 4, text.transform.Matrix());
     }
 
-    renderer.Render();
+    renderer.render();
 }
 
 } // namespace Arclight::Systems

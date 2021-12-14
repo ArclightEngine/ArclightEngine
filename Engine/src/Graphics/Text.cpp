@@ -56,7 +56,7 @@ Text::Text() {}
 
 Text::Text(const UnicodeString& text) { SetText(text); }
 
-void Text::Render() {
+void Text::render() {
     if (!m_font.get()) {
         return;
     }
@@ -198,18 +198,18 @@ void Text::Render() {
 void Text::SetFont(std::shared_ptr<Font> font) {
     m_font = std::move(font);
 
-    Render();
+    render();
 }
 
 void Text::SetText(UnicodeString text) {
     m_text = std::move(text);
 
-    Render();
+    render();
 }
 
 void Text::SetFontSize(int pixelSize) {
     m_pixelSize = pixelSize;
-    Render();
+    render();
 }
 
 } // namespace Arclight

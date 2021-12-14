@@ -71,7 +71,7 @@ VulkanRenderer::~VulkanRenderer() {
     s_rendererInstance = nullptr;
 }
 
-int VulkanRenderer::Initialize(WindowContext* windowContext) {
+int VulkanRenderer::initialize(WindowContext* windowContext) {
     assert(!s_rendererInstance);
 
     m_windowContext = windowContext;
@@ -90,19 +90,19 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
     // Create our Vulkan instance
     if (vkCreateInstance(&m_vkCreateInfo, nullptr, &m_instance) != VK_SUCCESS) {
-        Logger::Error("VulkanRenderer::Initialize: Failed to create Vulkan instance!");
+        Logger::Error("VulkanRenderer::initialize: Failed to create Vulkan instance!");
         return -1;
     }
 
     if (EnumerateGPUs()) {
         return -4;
     } else if (!m_GPUs.size()) {
-        Logger::Error("VulkanRenderer::Initialize: No available Vulkan devices!");
+        Logger::Error("VulkanRenderer::initialize: No available Vulkan devices!");
         return -5;
     }
 
     if (SelectBestGPU() || m_renderGPU == VK_NULL_HANDLE) {
-        Logger::Error("VulkanRenderer::Initialize: No suitable Vulkan devices!");
+        Logger::Error("VulkanRenderer::initialize: No suitable Vulkan devices!");
         return -5;
     }
 
@@ -123,7 +123,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
     // Create Vulkan surface with SDL
     if (!SDL_Vulkan_CreateSurface(sdlWindow, m_instance, &m_surface)) {
-        Logger::Error("VulkanRenderer::Initialize: Failed to create SDL Vulkan surface!");
+        Logger::Error("VulkanRenderer::initialize: Failed to create SDL Vulkan surface!");
         return -3;
     }
 
@@ -131,7 +131,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
     if (vkGetPhysicalDeviceSurfaceSupportKHR(m_renderGPU, m_graphicsQueueFamily, m_surface,
                                              &supportsSurface) != VK_SUCCESS ||
         !supportsSurface) {
-        Logger::Error("VulkanRenderer::Initialize: GPU does not support Vulkan surface!");
+        Logger::Error("VulkanRenderer::initialize: GPU does not support Vulkan surface!");
         return -7;
     }
 
@@ -222,7 +222,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
     };
 
     if (vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, nullptr, &m_swapchain) != VK_SUCCESS) {
-        Logger::Error("VulkanRenderer::Initialize: Failed to create swapchain!\n");
+        Logger::Error("VulkanRenderer::initialize: Failed to create swapchain!\n");
         return -8;
     }
 
@@ -343,7 +343,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 
     if (vkCreateRenderPass(m_device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
         throw std::runtime_error(
-            "VulkanRenderer::Initialize: Failed to create Vulkan render pass!");
+            "VulkanRenderer::initialize: Failed to create Vulkan render pass!");
         return -11;
     }
 
@@ -366,7 +366,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
         if (vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_framebuffers[i]) !=
             VK_SUCCESS) {
             throw std::runtime_error(
-                "VulkanRenderer::Initialize: Failed to create Vulkan framebuffer!");
+                "VulkanRenderer::initialize: Failed to create Vulkan framebuffer!");
             return -13;
         }
     }
@@ -448,7 +448,7 @@ int VulkanRenderer::Initialize(WindowContext* windowContext) {
 }
 
 RenderPipeline::PipelineHandle
-VulkanRenderer::CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader,
+VulkanRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
                                const RenderPipeline::PipelineFixedConfig& config) {
     VulkanPipeline* pipeline = new VulkanPipeline(*this, vertexShader, fragmentShader, config);
 
@@ -457,7 +457,7 @@ VulkanRenderer::CreatePipeline(const Shader& vertexShader, const Shader& fragmen
     return pipeline;
 }
 
-void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle) {
+void VulkanRenderer::destroy_pipeline(RenderPipeline::PipelineHandle handle) {
     size_t erased = m_pipelines.erase(reinterpret_cast<VulkanPipeline*>(handle));
     assert(erased ==
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
@@ -465,7 +465,7 @@ void VulkanRenderer::DestroyPipeline(RenderPipeline::PipelineHandle handle) {
     delete reinterpret_cast<VulkanPipeline*>(handle);
 }
 
-Texture::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds, Texture::Format format) {
+Texture::TextureHandle VulkanRenderer::allocate_texture(const Vector2u& bounds, Texture::Format format) {
     VulkanTexture* texture = new VulkanTexture(*this, bounds, TextureToVkFormat(format));
 
     m_textures.insert(texture);
@@ -473,7 +473,7 @@ Texture::TextureHandle VulkanRenderer::AllocateTexture(const Vector2u& bounds, T
     return texture;
 }
 
-void VulkanRenderer::UpdateTexture(Texture::TextureHandle texture, const void* data) {
+void VulkanRenderer::update_texture(Texture::TextureHandle texture, const void* data) {
     assert(m_textures.contains(reinterpret_cast<VulkanTexture*>(texture)));
 
     VulkanTexture* vkTex = reinterpret_cast<VulkanTexture*>(texture);
@@ -482,7 +482,7 @@ void VulkanRenderer::UpdateTexture(Texture::TextureHandle texture, const void* d
     vkTex->UpdateTextureImage();
 }
 
-void VulkanRenderer::DestroyTexture(Texture::TextureHandle texture) {
+void VulkanRenderer::destroy_texture(Texture::TextureHandle texture) {
     if(texture == nullptr) {
         return;
     }
@@ -501,8 +501,8 @@ void VulkanRenderer::DestroyTexture(Texture::TextureHandle texture) {
     delete reinterpret_cast<VulkanTexture*>(texture);
 }
 
-void VulkanRenderer::Render() {
-    Renderer::Render();
+void VulkanRenderer::render() {
+    Renderer::render();
 
     EndRenderPass();
     EndFrame();
@@ -511,11 +511,11 @@ void VulkanRenderer::Render() {
     BeginRenderPass();
 }
 
-void VulkanRenderer::WaitDeviceIdle() const { vkDeviceWaitIdle(m_device); }
+void VulkanRenderer::wait_device_idle() const { vkDeviceWaitIdle(m_device); }
 
-RenderPipeline& VulkanRenderer::DefaultPipeline() { return *m_defaultPipeline; }
+RenderPipeline& VulkanRenderer::default_pipeline() { return *m_defaultPipeline; }
 
-void VulkanRenderer::ResizeViewport(const Vector2i&) {
+void VulkanRenderer::resize_viewport(const Vector2i&) {
     // Recreate the swapchain
     vkDeviceWaitIdle(m_device);
     vkQueueWaitIdle(m_graphicsQueue);
@@ -537,7 +537,7 @@ void VulkanRenderer::ResizeViewport(const Vector2i&) {
 
     if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_renderGPU, m_surface,
                                                   &m_swapchainSurfaceCapabilities) != VK_SUCCESS) {
-        throw std::runtime_error("VulkanRenderer::ResizeViewport: Failed to get surface "
+        throw std::runtime_error("VulkanRenderer::resize_viewport: Failed to get surface "
                                  "capabilities!"); // This function does not return on failure,
                                                    // throw an exception
     }
@@ -679,7 +679,7 @@ void VulkanRenderer::ResizeViewport(const Vector2i&) {
     BeginRenderPass();
 }
 
-void VulkanRenderer::BindTexture(Texture::TextureHandle texture) {
+void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
     m_boundTexture = reinterpret_cast<VulkanTexture*>(texture);
 
     if (texture) {
@@ -718,13 +718,13 @@ void VulkanRenderer::BindTexture(Texture::TextureHandle texture) {
     }
 }
 
-void VulkanRenderer::BindPipeline(RenderPipeline::PipelineHandle pipeline) {
+void VulkanRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
     m_boundPipeline = reinterpret_cast<VulkanPipeline*>(pipeline);
 }
 
-void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
+void VulkanRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
     if (vertexCount > 4) {
-        throw std::runtime_error("VulkanRenderer::Draw: vertexCount too large!");
+        throw std::runtime_error("VulkanRenderer::draw: vertexCount too large!");
     }
 
     // Only rebind the pipeline and descriptor sets
@@ -758,7 +758,7 @@ void VulkanRenderer::Draw(const Vertex* vertices, unsigned vertexCount, const Ma
 
     FrameVertexBuffer& vBuffer = m_frames[m_currentFrame].vertexBuffer;
     if(vBuffer.nextIndex + vertexCount > vBuffer.vertexBuffer.size){
-        Logger::Warning("VulkanRenderer::Draw: Vertex buffer full!");
+        Logger::Warning("VulkanRenderer::draw: Vertex buffer full!");
         vBuffer.nextIndex = 0;
         vBuffer.reallocationSize = vBuffer.vertexBuffer.size * 2;
     }
@@ -902,14 +902,14 @@ int VulkanRenderer::LoadExtensions() {
     // Get the amount of Vulkan instance extensions from SDL
     unsigned int eCount;
     if (!SDL_Vulkan_GetInstanceExtensions(sdlWindow, &eCount, nullptr)) {
-        Logger::Error("VulkanRenderer::Initialize: Failed to get SDL Vulkan Extensions!\n");
+        Logger::Error("VulkanRenderer::initialize: Failed to get SDL Vulkan Extensions!\n");
         return -2;
     }
 
     // Get the actual extension names
     m_vkExtensions.resize(eCount);
     if (!SDL_Vulkan_GetInstanceExtensions(sdlWindow, &eCount, m_vkExtensions.data())) {
-        Logger::Error("VulkanRenderer::Initialize: Failed to get SDL Vulkan Extensions!\n");
+        Logger::Error("VulkanRenderer::initialize: Failed to get SDL Vulkan Extensions!\n");
         return -2;
     }
 

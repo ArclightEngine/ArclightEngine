@@ -232,10 +232,10 @@ void MenuInit(float, World& world) {
     Entity footnoteEntity = world.CreateEntity();
     Entity controlsEntity = world.CreateEntity();
 
-    WindowContext* window = WindowContext::Instance();
+    WindowContext* window = WindowContext::instance();
 
     std::shared_ptr<Font> font =
-        ResourceManager::Instance().GetResource<Font>("assets/inconsolata.ttf");
+        ResourceManager::instance().GetResource<Font>("assets/inconsolata.ttf");
     assert(font.get());
 
     Text text("Lightris");
@@ -265,8 +265,8 @@ void MenuInit(float, World& world) {
 
 void MenuSystem(float, World& world) {
     if (Input::GetKeyPress(KeyCode_R)) {
-        Application::Instance().commands.LoadState<StateGame>();
-        Application::Instance().commands.LoadWorld(std::make_shared<World>());
+        Application::instance().commands.load_state<StateGame>();
+        Application::instance().commands.load_world(std::make_shared<World>());
     }
 }
 
@@ -299,7 +299,7 @@ void BoardInit(float, World& world) {
 
     srand(time(NULL));
 
-    WindowContext& window = *WindowContext::Instance();
+    WindowContext& window = *WindowContext::instance();
     boardScreenPos.x = window.GetSize().x / 2 - (BOARD_WIDTH / 2 * BLOCK_SIZE);
     boardScreenPos.y = BLOCK_SIZE;
 
@@ -689,14 +689,14 @@ void QueueSystem(float, World& world) {
 
 extern "C" {
 void GameInit() {
-    auto& app = Application::Instance();
+    auto& app = Application::instance();
     Logger::Debug("Starting Game!");
 
-    app.Window().SetTitle("Lightris");
-    app.Window().SetSize({704, 704});
+    app.window().SetTitle("Lightris");
+    app.window().SetSize({704, 704});
 
-    auto blockImage = ResourceManager::Instance().GetResource<Image>("assets/block.png");
-    auto boardImage = ResourceManager::Instance().GetResource<Image>("assets/board.png");
+    auto blockImage = ResourceManager::instance().GetResource<Image>("assets/block.png");
+    auto boardImage = ResourceManager::instance().GetResource<Image>("assets/board.png");
     assert(blockImage.get());
     assert(boardImage.get());
 
@@ -706,19 +706,19 @@ void GameInit() {
 
     StdoutFPSCounter fpsCounter;
 
-    app.AddState<StateMenu>();
-    app.AddState<StateGame>();
-    app.commands.LoadState<StateMenu>();
+    app.add_state<StateMenu>();
+    app.add_state<StateGame>();
+    app.commands.load_state<StateMenu>();
 
-    app.AddSystem<Systems::Renderer2D>();
-    app.AddSystem<StdoutFPSCounter, &StdoutFPSCounter::Tick, Application::When::Tick>(fpsCounter);
-    app.AddSystem<MenuInit, Application::When::Init, StateMenu>();
-    app.AddSystem<MenuSystem, Application::When::Tick, StateMenu>();
-    app.AddSystem<BoardInit, Application::When::Init, StateGame>();
-    app.AddSystem<BoardSystem, Application::When::Tick, StateGame>();
-    app.AddSystem<QueueSystem, Application::When::Tick, StateGame>();
+    app.add_system<Systems::Renderer2D>();
+    app.add_system<StdoutFPSCounter, &StdoutFPSCounter::Tick, Application::When::Tick>(fpsCounter);
+    app.add_system<MenuInit, Application::When::Init, StateMenu>();
+    app.add_system<MenuSystem, Application::When::Tick, StateMenu>();
+    app.add_system<BoardInit, Application::When::Init, StateGame>();
+    app.add_system<BoardSystem, Application::When::Tick, StateGame>();
+    app.add_system<QueueSystem, Application::When::Tick, StateGame>();
 
-    app.Run();
+    app.run();
 
     delete blockTexture;
 }

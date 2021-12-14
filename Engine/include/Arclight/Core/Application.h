@@ -29,26 +29,28 @@ public:
 
     Application();
 
-    static ALWAYS_INLINE Application& Instance() { return *s_instance; }
+    static ALWAYS_INLINE Application& instance() { return *s_instance; }
 
     // Returns WindowContext for Application
-    // Should be used as opposed to WindowContext::Instance();
-    static WindowContext& Window() { return *WindowContext::Instance(); }
+    // Should be used as opposed to WindowContext::instance();
+    static WindowContext& window() { return *WindowContext::instance(); }
 
-    void Run();
-    void MainLoop();
+    void run();
+    void main_loop();
 
-    void Exit();
+    void exit();
 
     // For now we do not allow runtime definition of states
     // Ensure states are statically defined by using templates
-    template <State s> void AddState() {
+    template <State s> Application& add_state() {
         static_assert(s >= 0);
         m_states[s]; // Default initialize
+
+        return *this;
     }
 
     template<void(*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
-    ALWAYS_INLINE void AddSystem() {
+    ALWAYS_INLINE Application& add_system() {
         if constexpr(s == StateNone){
             if constexpr(when == When::Init) {
                 m_globalSystems.init.push_back(new System<Function>());
@@ -66,10 +68,12 @@ public:
                 m_states.at(s).exit.push_back(new System<Function>());
             }
         }
+
+        return *this;
     }
 
     template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
-    ALWAYS_INLINE void AddSystem(Clazz& ref) {
+    ALWAYS_INLINE Application& add_system(Clazz& ref) {
         if constexpr(s == StateNone){
             if constexpr(when == When::Init) {
                 m_globalSystems.init.push_back(new ClassSystem<Clazz, Function>(ref));
@@ -87,6 +91,8 @@ public:
                 m_states.at(s).exit.push_back(new ClassSystem<Clazz, Function>(ref));
             }
         }
+
+        return *this;
     }
 
     // Command pattern
@@ -97,13 +103,13 @@ public:
     public:
         ALWAYS_INLINE Commands(Application& app) : m_app(app) {}
 
-        template <State s> ALWAYS_INLINE void LoadState() { m_app.LoadStateImpl(s); }
+        template <State s> ALWAYS_INLINE void load_state() { m_app.load_state_impl(s); }
 
-        template <State s> ALWAYS_INLINE void PushState() { m_app.PushStateImpl(s); }
+        template <State s> ALWAYS_INLINE void push_state() { m_app.push_state_impl(s); }
 
-        ALWAYS_INLINE void PopState() { m_app.PopStateImpl(); }
+        ALWAYS_INLINE void pop_state() { m_app.pop_state_impl(); }
 
-        ALWAYS_INLINE void LoadWorld(std::shared_ptr<World> newWorld) { m_app.LoadWorldImpl(newWorld); }
+        ALWAYS_INLINE void load_world(std::shared_ptr<World> newWorld) { m_app.load_world_impl(newWorld); }
 
     private:
         Application& m_app;
@@ -112,15 +118,15 @@ public:
 private:
     static Application* s_instance;
 
-    void RunStateInitSystems();
-    void RunStateExitSystems();
-    void ProcessJobQueue();
-    void ProcessDeferQueue();
+    void run_state_init_systems();
+    void run_state_exit_systems();
+    void process_job_queue();
+    void process_defer_queue();
 
-    void LoadStateImpl(State s);
-    void PushStateImpl(State s);
-    void PopStateImpl();
-    void LoadWorldImpl(std::shared_ptr<World> world);
+    void load_state_impl(State s);
+    void push_state_impl(State s);
+    void pop_state_impl();
+    void load_world_impl(std::shared_ptr<World> world);
 
     // Frame delay in us
     const long m_frameDelay = 1000000 / 120;

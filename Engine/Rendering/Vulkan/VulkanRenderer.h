@@ -32,32 +32,32 @@ class VulkanRenderer final : public Renderer {
 public:
     ~VulkanRenderer();
 
-    int Initialize(WindowContext* windowContext);
+    int initialize(WindowContext* windowContext);
 
-    void Render();
-    void WaitDeviceIdle() const;
+    void render();
+    void wait_device_idle() const;
 
-    void ResizeViewport(const Vector2i& pixelSize) override;
+    void resize_viewport(const Vector2i& pixelSize) override;
 
     // Get the default RenderPipeline
-    RenderPipeline& DefaultPipeline();
+    RenderPipeline& default_pipeline();
 
-    void BindPipeline(RenderPipeline::PipelineHandle pipeline) override;
-    void BindTexture(Texture::TextureHandle texture) override;
+    void bind_pipeline(RenderPipeline::PipelineHandle pipeline) override;
+    void bind_texture(Texture::TextureHandle texture) override;
 
     // Draw Primitives
-    void Draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
+    void draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
 
-    const std::string& GetName() const { return m_rendererName; }
+    const std::string& get_name() const { return m_rendererName; }
 
     RenderPipeline::PipelineHandle
-    CreatePipeline(const Shader& vertexShader, const Shader& fragmentShader,
+    create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
                    const RenderPipeline::PipelineFixedConfig& config);
-    void DestroyPipeline(RenderPipeline::PipelineHandle handle);
+    void destroy_pipeline(RenderPipeline::PipelineHandle handle);
 
-    Texture::TextureHandle AllocateTexture(const Vector2u& bounds, Texture::Format format);
-    void UpdateTexture(Texture::TextureHandle texture, const void* data);
-    void DestroyTexture(Texture::TextureHandle texture);
+    Texture::TextureHandle allocate_texture(const Vector2u& bounds, Texture::Format format);
+    void update_texture(Texture::TextureHandle texture, const void* data);
+    void destroy_texture(Texture::TextureHandle texture);
 
     constexpr VkFormat TextureToVkFormat(Texture::Format format) {
         switch (format) {

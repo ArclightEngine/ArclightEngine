@@ -8,7 +8,7 @@
 
 namespace Arclight::Rendering {
 
-void Renderer::Render(){
+void Renderer::render(){
 	
 }
 

@@ -16,8 +16,8 @@
 #include <emscripten.h>
 
 static void emscripten_main_loop() {
-    static Arclight::Application* appInstance = &Arclight::Application::Instance();
-    appInstance->MainLoop();
+    static Arclight::Application* appInstance = &Arclight::Application::instance();
+    appInstance->main_loop();
 }
 #endif
 
@@ -35,15 +35,15 @@ Application::Application() {
     World::s_currentWorld = m_currentWorld.get();
 }
 
-void Application::Run() {
+void Application::run() {
     for (auto& sys : m_globalSystems.init) {
         m_threadPool.Schedule(*sys);
     }
 
     // A system may have queued a world or state change
-    ProcessDeferQueue();
+    process_defer_queue();
 
-    Rendering::Renderer::Instance()->Render();
+    Rendering::Renderer::instance()->render();
 
 #ifdef ARCLIGHT_PLATFORM_WASM
     // This function makes sure we yield to the browser
@@ -52,7 +52,7 @@ void Application::Run() {
     while (m_isRunning) {
         m_timer.Reset();
 
-        MainLoop();
+        main_loop();
 
         long elapsed = m_timer.Elapsed();
         long waitTime = m_frameDelay - elapsed;
@@ -63,7 +63,7 @@ void Application::Run() {
 #endif
 }
 
-void Application::MainLoop() {
+void Application::main_loop() {
     auto pollEvents = [&]() -> void {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -101,15 +101,15 @@ void Application::MainLoop() {
         }
     }
 
-    ProcessJobQueue();
+    process_job_queue();
     World::s_currentWorld->Cleanup();
-    ProcessDeferQueue();
+    process_defer_queue();
 
     while (m_pendingStateChange) {
 #ifdef ARCLIGHT_STATE_DEBUG
         Logger::Debug("Running exit systems!");
 #endif
-        RunStateExitSystems();
+        run_state_exit_systems();
 
 #ifdef ARCLIGHT_STATE_DEBUG
         Logger::Debug("Processing state change!");
@@ -123,13 +123,13 @@ void Application::MainLoop() {
         m_pendingStateChange.s = -1;
 
         // A system may have queued a world or state change
-        RunStateInitSystems();
+        run_state_init_systems();
     }
 }
 
-void Application::Exit() { m_isRunning = false; }
+void Application::exit() { m_isRunning = false; }
 
-void Application::RunStateInitSystems(){
+void Application::run_state_init_systems(){
     if(m_currentState){
         for (auto& sys : m_currentState->init) {
             sys->Init();
@@ -141,39 +141,39 @@ void Application::RunStateInitSystems(){
             sys->Init();
         }
 
-        ProcessJobQueue();
+        process_job_queue();
         World::s_currentWorld->Cleanup();
-        ProcessDeferQueue();
+        process_defer_queue();
     }
 }
 
-void Application::RunStateExitSystems(){
+void Application::run_state_exit_systems(){
     if(m_currentState){
         for (auto& sys : m_currentState->exit) {
             m_threadPool.Schedule(*sys);
         }
         
-        ProcessJobQueue();
+        process_job_queue();
         World::s_currentWorld->Cleanup();
-        ProcessDeferQueue();
+        process_defer_queue();
     }
 }
 
-void Application::ProcessJobQueue() {
+void Application::process_job_queue() {
     m_threadPool.Run();
 
     while (!m_threadPool.Idle())
         ; // We shouldn't really busy wait
 }
 
-void Application::ProcessDeferQueue() {
+void Application::process_defer_queue() {
     while (!m_deferQueue.empty()) {
         m_deferQueue.front()();
         m_deferQueue.pop();
     }
 }
 
-void Application::PopStateImpl() {
+void Application::pop_state_impl() {
     if (m_pendingStateChange) {
         throw std::runtime_error("State change already queued!");
     }
@@ -182,7 +182,7 @@ void Application::PopStateImpl() {
     m_deferQueue.push([this] { m_stateManager.Pop(); });
 }
 
-void Application::PushStateImpl(State s) {
+void Application::push_state_impl(State s) {
     if (m_pendingStateChange) {
         throw std::runtime_error("State change already queued!");
     }
@@ -191,7 +191,7 @@ void Application::PushStateImpl(State s) {
     m_deferQueue.push([this] { m_stateManager.Push(m_pendingStateChange.s); });
 }
 
-void Application::LoadStateImpl(State s) {
+void Application::load_state_impl(State s) {
     if (m_pendingStateChange) {
         throw std::runtime_error("State change already queued!");
     }
@@ -201,7 +201,7 @@ void Application::LoadStateImpl(State s) {
     m_deferQueue.push([this] { m_stateManager.Swap(m_pendingStateChange.s); });
 }
 
-void Application::LoadWorldImpl(std::shared_ptr<World> world) {
+void Application::load_world_impl(std::shared_ptr<World> world) {
     m_deferQueue.push([this, world] {
         m_currentWorld = std::move(world);
         World::s_currentWorld = m_currentWorld.get();

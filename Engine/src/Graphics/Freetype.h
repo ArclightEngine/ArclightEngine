@@ -19,7 +19,7 @@ class FreeType {
 public:
     FreeType();
 
-    static inline FreeType& Instance() {
+    static inline FreeType& instance() {
         assert(m_instance);
         return *m_instance;
     }

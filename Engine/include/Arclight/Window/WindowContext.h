@@ -14,7 +14,7 @@ public:
     WindowContext(SDL_Window* window);
     ~WindowContext();
 
-    static inline WindowContext* Instance() { return m_instance; }
+    static inline WindowContext* instance() { return m_instance; }
     inline SDL_Window* GetWindow() { return m_window; }
 
     // Returns a Vector2i containing the window size
