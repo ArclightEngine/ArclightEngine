@@ -50,7 +50,7 @@ public:
 	///
 	/// Bind pipeline to be used on next draw call.
 	////////////////////////////////////////
-	virtual void bind_pipeline(RenderPipeline::PipelineHandle pipeline = instance()->default_pipeline().Handle()) = 0;
+	virtual void bind_pipeline(RenderPipeline::PipelineHandle pipeline = instance()->default_pipeline().handle()) = 0;
 
 	////////////////////////////////////////
 	/// \brief Draw

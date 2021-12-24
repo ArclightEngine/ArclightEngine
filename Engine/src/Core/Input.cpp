@@ -1,6 +1,5 @@
 #include <Arclight/Core/Input.h>
-
-#include <stdexcept>
+#include <Arclight/Core/Fatal.h>
 
 namespace Arclight {
 
@@ -10,7 +9,7 @@ Input::Input(){
     // TODO: For now it is a given that the singleton is initialzied before it is accessed by threads however we may want to consider thread-safety
 
     if(m_instance){
-        throw std::runtime_error("Instance of Input already exists!");
+        FatalRuntimeError("Instance of Input already exists!");
     }
 
     m_instance = this;

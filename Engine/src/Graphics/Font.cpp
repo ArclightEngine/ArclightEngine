@@ -1,8 +1,8 @@
 #include <Arclight/Graphics/Font.h>
 
 #include <cassert>
-#include <stdexcept>
 
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/File.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/UnicodeString.h>
@@ -30,17 +30,18 @@ int Font::LoadImpl() {
 
     File* file = File::Open(m_filesystemPath);
     if (!file) {
-        Logger::Error("Error opening font face '", m_filesystemPath, "'.");
+        Logger::Error("Error opening font face '{}'.", m_filesystemPath);
 
         m_handle = nullptr;
         return -1;
     }
 
-    FT_Error e = FreeType::instance().NewFace(file, 0, reinterpret_cast<FT_Face*>(&m_handle), m_fontData);
+    FT_Error e =
+        FreeType::instance().NewFace(file, 0, reinterpret_cast<FT_Face*>(&m_handle), m_fontData);
     delete file;
 
     if (e) {
-        Logger::Error("Error ", e, " loading font face '", m_filesystemPath, "'.");
+        Logger::Error("Error {} loading font face '{}'", e, m_filesystemPath);
 
         m_handle = nullptr;
         return e;

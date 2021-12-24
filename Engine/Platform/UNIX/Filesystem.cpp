@@ -1,10 +1,11 @@
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/File.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Platform/Platform.h>
 
 #include <cassert>
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -36,7 +37,7 @@ public:
             uMode = R_OK | W_OK;
             break;
         default:
-            throw std::runtime_error("Invalid file access mode!");
+            FatalRuntimeError("Invalid file access mode!");
             break;
         }
 
@@ -46,13 +47,9 @@ public:
     bool IsOpen() const override { return m_file; }
     bool IsEOF() const override { return feof(m_file) != 0; }
 
-    int Seek(size_t off) override {
-        return fseeko(m_file, off, SEEK_SET);
-    }
+    int Seek(size_t off) override { return fseeko(m_file, off, SEEK_SET); }
 
-    ssize_t Tell() const override {
-        return ftello(m_file);
-    }
+    ssize_t Tell() const override { return ftello(m_file); }
 
     ssize_t GetSize() const override {
         assert(IsOpen());
@@ -68,8 +65,8 @@ public:
     }
 
     ssize_t Read(void* buffer, size_t size, Error* e) override {
-        if(!IsOpen()){
-            if(e){
+        if (!IsOpen()) {
+            if (e) {
                 *e = Error_FileNotOpen;
             }
             return -1;
@@ -79,8 +76,8 @@ public:
     }
 
     ssize_t Write(const void* buffer, size_t size, Error* e) override {
-        if(!IsOpen()){
-            if(e){
+        if (!IsOpen()) {
+            if (e) {
                 *e = Error_FileNotOpen;
             }
             return -1;
@@ -98,7 +95,7 @@ bool _Access(const UnicodeString& upath, int mode) {
     upath.toUTF8String<std::string>(path);
 
     if (access(path.c_str(), OSFile::ToUNIXAccessMode(mode)) != 0) {
-        Logger::Error("Failed to access ", path, ": ", strerror(errno));
+        Logger::Error("Failed to access {}: {}", path, strerror(errno));
         return false;
     }
 
@@ -113,7 +110,7 @@ File* _OpenFile(const UnicodeString& upath, int mode, Error* e) {
     // The only reserved character is the null terminator and '/' separator
 
     const char* cMode = "r";
-    switch(mode & File::OpenAccess){
+    switch (mode & File::OpenAccess) {
     case File::OpenWrite:
         cMode = "w";
         break;
@@ -127,7 +124,7 @@ File* _OpenFile(const UnicodeString& upath, int mode, Error* e) {
 
     FILE* filep = nullptr;
     if (!(filep = fopen(path.c_str(), cMode))) {
-        Logger::Error("Failed to open ", path, ": ", strerror(errno));
+        Logger::Error("Failed to access {}: {}", path, strerror(errno));
         if (e) {
             switch (errno) {
             case EACCES:
@@ -149,4 +146,4 @@ File* _OpenFile(const UnicodeString& upath, int mode, Error* e) {
     return new OSFile(filep);
 }
 
-} // namespace Arclight
+} // namespace Arclight::Platform

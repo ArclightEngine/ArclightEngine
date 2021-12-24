@@ -1,9 +1,10 @@
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Platform/Platform.h>
 #include <Arclight/Window/WindowContext.h>
+
 #include <cassert>
-#include <stdexcept>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_video.h>
@@ -50,14 +51,14 @@ const Uint32 platformSDLWindowFlags = SDL_WINDOW_RESIZABLE;
 void Initialize() {
     int sdlError = SDL_Init(platformSDLInitFlags);
     if (sdlError) {
-        Logger::Error("Error \"", SDL_GetError(), "\" Initializing SDL!");
+        Logger::Error("Error \"{}\" Initializing SDL!", SDL_GetError());
         exit(1);
     }
 
     sdlWindow = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480,
                                  platformSDLWindowFlags);
     if (!sdlWindow) {
-        Logger::Error("Error \"", SDL_GetError(), "\" creating SDL window!");
+        Logger::Error("Error \"{}\" creating SDL window!", SDL_GetError());
         exit(1);
     }
 
@@ -79,7 +80,7 @@ void Initialize() {
 
 #ifdef ARCLIGHT_OPENGL
     Rendering::GLRenderer* glRenderer = new Rendering::GLRenderer();
-    if(!glRenderer->initialize(windowContext)){
+    if (!glRenderer->initialize(windowContext)) {
         renderers.push_back(glRenderer);
     }
 #endif

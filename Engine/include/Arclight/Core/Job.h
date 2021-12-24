@@ -9,7 +9,7 @@ public:
 
     // May be called to reset any timers, etc.
     virtual void Init() {};
-    virtual void Run() = 0;
+    virtual void run() = 0;
 
 protected:
     Job() = default;

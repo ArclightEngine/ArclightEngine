@@ -1,6 +1,6 @@
 #include "VulkanPrivate.h"
 
-#include <stdexcept>
+#include <Arclight/Core/Fatal.h>
 
 namespace Arclight::Rendering {
 
@@ -52,7 +52,7 @@ void VulkanImageLayoutTransition(VkCommandBuffer commandBuffer, VkImage image,
         srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     } else {
-        throw std::runtime_error("VulkanImageLayoutTransition: Invalid image layout!");
+        FatalRuntimeError("VulkanImageLayoutTransition: Invalid image layout!");
     }
 
     vkCmdPipelineBarrier(commandBuffer, srcStage, destStage, 0, 0, nullptr, 0, nullptr, 1,

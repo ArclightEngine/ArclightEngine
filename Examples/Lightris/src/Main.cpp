@@ -3,9 +3,9 @@
 #include <Arclight/Core/Input.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
+#include <Arclight/Components/Sprite.h>
 #include <Arclight/ECS/World.h>
 #include <Arclight/Graphics/Image.h>
-#include <Arclight/Graphics/Sprite.h>
 #include <Arclight/Graphics/Text.h>
 #include <Arclight/Graphics/Texture.h>
 #include <Arclight/Systems/Renderer2D.h>
@@ -520,7 +520,6 @@ void ClearLinesIfNeeded(World& world, Board& board) {
 
         // Line is full, clear it
         if (lineIsFull) {
-            Logger::Debug("Line ", y, " cleared!");
             hasClearedLine = true;
 
             DestroyLineEntities(world, board[y]);
@@ -710,13 +709,13 @@ void GameInit() {
     app.add_state<StateGame>();
     app.commands.load_state<StateMenu>();
 
-    app.add_system<Systems::Renderer2D>();
-    app.add_system<StdoutFPSCounter, &StdoutFPSCounter::Tick, Application::When::Tick>(fpsCounter);
-    app.add_system<MenuInit, Application::When::Init, StateMenu>();
-    app.add_system<MenuSystem, Application::When::Tick, StateMenu>();
-    app.add_system<BoardInit, Application::When::Init, StateGame>();
-    app.add_system<BoardSystem, Application::When::Tick, StateGame>();
-    app.add_system<QueueSystem, Application::When::Tick, StateGame>();
+    app.add_system<Systems::renderer_2d, Application::Stage::PostTick>();
+    app.add_system<StdoutFPSCounter, &StdoutFPSCounter::Tick, Application::Stage::Tick>(fpsCounter);
+    app.add_system<MenuInit, Application::Stage::Init, StateMenu>();
+    app.add_system<MenuSystem, Application::Stage::Tick, StateMenu>();
+    app.add_system<BoardInit, Application::Stage::Init, StateGame>();
+    app.add_system<BoardSystem, Application::Stage::Tick, StateGame>();
+    app.add_system<QueueSystem, Application::Stage::Tick, StateGame>();
 
     app.run();
 

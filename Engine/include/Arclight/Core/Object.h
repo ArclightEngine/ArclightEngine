@@ -3,7 +3,6 @@
 // See Documentation/Engine/Core/Objects.md
 
 #include <memory>
-#include <stdexcept>
 #include <string_view>
 
 #include <Arclight/Core/Util.h>
@@ -45,9 +44,8 @@ public:
 private:
 };
 
-template<typename T, typename U>
-std::shared_ptr<T> ObjectCast(const std::shared_ptr<U>& ptr) {
-    if(ptr->IsObject(T::ObjectTypeStatic())) {
+template <typename T, typename U> std::shared_ptr<T> ObjectCast(const std::shared_ptr<U>& ptr) {
+    if (ptr->IsObject(T::ObjectTypeStatic())) {
         return static_pointer_cast<T>(ptr);
     }
 

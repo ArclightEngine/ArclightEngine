@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     getcwd(cwd, 4096);
 
     Platform::Initialize();
-    Logger::Debug("Using renderer: ", Rendering::Renderer::instance()->get_name());
+    Logger::Debug("Using renderer: {}", Rendering::Renderer::instance()->get_name());
 
     Application app;
 
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     void (*InitFunc)(void) = GameInit;
 #elif defined(ARCLIGHT_PLATFORM_UNIX)
     std::string gamePath = std::string(cwd) + "/" + "game.so";
-    Logger::Debug("Loading game executable: ", gamePath);
+    Logger::Debug("Loading game executable: {}", gamePath);
 
     void* game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
     if (!game) {
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
         game = dlopen(gamePath.c_str(), RTLD_GLOBAL | RTLD_NOW);
 
         if (!game) {
-            Logger::Debug("Error loading ", dlerror());
+            Logger::Debug("Error loading {}", dlerror());
             return 1;
         }
     }

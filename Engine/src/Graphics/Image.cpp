@@ -1,10 +1,9 @@
 #include <Arclight/Graphics/Image.h>
 
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/File.h>
 #include <Arclight/Core/Resource.h>
 #include <Arclight/Core/ResourceManager.h>
-
-#include <stdexcept>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -42,7 +41,7 @@ int Image::LoadImpl() {
     delete file;
 
     if (channels != 4) {
-        throw std::runtime_error(
+        FatalRuntimeError(
             "Image::LoadResource: Failed to load image from resource, expected 4 channels.");
         return 1;
     }

@@ -1,8 +1,8 @@
 #include <Arclight/Graphics/Text.h>
 
 #include <cassert>
-#include <stdexcept>
 
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/File.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Graphics/Texture.h>
@@ -20,8 +20,8 @@ FreeType::FreeType() {
     Arclight::Logger::Debug("Initializing Freetype!");
 
     if (FT_Error e = FT_Init_FreeType(&m_library); e) {
-        Arclight::Logger::Error("Error ", FT_Error_String(e), " initializing freetype!");
-        throw std::runtime_error("Failed to initialize Freetype!");
+        Arclight::Logger::Error("Error {} initializing freetype!", FT_Error_String(e));
+        FatalRuntimeError("Failed to initialize Freetype!");
     }
 }
 
@@ -79,10 +79,10 @@ void Text::render() {
     icu::StringCharacterIterator it(m_text);
     UChar32 codepoint = it.next32PostInc();
     while (codepoint != icu::StringCharacterIterator::DONE) {
-        if(codepoint == '\n'){
+        if (codepoint == '\n') {
             texBounds.y += pixelLineHeight;
             glyphs.push_back('\n');
-        } else if(codepoint != '\r') { // Ignore carriage returns
+        } else if (codepoint != '\r') { // Ignore carriage returns
             glyphs.push_back(FT_Get_Char_Index(face, codepoint));
         }
 
@@ -95,7 +95,7 @@ void Text::render() {
 
     unsigned int prevGlyph = 0;
     for (unsigned int glyph : glyphs) {
-        if(glyph == '\n'){
+        if (glyph == '\n') {
             continue;
         }
 
@@ -137,7 +137,7 @@ void Text::render() {
     int yPos = 0;
     prevGlyph = 0;
     for (unsigned int glyph : glyphs) {
-        if(glyph == '\n'){
+        if (glyph == '\n') {
             yPos += static_cast<int>(pixelLineHeight);
             xPos = 0;
             continue;

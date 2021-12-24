@@ -32,5 +32,5 @@ static constexpr inline const char* GLErrorString(GLuint error) {
         assert(glGetError() == GL_NO_ERROR);                                                       \
         (x);                                                                                       \
         if (auto e = glGetError(); e != GL_NO_ERROR)                                               \
-            FatalRuntimeError("glCheck failed with error of ", GLErrorString(e), " (", e, ")");     \
+            FatalRuntimeError("glCheck failed with error of {} ({})", GLErrorString(e), e);     \
     }

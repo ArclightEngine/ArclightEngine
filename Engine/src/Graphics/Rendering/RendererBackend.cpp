@@ -1,17 +1,13 @@
 #include <Arclight/Graphics/Rendering/Renderer.h>
 
-#include <Arclight/Core/ThreadPool.h>
 #include <Arclight/Core/Job.h>
+#include <Arclight/Core/ThreadPool.h>
 
 #include <cassert>
-#include <stdexcept>
-
 namespace Arclight::Rendering {
 
-void Renderer::render(){
-	
-}
+void Renderer::render() {}
 
 Renderer* Renderer::s_rendererInstance = nullptr;
 
-} // namespace Rendering
+} // namespace Arclight::Rendering

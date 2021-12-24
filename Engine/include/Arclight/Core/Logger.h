@@ -1,54 +1,46 @@
 #pragma once
 
-#include <iostream>
-
 #include <Arclight/Core/UnicodeString.h>
+#include <Arclight/Core/Util.h>
+
+#include <cassert>
+
+#define FMT_EXCEPTIONS 0
+
+#include <fmt/core.h>
+#include <fmt/format.h>
+
+
+template <> struct fmt::formatter<Arclight::UnicodeString> : fmt::formatter<std::string> {
+    template <typename Ctx> auto format(const Arclight::UnicodeString& s, Ctx& ctx) {
+        std::string utf8String;
+        s.toUTF8String(utf8String);
+        return formatter<std::string>::format(utf8String, ctx);
+    }
+};
 
 namespace Arclight{
 namespace Logger {
 
-template<typename Arg>
-void Log(const Arg& arg){
-    std::cout << arg;
+template<typename F, typename ...Args>
+ALWAYS_INLINE void Debug(const F& f, Args&&... args){
+    fmt::print(stderr, "[Arclight] [Debug] ");
+    fmt::vprint(stderr, f, fmt::make_args_checked<Args...>(f, args...));
+    fmt::print(stderr, "\n");
 }
 
-template<>
-void Log(const UnicodeString& arg);
-
-// Explicit overloads for basic types, no need to pass by const reference
-void Log(short arg);
-void Log(int arg);
-void Log(long arg);
-void Log(unsigned short arg);
-void Log(unsigned int arg);
-void Log(unsigned long arg);
-void Log(float arg);
-
-template <typename Arg, typename ...Args>
-inline void Log(const Arg& arg, const Args&... args){
-    Log(arg);
-    Log(args...);
+template<typename F, typename ...Args>
+ALWAYS_INLINE void Warning(const F& f, Args&&... args){
+    fmt::print(stderr, "[Arclight] [Warning] ");
+    fmt::vprint(stderr, f, fmt::make_args_checked<Args...>(f, args...));
+    fmt::print(stderr, "\n");
 }
 
-template<typename ...Args>
-void Debug(const Args&... args){
-    Log("[Arclight] [Debug] ");
-    Log(args...);
-    Log("\n");
-}
-
-template<typename ...Args>
-void Warning(const Args&... args){
-    Log("[Arclight] [Warning] ");
-    Log(args...);
-    Log("\n");
-}
-
-template<typename ...Args>
-void Error(const Args&... args){
-    Log("[Arclight] [Error] ");
-    Log(args...);
-    Log("\n");
+template<typename F, typename ...Args>
+ALWAYS_INLINE void Error(const F& f, Args&&... args){
+    fmt::print(stderr, "[Arclight] [Error] ");
+    fmt::vprint(stderr, f, fmt::make_args_checked<Args...>(f, args...));
+    fmt::print(stderr, "\n");
 }
 
 } // namespace Logger

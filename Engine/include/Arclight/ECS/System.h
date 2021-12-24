@@ -30,14 +30,14 @@ public:
         m_timer.Reset();
     }
 
-    void Run() final override {
-        m_elapsedTime = m_timer.Elapsed() / 1000000.f;
+    void run() final override {
+        m_elapsedTime = m_timer.elapsed() / 1000000.f;
 
         Function(m_elapsedTime, World::Current());
     }
 
 protected:
-    ALWAYS_INLINE float Elapsed() const { return m_elapsedTime; }
+    ALWAYS_INLINE float elapsed() const { return m_elapsedTime; }
 
     float m_elapsedTime = 0;
     Timer m_timer;
@@ -54,14 +54,14 @@ public:
         m_timer.Reset();
     }
 
-    void Run() final override {
-        m_elapsedTime = m_timer.Elapsed() / 1000000.f;
+    void run() final override {
+        m_elapsedTime = m_timer.elapsed() / 1000000.f;
 
         (m_data->*Function)(m_elapsedTime, World::Current());
     }
 
 protected:
-    ALWAYS_INLINE float Elapsed() const { return m_elapsedTime; }
+    ALWAYS_INLINE float elapsed() const { return m_elapsedTime; }
 
     Clazz* m_data;
 

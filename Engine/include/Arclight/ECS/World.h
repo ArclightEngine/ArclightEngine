@@ -30,7 +30,7 @@ public:
     }
 
     template <Component C, typename... Args>
-    ALWAYS_INLINE C& add_component(Entity ent, Args&&... args) {
+    ALWAYS_INLINE decltype(auto) add_component(Entity ent, Args&&... args) {
         return m_registry.emplace<C>(ent, std::move(args)...);
     }
 

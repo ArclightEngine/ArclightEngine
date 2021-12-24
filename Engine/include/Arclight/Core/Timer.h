@@ -11,7 +11,7 @@ public:
     ///
     /// \return Time in microseconds before last call
     ////////////////////////////////////////
-    inline long Elapsed(){
+    inline long elapsed(){
         auto newTimePoint = std::chrono::steady_clock::now();
 
         long elapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(newTimePoint - m_timePoint).count();

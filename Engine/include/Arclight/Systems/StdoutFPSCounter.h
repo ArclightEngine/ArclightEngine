@@ -11,7 +11,7 @@ namespace Arclight {
 
             // Print the framerate every 2 seconds
             if(accum > 2.f && fCount){
-                Arclight::Logger::Debug(fCount / accum, " fps");
+                Arclight::Logger::Debug("{} fps", fCount / accum);
 
                 fCount = 0;
                 accum = 0;

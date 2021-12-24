@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arclight/Core/Input.h>
-#include <Arclight/Core/NonCopyable.h>
 #include <Arclight/Core/ResourceManager.h>
 #include <Arclight/Core/ThreadPool.h>
 #include <Arclight/Core/Timer.h>
@@ -19,15 +18,19 @@
 
 namespace Arclight {
 
-class Application : NonCopyable {
+class Application {
 public:
-    enum class When {
-        Init, // Enter state or enter program
-        Tick, // Run each tick
-        Exit, // Run on state change or exit program
+    enum class Stage {
+        Init,
+        Exit,
+        PreTick,
+        Tick,
+        PostTick,
     };
 
     Application();
+    Application(Application&&) = delete;
+    Application(const Application&) = delete;
 
     static ALWAYS_INLINE Application& instance() { return *s_instance; }
 
@@ -49,46 +52,62 @@ public:
         return *this;
     }
 
-    template<void(*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
+    template<void(*Function)(float, ::Arclight::World&), Stage when = Stage::Tick, State s = StateNone>
     ALWAYS_INLINE Application& add_system() {
         if constexpr(s == StateNone){
-            if constexpr(when == When::Init) {
+            if constexpr(when == Stage::Init) {
                 m_globalSystems.init.push_back(new System<Function>());
-            } else if constexpr(when == When::Tick) {
-                m_globalSystems.tick.push_back(new System<Function>());
-            } else if constexpr(when == When::Exit) {
+            } else if constexpr(when == Stage::Exit) {
                 m_globalSystems.exit.push_back(new System<Function>());
+            } else if constexpr(when == Stage::PostTick) {
+                m_globalSystems.posttick.push_back(new System<Function>());
+            } else if constexpr(when == Stage::Tick) {
+                m_globalSystems.tick.push_back(new System<Function>());
+            } else if constexpr(when == Stage::PreTick) {
+                m_globalSystems.pretick.push_back(new System<Function>());
             }
         } else {
-            if constexpr(when == When::Init) {
+            if constexpr(when == Stage::Init) {
                 m_states.at(s).init.push_back(new System<Function>());
-            } else if constexpr(when == When::Tick) {
-                m_states.at(s).tick.push_back(new System<Function>());
-            } else if constexpr(when == When::Exit) {
+            } else if constexpr(when == Stage::Exit) {
                 m_states.at(s).exit.push_back(new System<Function>());
+            } else if constexpr(when == Stage::PostTick) {
+                m_states.at(s).posttick.push_back(new System<Function>());
+            } else if constexpr(when == Stage::Tick) {
+                m_states.at(s).tick.push_back(new System<Function>());
+            } else if constexpr(when == Stage::PreTick) {
+                m_states.at(s).pretick.push_back(new System<Function>());
             }
         }
 
         return *this;
     }
 
-    template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&), When when = When::Tick, State s = StateNone>
+    template<class Clazz, void(Clazz::*Function)(float, ::Arclight::World&), Stage when = Stage::Tick, State s = StateNone>
     ALWAYS_INLINE Application& add_system(Clazz& ref) {
         if constexpr(s == StateNone){
-            if constexpr(when == When::Init) {
+            if constexpr(when == Stage::Init) {
                 m_globalSystems.init.push_back(new ClassSystem<Clazz, Function>(ref));
-            } else if constexpr(when == When::Tick) {
-                m_globalSystems.tick.push_back(new ClassSystem<Clazz, Function>(ref));
-            } else if constexpr(when == When::Exit) {
+            } else if constexpr(when == Stage::Exit) {
                 m_globalSystems.exit.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == Stage::PostTick) {
+                m_globalSystems.posttick.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == Stage::Tick) {
+                m_globalSystems.tick.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == Stage::PreTick) {
+                m_globalSystems.pretick.push_back(new ClassSystem<Clazz, Function>(ref));
             }
         } else {
-            if constexpr(when == When::Init) {
+            if constexpr(when == Stage::Init) {
                 m_states.at(s).init.push_back(new ClassSystem<Clazz, Function>(ref));
-            } else if constexpr(when == When::Tick) {
-                m_states.at(s).tick.push_back(new ClassSystem<Clazz, Function>(ref));
-            } else if constexpr(when == When::Exit) {
+            } else if constexpr(when == Stage::Exit) {
                 m_states.at(s).exit.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == Stage::PostTick) {
+                m_states.at(s).posttick.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == Stage::Tick) {
+                m_states.at(s).tick.push_back(new ClassSystem<Clazz, Function>(ref));
+            } else if constexpr(when == Stage::PreTick) {
+                m_states.at(s).pretick.push_back(new ClassSystem<Clazz, Function>(ref));
             }
         }
 
@@ -128,6 +147,44 @@ private:
     void pop_state_impl();
     void load_world_impl(std::shared_ptr<World> world);
 
+    void init_system_group(SystemGroup& g) {
+        for (auto& sys : g.tick) {
+            sys->Init();
+        }
+
+        for (auto& sys : g.tick) {
+            sys->Init();
+        }
+
+        for (auto& sys : g.posttick) {
+            sys->Init();
+        }
+    }
+
+    void run_system_group(SystemGroup& g) {
+        for (auto* sys : g.pretick) {
+            m_threadPool.Schedule(*sys);
+        }
+
+        process_job_queue();
+        World::s_currentWorld->cleanup();
+
+        for (auto* sys : g.tick) {
+            m_threadPool.Schedule(*sys);
+        }
+
+        process_job_queue();
+        World::s_currentWorld->cleanup();
+
+        for (auto* sys : g.posttick) {
+            m_threadPool.Schedule(*sys);
+        }
+
+
+        process_job_queue();
+        World::s_currentWorld->cleanup();
+    }
+
     // Frame delay in us
     const long m_frameDelay = 1000000 / 120;
 
@@ -143,7 +200,7 @@ private:
     std::shared_ptr<World> m_currentWorld;
 
     std::queue<std::function<void()>> m_deferQueue;
-
+    
     // Enforce a policy where only one system can undergo a state change,
     // one per frame
     struct PendingStateChange {

@@ -1,10 +1,10 @@
+#include <Arclight/Components/Sprite.h>
 #include <Arclight/Core/Application.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
 #include <Arclight/ECS/System.h>
 #include <Arclight/Graphics/Image.h>
 #include <Arclight/Graphics/Rect.h>
-#include <Arclight/Graphics/Sprite.h>
 #include <Arclight/Graphics/Texture.h>
 #include <Arclight/State/State.h>
 #include <Arclight/Systems/Renderer2D.h>
@@ -35,51 +35,47 @@ public:
         auto& app = Arclight::Application::instance();
 
         if (Arclight::Input::GetKeyPress(Arclight::KeyCode_E)) {
-            Arclight::Entity newEntity = world.CreateEntity();
+            Arclight::Entity newEntity = world.create_entity();
 
             Arclight::Sprite spr = Arclight::CreateSprite({BALL_SIZE});
             spr.texture = &tex;
             spr.transform.SetPosition(rand() % app.window().GetWindowRenderSize().x,
-                                        rand() % app.window().GetWindowRenderSize().y);
+                                      rand() % app.window().GetWindowRenderSize().y);
 
-            world.AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
-                                                                            std::move(spr));
-            world.AddComponent<BallData>(
-                newEntity,
-                BallData{{ballSpeed * ((rand() & 2) - 1), ballSpeed * ((rand() & 2) - 1)}});
+            world.add_component<Arclight::Sprite, Arclight::Sprite>(newEntity, std::move(spr));
+            world.add_component<BallData>(newEntity, BallData{{ballSpeed * ((rand() & 2) - 1),
+                                                              ballSpeed * ((rand() & 2) - 1)}});
 
             ballCount++;
-            Arclight::Logger::Debug(ballCount, " balls");
+            Arclight::Logger::Debug("{} balls", ballCount);
         } else if (Arclight::Input::GetKeyPress(Arclight::KeyCode_R)) {
             int i = 1000; // Add 1000 entities
             while (i--) {
-                Arclight::Entity newEntity = world.CreateEntity();
+                Arclight::Entity newEntity = world.create_entity();
 
                 Arclight::Sprite spr = Arclight::CreateSprite({BALL_SIZE});
                 spr.texture = &tex;
                 spr.transform.SetPosition(rand() % app.window().GetWindowRenderSize().x,
-                                            rand() % app.window().GetWindowRenderSize().y);
+                                          rand() % app.window().GetWindowRenderSize().y);
 
-                world.AddComponent<Arclight::Sprite, Arclight::Sprite>(newEntity,
-                                                                             std::move(spr));
-                world.AddComponent<BallData>(
-                    newEntity,
-                    BallData{{ballSpeed * ((rand() & 2) - 1), ballSpeed * ((rand() & 2) - 1)}});
+                world.add_component<Arclight::Sprite, Arclight::Sprite>(newEntity, std::move(spr));
+                world.add_component<BallData>(newEntity, BallData{{ballSpeed * ((rand() & 2) - 1),
+                                                                  ballSpeed * ((rand() & 2) - 1)}});
             }
 
             ballCount += 1000;
-            Arclight::Logger::Debug(ballCount, " balls");
+            Arclight::Logger::Debug("{} balls", ballCount);
         } else if (Arclight::Input::GetKeyPress(Arclight::KeyCode_Q)) {
-            auto view = world.Registry().view<BallData>();
+            auto view = world.registry().view<BallData>();
             for (Arclight::Entity e : view) {
-                world.DestroyEntity(e);
+                world.destroy_entity(e);
             }
 
             ballCount = 0;
-            Arclight::Logger::Debug(ballCount, " balls");
+            Arclight::Logger::Debug("{} balls", ballCount);
         }
 
-        auto view = world.Registry().view<Arclight::Sprite, BallData>();
+        auto view = world.registry().view<Arclight::Sprite, BallData>();
         for (Arclight::Entity e : view) {
             auto& spr = view.get<Arclight::Sprite>(e);
             auto& data = view.get<BallData>(e);
@@ -126,7 +122,7 @@ void GameInit() {
     auto& app = Arclight::Application::instance();
     app.window().backgroundColour = {0, 0, 0, 255};
     app.window().SetSize({640, 480});
-    app.add_system<Arclight::Systems::Renderer2D>();
+    app.add_system<Arclight::Systems::renderer_2d>();
     app.add_system<Arclight::StdoutFPSCounter, &Arclight::StdoutFPSCounter::Tick>(fpsCounter);
     app.add_system<TestSystem, &TestSystem::Tick>(testSystem);
 

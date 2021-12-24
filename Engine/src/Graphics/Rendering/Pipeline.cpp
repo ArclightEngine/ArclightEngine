@@ -8,7 +8,7 @@ RenderPipeline::RenderPipeline(const Shader& vertexShader, const Shader& fragmen
     m_handle = Renderer::instance()->create_pipeline(vertexShader, fragmentShader, config);
 }
 
-RenderPipeline& RenderPipeline::Default() {
+RenderPipeline& RenderPipeline::default_pipeline() {
     return Renderer::instance()->default_pipeline();
 }
 

@@ -32,7 +32,7 @@ public:
 
     void draw(const Vertex*, unsigned, const Matrix4& transform = Matrix4(),
               Texture::TextureHandle texture = nullptr,
-              RenderPipeline& pipeline = RenderPipeline::Default()) {
+              RenderPipeline& pipeline = RenderPipeline::default_pipeline()) {
         (void)transform;
         (void)texture;
         (void)pipeline;

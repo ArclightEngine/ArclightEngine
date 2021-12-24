@@ -5,6 +5,6 @@
 
 namespace Arclight::Systems {
 
-void Renderer2D(float elapsed, World& world);
+void renderer_2d(float elapsed, World& world);
 
 }

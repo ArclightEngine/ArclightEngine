@@ -45,9 +45,9 @@ public:
 	RenderPipeline(const Shader& vertexShader, const Shader& fragmentShader, const PipelineFixedConfig& config = defaultConfig);
 	virtual ~RenderPipeline() = default;
 
-	inline PipelineHandle Handle() { return m_handle; }
+	inline PipelineHandle handle() { return m_handle; }
 
-	static RenderPipeline& Default();
+	static RenderPipeline& default_pipeline();
 
 	static const PipelineFixedConfig defaultConfig;
 private:

@@ -3,13 +3,12 @@
 
 #include "VulkanMemory.h"
 
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
 
 #include <SDL2/SDL_vulkan.h>
 #include <assert.h>
-
-#include <stdexcept>
 
 namespace Arclight::Rendering {
 
@@ -32,7 +31,8 @@ VulkanRenderer::~VulkanRenderer() {
         vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
         vkDestroyCommandPool(m_device, m_commandPools[i], nullptr);
 
-        vmaDestroyBuffer(m_alloc, frame.vertexBuffer.vertexBuffer.buffer, frame.vertexBuffer.vertexBuffer.allocation);
+        vmaDestroyBuffer(m_alloc, frame.vertexBuffer.vertexBuffer.buffer,
+                         frame.vertexBuffer.vertexBuffer.allocation);
 
         vkDestroySemaphore(m_device, frame.imageAvailableSemaphore, nullptr);
         vkDestroySemaphore(m_device, frame.renderFinishedSemaphore, nullptr);
@@ -342,8 +342,7 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
     };
 
     if (vkCreateRenderPass(m_device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
-        throw std::runtime_error(
-            "VulkanRenderer::initialize: Failed to create Vulkan render pass!");
+        FatalRuntimeError("VulkanRenderer::initialize: Failed to create Vulkan render pass!");
         return -11;
     }
 
@@ -365,8 +364,7 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
 
         if (vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_framebuffers[i]) !=
             VK_SUCCESS) {
-            throw std::runtime_error(
-                "VulkanRenderer::initialize: Failed to create Vulkan framebuffer!");
+            FatalRuntimeError("VulkanRenderer::initialize: Failed to create Vulkan framebuffer!");
             return -13;
         }
     }
@@ -449,7 +447,7 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
 
 RenderPipeline::PipelineHandle
 VulkanRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
-                               const RenderPipeline::PipelineFixedConfig& config) {
+                                const RenderPipeline::PipelineFixedConfig& config) {
     VulkanPipeline* pipeline = new VulkanPipeline(*this, vertexShader, fragmentShader, config);
 
     m_pipelines.insert(pipeline);
@@ -465,7 +463,8 @@ void VulkanRenderer::destroy_pipeline(RenderPipeline::PipelineHandle handle) {
     delete reinterpret_cast<VulkanPipeline*>(handle);
 }
 
-Texture::TextureHandle VulkanRenderer::allocate_texture(const Vector2u& bounds, Texture::Format format) {
+Texture::TextureHandle VulkanRenderer::allocate_texture(const Vector2u& bounds,
+                                                        Texture::Format format) {
     VulkanTexture* texture = new VulkanTexture(*this, bounds, TextureToVkFormat(format));
 
     m_textures.insert(texture);
@@ -483,7 +482,7 @@ void VulkanRenderer::update_texture(Texture::TextureHandle texture, const void* 
 }
 
 void VulkanRenderer::destroy_texture(Texture::TextureHandle texture) {
-    if(texture == nullptr) {
+    if (texture == nullptr) {
         return;
     }
 
@@ -537,9 +536,9 @@ void VulkanRenderer::resize_viewport(const Vector2i&) {
 
     if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_renderGPU, m_surface,
                                                   &m_swapchainSurfaceCapabilities) != VK_SUCCESS) {
-        throw std::runtime_error("VulkanRenderer::resize_viewport: Failed to get surface "
-                                 "capabilities!"); // This function does not return on failure,
-                                                   // throw an exception
+        FatalRuntimeError("VulkanRenderer::resize_viewport: Failed to get surface "
+                          "capabilities!"); // This function does not return on failure,
+                                            // throw an exception
     }
 
     Vector2i windowSize = m_windowContext->GetWindowRenderSize();
@@ -706,7 +705,7 @@ void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
                 .pTexelBufferView = nullptr,
             };
 
-            Logger::Debug("Using VkImageView ", tex->DescriptorImageInfo().imageView);
+            Logger::Debug("Using VkImageView {}", (void*)tex->DescriptorImageInfo().imageView);
 
             vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0,
                                    nullptr); // Update sampler descriptor
@@ -724,7 +723,7 @@ void VulkanRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
 
 void VulkanRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
     if (vertexCount > 4) {
-        throw std::runtime_error("VulkanRenderer::draw: vertexCount too large!");
+        FatalRuntimeError("VulkanRenderer::draw: vertexCount too large!");
     }
 
     // Only rebind the pipeline and descriptor sets
@@ -757,17 +756,19 @@ void VulkanRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Ma
     }
 
     FrameVertexBuffer& vBuffer = m_frames[m_currentFrame].vertexBuffer;
-    if(vBuffer.nextIndex + vertexCount > vBuffer.vertexBuffer.size){
+    if (vBuffer.nextIndex + vertexCount > vBuffer.vertexBuffer.size) {
         Logger::Warning("VulkanRenderer::draw: Vertex buffer full!");
         vBuffer.nextIndex = 0;
         vBuffer.reallocationSize = vBuffer.vertexBuffer.size * 2;
     }
     assert(vBuffer.nextIndex + vertexCount <= vBuffer.vertexBuffer.size);
 
-    memcpy(reinterpret_cast<Vertex*>(vBuffer.vertexBuffer.hostMapping) + vBuffer.nextIndex, vertices, sizeof(Vertex) * vertexCount);
+    memcpy(reinterpret_cast<Vertex*>(vBuffer.vertexBuffer.hostMapping) + vBuffer.nextIndex,
+           vertices, sizeof(Vertex) * vertexCount);
 
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &vBuffer.vertexBuffer.buffer, offsets);
+    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &vBuffer.vertexBuffer.buffer,
+                           offsets);
 
     m_boundPipeline->UpdatePushConstant(
         m_commandBuffers[m_currentFrame],
@@ -841,11 +842,10 @@ VulkanRenderer::OneTimeCommandBuffer::~OneTimeCommandBuffer() {
 
 void VulkanRenderer::BeginFrame() {
     Frame& frame = m_frames[m_currentFrame];
-    VkResult result = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX,
-                                            frame.imageAvailableSemaphore,
-                                            VK_NULL_HANDLE, &m_imageIndex);
+    VkResult result =
+        vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, frame.imageAvailableSemaphore,
+                              VK_NULL_HANDLE, &m_imageIndex);
     assert(result == VK_SUCCESS);
-
 
     vkWaitForFences(m_device, 1, &frame.fence, VK_TRUE, UINT64_MAX);
     vkResetFences(m_device, 1, &frame.fence);
@@ -1024,16 +1024,15 @@ VulkanRenderer::SwapChainInfo VulkanRenderer::GetSwapChainInfo() {
 
     if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_renderGPU, m_surface,
                                                   &info.surfaceCapabilites) != VK_SUCCESS) {
-        throw std::runtime_error("VulkanRenderer::GetSwapChainInfo: Failed to get surface "
-                                 "capabilities!"); // This function does not return on failure,
-                                                   // throw an exception
+        FatalRuntimeError("VulkanRenderer::GetSwapChainInfo: Failed to get surface "
+                          "capabilities!"); // This function does not return on failure,
+                                            // throw an exception
     }
 
     uint32_t formatCount;
     if (vkGetPhysicalDeviceSurfaceFormatsKHR(m_renderGPU, m_surface, &formatCount, nullptr) !=
         VK_SUCCESS) {
-        throw std::runtime_error(
-            "VulkanRenderer::GetSwapChainInfo: Failed to get surface formats!");
+        FatalRuntimeError("VulkanRenderer::GetSwapChainInfo: Failed to get surface formats!");
     }
 
     info.surfaceFormats.resize(formatCount);

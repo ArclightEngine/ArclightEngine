@@ -46,7 +46,7 @@ int GLRenderer::initialize(class WindowContext* context) {
 
     m_glContext = SDL_GL_CreateContext(context->GetWindow());
     if (!m_glContext) {
-        FatalRuntimeError("Failed to get OpenGL context from SDL: ", SDL_GetError());
+        FatalRuntimeError("Failed to get OpenGL context from SDL: {}", SDL_GetError());
     }
 
     EmscriptenWebGLContextAttributes attr;
@@ -62,7 +62,7 @@ int GLRenderer::initialize(class WindowContext* context) {
 
     m_glContext = SDL_GL_CreateContext(context->GetWindow());
     if (!m_glContext) {
-        FatalRuntimeError("Failed to get OpenGL context from SDL: ", SDL_GetError());
+        FatalRuntimeError("Failed to get OpenGL context from SDL: {}", SDL_GetError());
     }
 
     const GLubyte* versionString = glGetString(GL_VERSION);
@@ -215,18 +215,6 @@ Texture::TextureHandle GLRenderer::allocate_texture(const Vector2u& size, Textur
 
     GLTexture* tex = new GLTexture{texID, size, glFormat, format};
     m_textures.insert(tex);
-
-    // WEBGL DOES NOT SUPPORT TEXTURE SWIZZLE!
-    if(format == Texture::Format_A8_SRGB){
-        // Swizzle alpha textures
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-
-        if (auto e = glGetError(); e != GL_NO_ERROR)
-            FatalRuntimeError("glCheck failed with error of ", GLErrorString(e), " (", e, ")");
-    }
 
     // Unbind texture
     glCheck(glBindTexture(GL_TEXTURE_2D, 0));

@@ -6,11 +6,11 @@
 namespace {
 
 template<typename... Args>
-[[ noreturn ]] inline void _FatalRuntimeErrorImpl(Args... details){
-    Arclight::Logger::Error(details...);
+[[ noreturn ]] inline void _FatalRuntimeErrorImpl(const char* f, Args... details){
+    Arclight::Logger::Error(f, details...);
     abort();
 }
 
 }
 
-#define FatalRuntimeError(...) _FatalRuntimeErrorImpl(__FILE__, "(", __LINE__, "): ", ##__VA_ARGS__)
+#define FatalRuntimeError(format, ...) _FatalRuntimeErrorImpl("{} ({}): " format, __FILE__, __LINE__, ##__VA_ARGS__)

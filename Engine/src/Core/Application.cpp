@@ -1,5 +1,6 @@
 #include <Arclight/Core/Application.h>
 
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Platform/Platform.h>
@@ -7,8 +8,6 @@
 #include <SDL2/SDL.h>
 
 #include <unistd.h>
-
-#include <stdexcept>
 
 //#define ARCLIGHT_STATE_DEBUG
 
@@ -27,7 +26,7 @@ Application* Application::s_instance = nullptr;
 
 Application::Application() {
     if (s_instance) {
-        throw std::runtime_error("Application instance already exists!");
+        FatalRuntimeError("Application instance already exists!");
     }
 
     s_instance = this;
@@ -54,7 +53,7 @@ void Application::run() {
 
         main_loop();
 
-        long elapsed = m_timer.Elapsed();
+        long elapsed = m_timer.elapsed();
         long waitTime = m_frameDelay - elapsed;
         if (waitTime > 0) {
             usleep(waitTime);
@@ -78,8 +77,9 @@ void Application::main_loop() {
                 m_input.OnKey((KeyCode)event.key.keysym.sym, Input::KeyState_Released);
                 break;
             case SDL_WINDOWEVENT:
-                if(event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-	                Rendering::Renderer::Instance()->ResizeViewport({ event.window.data1, event.window.data2 });
+                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                    Rendering::Renderer::instance()->resize_viewport(
+                        {event.window.data1, event.window.data2});
                 }
                 break;
             default:
@@ -91,18 +91,14 @@ void Application::main_loop() {
     m_input.Tick();
     pollEvents();
 
-    for (auto* sys : m_globalSystems.tick) {
-        m_threadPool.Schedule(*sys);
-    }
+    run_system_group(m_globalSystems);
 
-    if(m_currentState){
-        for (auto* sys : m_currentState->tick) {
-            m_threadPool.Schedule(*sys);
-        }
+    if (m_currentState) {
+        run_system_group(*m_currentState);
     }
 
     process_job_queue();
-    World::s_currentWorld->Cleanup();
+    World::s_currentWorld->cleanup();
     process_defer_queue();
 
     while (m_pendingStateChange) {
@@ -129,38 +125,36 @@ void Application::main_loop() {
 
 void Application::exit() { m_isRunning = false; }
 
-void Application::run_state_init_systems(){
-    if(m_currentState){
+void Application::run_state_init_systems() {
+    if (m_currentState) {
         for (auto& sys : m_currentState->init) {
             sys->Init();
             m_threadPool.Schedule(*sys);
         }
 
         // Ensure any timers get reset
-        for (auto& sys : m_currentState->tick) {
-            sys->Init();
-        }
+        init_system_group(*m_currentState);
 
         process_job_queue();
-        World::s_currentWorld->Cleanup();
+        World::s_currentWorld->cleanup();
         process_defer_queue();
     }
 }
 
-void Application::run_state_exit_systems(){
-    if(m_currentState){
+void Application::run_state_exit_systems() {
+    if (m_currentState) {
         for (auto& sys : m_currentState->exit) {
             m_threadPool.Schedule(*sys);
         }
-        
+
         process_job_queue();
-        World::s_currentWorld->Cleanup();
+        World::s_currentWorld->cleanup();
         process_defer_queue();
     }
 }
 
 void Application::process_job_queue() {
-    m_threadPool.Run();
+    m_threadPool.run();
 
     while (!m_threadPool.Idle())
         ; // We shouldn't really busy wait
@@ -175,7 +169,7 @@ void Application::process_defer_queue() {
 
 void Application::pop_state_impl() {
     if (m_pendingStateChange) {
-        throw std::runtime_error("State change already queued!");
+        FatalRuntimeError("State change already queued!");
     }
 
     m_pendingStateChange = {1}; // Dummy state value to indicate presence of change
@@ -184,7 +178,7 @@ void Application::pop_state_impl() {
 
 void Application::push_state_impl(State s) {
     if (m_pendingStateChange) {
-        throw std::runtime_error("State change already queued!");
+        FatalRuntimeError("State change already queued!");
     }
 
     m_pendingStateChange = {s};
@@ -193,7 +187,7 @@ void Application::push_state_impl(State s) {
 
 void Application::load_state_impl(State s) {
     if (m_pendingStateChange) {
-        throw std::runtime_error("State change already queued!");
+        FatalRuntimeError("State change already queued!");
     }
 
     m_pendingStateChange = {s};

@@ -4,9 +4,8 @@
 #include "VulkanRenderer.h"
 
 #include <Arclight/Colour.h>
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/Logger.h>
-
-#include <stdexcept>
 
 namespace Arclight::Rendering {
 
@@ -86,32 +85,28 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds, V
     UpdateTextureImage();
 
     VkComponentMapping componentMapping;
-    if(texFormat == VK_FORMAT_R8G8B8A8_SRGB){
-        componentMapping =
-            {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-            };
-    } else if(texFormat == VK_FORMAT_R8G8B8_SRGB){
-        componentMapping =
-            {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_ONE,
-            };
-    } else if(texFormat == VK_FORMAT_R8_SRGB){
-        Logger::Debug("r8 srgb");
+    if (texFormat == VK_FORMAT_R8G8B8A8_SRGB) {
+        componentMapping = {
+            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+        };
+    } else if (texFormat == VK_FORMAT_R8G8B8_SRGB) {
+        componentMapping = {
+            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .a = VK_COMPONENT_SWIZZLE_ONE,
+        };
+    } else if (texFormat == VK_FORMAT_R8_SRGB) {
         // Use red as alpha
-        componentMapping =
-            {
-                .r = VK_COMPONENT_SWIZZLE_ONE,
-                .g = VK_COMPONENT_SWIZZLE_ONE,
-                .b = VK_COMPONENT_SWIZZLE_ONE,
-                .a = VK_COMPONENT_SWIZZLE_R,
-            };
+        componentMapping = {
+            .r = VK_COMPONENT_SWIZZLE_ONE,
+            .g = VK_COMPONENT_SWIZZLE_ONE,
+            .b = VK_COMPONENT_SWIZZLE_ONE,
+            .a = VK_COMPONENT_SWIZZLE_R,
+        };
     }
 
     VkImageViewCreateInfo imageViewCreateInfo = {
@@ -133,7 +128,7 @@ VulkanTexture::VulkanTexture(VulkanRenderer& renderer, const Vector2u& bounds, V
     };
 
     vkCheck(vkCreateImageView(m_renderer.GetDevice(), &imageViewCreateInfo, nullptr, &m_imageView));
-    Logger::Debug("Created VkImageView ", m_imageView);
+    Logger::Debug("Created VkImageView {}", (void*)m_imageView);
 
     // TODO: Filter and address mode configuration
     VkSamplerCreateInfo samplerCreateInfo = {

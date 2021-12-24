@@ -1,10 +1,11 @@
 #include "VulkanPipeline.h"
 
 #include "VulkanRenderer.h"
+
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Graphics/Vertex.h>
 
 #include <cassert>
-#include <stdexcept>
 
 namespace Arclight::Rendering {
 
@@ -35,7 +36,7 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
     };
 
     if (vkCreatePipelineLayout(m_device, &vkPipelineLayoutCreateInfo, nullptr, &m_pipelineLayout)) {
-        throw std::runtime_error(
+        FatalRuntimeError(
             "[Fatal error] VulkanPipeline::VulkanPipeline: failed to create pipeline layout!");
     }
 
@@ -156,8 +157,7 @@ VulkanPipeline::VulkanPipeline(VulkanRenderer& renderer, const Shader& vertexSha
 
     if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &gfxPipelineCreateInfo, nullptr,
                                   &m_pipeline) != VK_SUCCESS) {
-        throw std::runtime_error(
-            "VulkanRenderer::initialize: Failed to create Vulkan graphics pipeline!");
+        FatalRuntimeError("VulkanRenderer::initialize: Failed to create Vulkan graphics pipeline!");
     }
 
     auto cmdBuf = m_renderer.CreateOneTimeCommandBuffer();
@@ -196,7 +196,7 @@ VkShaderModule VulkanPipeline::CreateShaderModule(const Shader& shader) {
 
     VkShaderModule sModule;
     if (vkCreateShaderModule(m_device, &createInfo, nullptr, &sModule)) {
-        throw std::runtime_error(
+        FatalRuntimeError(
             "[Fatal error] VulkanShader::CreateModule: Failed to create shader module!");
     }
 
@@ -210,8 +210,7 @@ VkPolygonMode VulkanPipeline::ToVkPolygonMode(RenderPipeline::RasterizerConfig::
     case RenderPipeline::RasterizerConfig::PolygonLine:
         return VK_POLYGON_MODE_LINE;
     default:
-        throw std::runtime_error(
-            "[Fatal error] VulkanPipeline::ToVkPolygonMode: Invalid polygon mode!");
+        FatalRuntimeError("[Fatal error] VulkanPipeline::ToVkPolygonMode: Invalid polygon mode!");
         return VK_POLYGON_MODE_FILL;
     }
 }
@@ -223,7 +222,7 @@ VkPrimitiveTopology VulkanPipeline::ToVkPrimitiveTopology(RenderPipeline::Primit
     case RenderPipeline::PrimitiveTriangleStrip:
         return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     default:
-        throw std::runtime_error(
+        FatalRuntimeError(
             "[Fatal error] VulkanPipeline::ToVkPrimitiveTopology: Invalid primitive type!");
         return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     }
