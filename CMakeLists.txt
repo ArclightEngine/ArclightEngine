@@ -10,7 +10,13 @@ set(CMAKE_ENABLE_EXPORTS ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_compile_options(-Wall -Wextra)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options (-fdiagnostics-color=always)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_compile_options (-fcolor-diagnostics)
+endif ()
+
+add_compile_options(-Wall -Wextra -fno-exceptions -fno-rtti)
 
 option(USE_VULKAN "Use Vulkan renderer")
 option(USE_DUMMY_RENDERER "Use dummy renderer")
@@ -81,4 +87,5 @@ endif()
 include_directories(thirdparty)
 include_directories(Engine/include)
 
+add_subdirectory(thirdparty/fmt)
 add_subdirectory(Engine)

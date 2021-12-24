@@ -70,3 +70,4 @@ Arclight engine uses the following third party libraries:
 - [Freetype](https://freetype.org)
 - [ICU](https://icu.unicode.org/)
 - [EnTT](https://github.com/skypjack/entt)
+- [libfmt](https://fmt.dev)

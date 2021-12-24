@@ -2,7 +2,6 @@ set(ENGINE_SRC
     "src/Core/Application.cpp"
     "src/Core/File.cpp"
     "src/Core/Input.cpp"
-    "src/Core/Logger.cpp"
     "src/Core/Resource.cpp"
     "src/Core/ResourceManager.cpp"
     "src/Core/ThreadPool.cpp"
@@ -41,6 +40,9 @@ else()
 endif()
 
 add_library(libarclight OBJECT ${ENGINE_SRC})
+
+find_package(fmt)
+target_link_libraries(libarclight fmt::fmt)
 
 # Process render sources afterwards
 add_subdirectory(Rendering)
