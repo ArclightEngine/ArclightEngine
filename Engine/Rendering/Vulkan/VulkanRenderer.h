@@ -44,6 +44,7 @@ public:
 
     void bind_pipeline(RenderPipeline::PipelineHandle pipeline) override;
     void bind_texture(Texture::TextureHandle texture) override;
+    void bind_vertex_buffer(void* buffer) override;
 
     // Draw Primitives
     void draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4());
@@ -52,12 +53,17 @@ public:
 
     RenderPipeline::PipelineHandle
     create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
-                   const RenderPipeline::PipelineFixedConfig& config);
-    void destroy_pipeline(RenderPipeline::PipelineHandle handle);
+                   const RenderPipeline::PipelineFixedConfig& config) override;
+    void destroy_pipeline(RenderPipeline::PipelineHandle handle) override;
 
-    Texture::TextureHandle allocate_texture(const Vector2u& bounds, Texture::Format format);
-    void update_texture(Texture::TextureHandle texture, const void* data);
-    void destroy_texture(Texture::TextureHandle texture);
+    Texture::TextureHandle allocate_texture(const Vector2u& bounds, Texture::Format format) override;
+    void update_texture(Texture::TextureHandle texture, const void* data) override;
+    void destroy_texture(Texture::TextureHandle texture) override;
+
+    void* allocate_vertex_buffer(unsigned vertexCount) override;
+    void update_vertex_buffer(void* buffer, const Vertex* data) override;
+    void* get_vertex_buffer_mapping(void* buffer) override;
+    void destroy_vertex_buffer(void* buffer) override;
 
     constexpr VkFormat TextureToVkFormat(Texture::Format format) {
         switch (format) {
@@ -88,6 +94,17 @@ protected:
         VkCommandBuffer m_buffer = VK_NULL_HANDLE;
     };
 
+    struct VertexBuffer {
+        VmaAllocation allocation; // VmaAlloaction of vertex buffer
+        VkBuffer buffer;          // VkBuffer object
+
+        void* hostMapping; // Host memory mapping of the buffer
+        uint32_t size;     // How many vertexes can fit in buffer
+    };
+
+    std::mutex m_bufferDestroyLock;
+    std::vector<std::pair<VkBuffer, VmaAllocation>> m_buffersPendingDestruction;
+
     inline VkDevice GetDevice() { return m_device; }
     inline VkRenderPass GetRenderPass() { return m_renderPass; }
     inline VkExtent2D GetScreenExtent() const { return m_swapExtent; }
@@ -97,8 +114,11 @@ protected:
         return OneTimeCommandBuffer(*this, m_commandPools[m_currentFrame]);
     }
 
+    void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform) override;
+
     std::set<VulkanTexture*> m_textures;
     std::set<VulkanPipeline*> m_pipelines;
+    std::set<VertexBuffer*> m_vertexBuffers;
     RenderPipeline* m_defaultPipeline = nullptr;
 
     // For now all pipelines are required to have the same descriptor set layout
@@ -112,20 +132,6 @@ private:
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    struct VertexBuffer {
-        VmaAllocation allocation; // VmaAlloaction of vertex buffer
-        VkBuffer buffer;          // VkBuffer object
-
-        void* hostMapping; // Host memory mapping of the buffer
-        uint32_t size;     // How many vertexes can fit in buffer
-    };
-
-    struct FrameVertexBuffer {
-        VertexBuffer vertexBuffer;
-        uint32_t nextIndex = 0;
-        uint32_t reallocationSize = 0;
-    };
-
     struct Frame {
         VkSemaphore imageAvailableSemaphore;
         VkSemaphore renderFinishedSemaphore;
@@ -133,8 +139,6 @@ private:
 
         VkCommandPool commandPool;
         VkCommandBuffer commandBuffer;
-
-        FrameVertexBuffer vertexBuffer;
     };
 
     struct PipelineViewportInfo {
@@ -189,7 +193,8 @@ private:
     void CreateDepthBuffer();
     void DestroyDepthBuffer();
 
-    VertexBuffer CreateVertexBuffer(uint32_t vertexCount);
+    void _create_vertex_buffer(VertexBuffer* buffer, uint32_t vertexCount);
+    void _destroy_vertex_buffer(VertexBuffer* buffer);
 
     VkDescriptorSet AllocateDescriptorSet();
 
@@ -217,8 +222,6 @@ private:
     // - Descriptor pool cache
     // - Descriptor set cache
     // - Buffer pool
-    // See
-    // https://github.com/KhronosGroup/Vulkan-Samples/blob/master/samples/performance/command_buffer_usage/command_buffer_usage_tutorial.md
 
     uint32_t m_imageIndex = 0;   // Vulkan image index of frame being rendered
     unsigned m_currentFrame = 0; // Our index of current frame being rendered
@@ -233,6 +236,8 @@ private:
     std::unordered_map<VulkanTexture*, VkDescriptorSet> m_textureDescriptorSets;
     VulkanTexture* m_lastTextures[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
     VulkanTexture* m_boundTexture = nullptr;
+
+    VertexBuffer* m_boundVertexBuffer = nullptr;
 
     DescriptorPool m_descriptorPools[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
 

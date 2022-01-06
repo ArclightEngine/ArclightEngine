@@ -12,6 +12,7 @@ set(ENGINE_SRC
     "src/Graphics/Text.cpp"
     "src/Graphics/Texture.cpp"
     "src/Graphics/Transform.cpp"
+    "src/Graphics/VertexBuffer.cpp"
     "src/Graphics/Rendering/Pipeline.cpp"
     "src/Graphics/Rendering/RendererBackend.cpp"
     "src/Graphics/Rendering/Shader.cpp"

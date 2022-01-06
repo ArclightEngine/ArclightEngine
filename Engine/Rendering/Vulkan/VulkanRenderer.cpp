@@ -31,9 +31,6 @@ VulkanRenderer::~VulkanRenderer() {
         vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
         vkDestroyCommandPool(m_device, m_commandPools[i], nullptr);
 
-        vmaDestroyBuffer(m_alloc, frame.vertexBuffer.vertexBuffer.buffer,
-                         frame.vertexBuffer.vertexBuffer.allocation);
-
         vkDestroySemaphore(m_device, frame.imageAvailableSemaphore, nullptr);
         vkDestroySemaphore(m_device, frame.renderFinishedSemaphore, nullptr);
         vkDestroyFence(m_device, frame.fence, nullptr);
@@ -43,6 +40,11 @@ VulkanRenderer::~VulkanRenderer() {
 
     for (VulkanTexture* texture : m_textures) {
         delete texture;
+    }
+
+    for (VertexBuffer* vBuf : m_vertexBuffers) {
+        _destroy_vertex_buffer(vBuf);
+        delete vBuf;
     }
 
     vmaDestroyAllocator(m_alloc);
@@ -430,13 +432,6 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
 
         vkCheck(vkCreateFence(m_device, &fenceInfo, nullptr, &frame.fence));
 
-        // Each frame gets a default vertex buffer of 65536 vertices
-        // In total should be 2MB/frame for 4MB in total when double buffered
-        m_frames[i].vertexBuffer = FrameVertexBuffer{
-            .vertexBuffer = CreateVertexBuffer(65536),
-            .nextIndex = 0,
-            .reallocationSize = 0,
-        };
         m_lastTextures[i] = nullptr;
     }
 
@@ -456,6 +451,8 @@ VulkanRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragme
 }
 
 void VulkanRenderer::destroy_pipeline(RenderPipeline::PipelineHandle handle) {
+    Renderer::destroy_pipeline(handle);
+
     size_t erased = m_pipelines.erase(reinterpret_cast<VulkanPipeline*>(handle));
     assert(erased ==
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
@@ -498,6 +495,45 @@ void VulkanRenderer::destroy_texture(Texture::TextureHandle texture) {
     }
 
     delete reinterpret_cast<VulkanTexture*>(texture);
+}
+
+void* VulkanRenderer::allocate_vertex_buffer(unsigned vertexCount) {
+    VertexBuffer* obj = new VertexBuffer;
+    _create_vertex_buffer(obj, vertexCount);
+
+    m_vertexBuffers.insert(obj);
+
+    return obj;
+}
+
+void VulkanRenderer::update_vertex_buffer(void* buffer, const Vertex* data) {
+    VertexBuffer* obj = (VertexBuffer*)buffer;
+
+    memcpy(obj->hostMapping, data, obj->size * sizeof(Vertex));
+}
+
+void* VulkanRenderer::get_vertex_buffer_mapping(void* buffer) {
+    VertexBuffer* obj = (VertexBuffer*)buffer;
+    assert(m_vertexBuffers.contains(obj));
+
+    return obj->hostMapping;
+}
+
+void VulkanRenderer::destroy_vertex_buffer(void* buffer) {
+    assert(buffer);
+
+    VertexBuffer* obj = (VertexBuffer*)buffer;
+    size_t erased = m_vertexBuffers.erase(obj);
+    assert(erased ==
+           1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
+
+    if(m_boundVertexBuffer == obj) {
+        m_boundVertexBuffer = nullptr;
+    }
+
+    _destroy_vertex_buffer(obj);
+
+    delete obj;
 }
 
 void VulkanRenderer::render() {
@@ -721,9 +757,14 @@ void VulkanRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
     m_boundPipeline = reinterpret_cast<VulkanPipeline*>(pipeline);
 }
 
-void VulkanRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
-    if (vertexCount > 4) {
-        FatalRuntimeError("VulkanRenderer::draw: vertexCount too large!");
+void VulkanRenderer::bind_vertex_buffer(void* buffer) {
+    m_boundVertexBuffer = (VertexBuffer*)buffer;
+}
+
+void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform) {
+    if(!m_boundVertexBuffer) {
+        FatalRuntimeError("VulkanRenderer::do_draw_call: vertex buffer was not bound!");
+        return;
     }
 
     // Only rebind the pipeline and descriptor sets
@@ -755,19 +796,8 @@ void VulkanRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Ma
         Logger::Debug("tex not bound!");
     }
 
-    FrameVertexBuffer& vBuffer = m_frames[m_currentFrame].vertexBuffer;
-    if (vBuffer.nextIndex + vertexCount > vBuffer.vertexBuffer.size) {
-        Logger::Warning("VulkanRenderer::draw: Vertex buffer full!");
-        vBuffer.nextIndex = 0;
-        vBuffer.reallocationSize = vBuffer.vertexBuffer.size * 2;
-    }
-    assert(vBuffer.nextIndex + vertexCount <= vBuffer.vertexBuffer.size);
-
-    memcpy(reinterpret_cast<Vertex*>(vBuffer.vertexBuffer.hostMapping) + vBuffer.nextIndex,
-           vertices, sizeof(Vertex) * vertexCount);
-
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &vBuffer.vertexBuffer.buffer,
+    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &m_boundVertexBuffer->buffer,
                            offsets);
 
     m_boundPipeline->UpdatePushConstant(
@@ -775,8 +805,7 @@ void VulkanRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Ma
         offsetof(VulkanPipeline::PushConstant2DTransform, transform),
         16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
 
-    vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, vBuffer.nextIndex, 0);
-    vBuffer.nextIndex += vertexCount;
+    vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, firstVertex, 0);
 }
 
 VulkanRenderer::OneTimeCommandBuffer::OneTimeCommandBuffer(VulkanRenderer& renderer,
@@ -852,12 +881,16 @@ void VulkanRenderer::BeginFrame() {
 
     vkCheck(vkResetCommandPool(m_device, m_commandPools[m_currentFrame],
                                0)); // Apparently resetting the whole command pool is faster
+
+    std::scoped_lock lockBufferDestruction(m_bufferDestroyLock);
+    for(auto& buffer : m_buffersPendingDestruction) {
+        vmaDestroyBuffer(m_alloc, buffer.first, buffer.second);
+    }
+    
     BeginCommandBuffer();
 
     m_lastTextures[m_currentFrame] = nullptr;
     m_lastPipelines[m_currentFrame] = 0;
-    // Reset vertex buffer index
-    frame.vertexBuffer.nextIndex = 0;
 }
 
 void VulkanRenderer::EndFrame() {
@@ -892,6 +925,8 @@ void VulkanRenderer::EndFrame() {
     };
 
     vkQueuePresentKHR(m_graphicsQueue, &presentInfo);
+
+    m_buffersPendingDestruction.clear();
 
     m_currentFrame = (m_currentFrame + 1) % RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT;
 }
@@ -1306,7 +1341,7 @@ void VulkanRenderer::DestroyDepthBuffer() {
     vmaDestroyImage(Allocator(), m_depthBuffer.depthImage, m_depthBuffer.depthImageAllocation);
 }
 
-VulkanRenderer::VertexBuffer VulkanRenderer::CreateVertexBuffer(uint32_t vertexCount) {
+void VulkanRenderer::_create_vertex_buffer(VertexBuffer* obj, uint32_t vertexCount) {
     VkBufferCreateInfo bufferInfo = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = nullptr,
@@ -1336,14 +1371,17 @@ VulkanRenderer::VertexBuffer VulkanRenderer::CreateVertexBuffer(uint32_t vertexC
     vkCheck(
         vmaCreateBuffer(m_alloc, &bufferInfo, &allocCreateInfo, &buffer, &allocation, &allocInfo));
 
-    VertexBuffer vertexBuffer = {
+    *obj = VertexBuffer{
         .allocation = allocation,
         .buffer = buffer,
         .hostMapping = allocInfo.pMappedData,
         .size = vertexCount,
     };
+}
 
-    return vertexBuffer;
+void VulkanRenderer::_destroy_vertex_buffer(VertexBuffer* obj) {
+    std::scoped_lock lockBufferDestruction(m_bufferDestroyLock);
+    m_buffersPendingDestruction.push_back({obj->buffer, obj->allocation});
 }
 
 VkDescriptorSet VulkanRenderer::AllocateDescriptorSet() {
