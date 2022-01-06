@@ -42,7 +42,7 @@ public:
     inline Vector2f FloatSize() const {
         return {static_cast<float>(m_size.x), static_cast<float>(m_size.y)};
     }
-    inline TextureHandle Handle() { return m_handle; }
+    inline TextureHandle handle() { return m_handle; }
 
 private:
     Vector2u m_size = {0, 0};

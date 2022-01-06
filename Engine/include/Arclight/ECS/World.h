@@ -13,6 +13,7 @@ namespace Arclight {
 
 class World final : NonCopyable {
     friend class Application;
+
 public:
     World() = default;
 
@@ -34,8 +35,7 @@ public:
         return m_registry.emplace<C>(ent, std::move(args)...);
     }
 
-    template <Component C>
-    ALWAYS_INLINE C& get_component(Entity ent){
+    template <Component C> ALWAYS_INLINE C& get_component(Entity ent) {
         return m_registry.get<C>(ent);
     }
 
@@ -44,7 +44,7 @@ public:
         assert(m_registry.valid(ent));
         // Needs to be deferred
         std::unique_lock lock(m_componentCleanupMutex);
-        AssureCleanupFunction<C...>(ent);
+        assure_cleanup_function<C...>(ent);
         m_registry.emplace<Components::ComponentRemovalTag<C>...>(ent);
     }
 
@@ -56,11 +56,18 @@ public:
         return m_registry.any_of<C...>(ent);
     }
 
-    template <Component... C> ALWAYS_INLINE auto view() {
-        return m_registry.view<C...>();
-    }
+    template <Component... C> ALWAYS_INLINE auto view() { return m_registry.view<C...>(); }
 
     ALWAYS_INLINE ECSRegistry& registry() { return m_registry; }
+
+    template <typename T, typename... Args> ALWAYS_INLINE T& ctx_set(Args&&... args) {
+        return m_registry.set<T>(std::move(args)...);
+    }
+
+    template <typename T> [[nodiscard]] ALWAYS_INLINE T& ctx() { return m_registry.ctx<T>(); }
+    template <typename T> [[nodiscard]] ALWAYS_INLINE T* try_ctx() { return m_registry.try_ctx<T>(); }
+
+    template <typename T> ALWAYS_INLINE void ctx_unset() { m_registry.unset<T>(); }
 
 private:
     // The current world is set by the application,
@@ -74,7 +81,7 @@ private:
     //
     // Afterwards, entities are destroyed consecutively
 
-    template <Component C> ALWAYS_INLINE void AssureCleanupFunction(Entity e) {
+    template <Component C> ALWAYS_INLINE void assure_cleanup_function(Entity e) {
         const auto index = entt::type_index<C>::value();
 
         if (!(index < m_componentCleanupFunctions.size())) {

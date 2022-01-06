@@ -28,8 +28,8 @@ public:
     void SetText(UnicodeString text);
     void SetFontSize(int size);
 
-    ALWAYS_INLINE Texture& Tex() { return m_texture; }
-    ALWAYS_INLINE const Vertex* Vertices() const { return m_vertices; }
+    ALWAYS_INLINE Texture& tex() { return m_texture; }
+    ALWAYS_INLINE const Vertex* vertices() const { return m_vertices; }
     ALWAYS_INLINE const Vector2f Bounds() const { return m_bounds.end; }
 
     Transform transform;
