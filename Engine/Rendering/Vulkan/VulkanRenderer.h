@@ -149,10 +149,13 @@ private:
 
     struct DescriptorPool {
         std::vector<VkDescriptorSet> sets;
+        std::stack<VkDescriptorSet> freeSets;
         VkDescriptorPool handle;
 
         // Index of the next set
         int nextSet = 0;
+
+        std::mutex poolLock;
     };
 
     struct DepthBuffer {
@@ -180,7 +183,9 @@ private:
     void CreateCommandPools();
 
     void CreateDescriptorSetLayout();
-    DescriptorPool CreateDescriptorPool();
+    DescriptorPool* create_descriptor_pool();
+    VkDescriptorSet allocate_descriptor_set();
+    void free_descriptor_set(VkDescriptorSet set);
 
     // Begin recording command buffer
     void BeginCommandBuffer();
@@ -196,7 +201,6 @@ private:
     void _create_vertex_buffer(VertexBuffer* buffer, uint32_t vertexCount);
     void _destroy_vertex_buffer(VertexBuffer* buffer);
 
-    VkDescriptorSet AllocateDescriptorSet();
 
     const std::string m_rendererName = "Vulkan";
 
@@ -230,16 +234,17 @@ private:
     VulkanPipeline* m_lastPipelines[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
     VulkanPipeline* m_boundPipeline = nullptr;
 
+    std::unordered_map<VulkanTexture*, VkDescriptorSet> m_textureDescriptorSets;
+    std::vector<VkDescriptorSet> m_freeTextureDescriptorSets;
     // Last used texture per pipeline
     // If the texture of the vertices being rendered is the same as the previous,
     // We do not need to update descriptor sets
-    std::unordered_map<VulkanTexture*, VkDescriptorSet> m_textureDescriptorSets;
     VulkanTexture* m_lastTextures[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
     VulkanTexture* m_boundTexture = nullptr;
 
     VertexBuffer* m_boundVertexBuffer = nullptr;
 
-    DescriptorPool m_descriptorPools[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+    std::unique_ptr<DescriptorPool> m_descriptorPool;
 
     std::vector<VkImage> m_images; // Swapchain image handles
     std::vector<VkImageView> m_imageViews;

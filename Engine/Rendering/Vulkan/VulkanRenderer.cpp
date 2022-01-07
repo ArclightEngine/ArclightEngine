@@ -23,9 +23,9 @@ VulkanRenderer::~VulkanRenderer() {
 
     DestroyDepthBuffer();
 
-    for (int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroyDescriptorPool(m_device, m_descriptorPools[i].handle, nullptr);
+    vkDestroyDescriptorPool(m_device, m_descriptorPool->handle, nullptr);
 
+    for (int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
         Frame& frame = m_frames[i];
 
         vkFreeCommandBuffers(m_device, m_commandPools[i], 1, &m_commandBuffers[i]);
@@ -115,8 +115,7 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
         Logger::Debug("Using GPU: ", p.deviceName);
 
         const VkPhysicalDeviceLimits& limits = p.limits;
-        Logger::Debug("Maximum bound descriptor sets: ", limits.maxBoundDescriptorSets,
-                      ", Push constant size: ", limits.maxPushConstantsSize);
+        Logger::Debug("Maximum bound descriptor sets: {}, Push constant size: {}", limits.maxBoundDescriptorSets, limits.maxPushConstantsSize);
     }
 
     if (CreateLogicalDevice()) {
@@ -398,9 +397,7 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
     s_rendererInstance = this;
 
     CreateDescriptorSetLayout();
-    for (unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
-        m_descriptorPools[i] = std::move(CreateDescriptorPool());
-    }
+    m_descriptorPool = std::unique_ptr<DescriptorPool>(create_descriptor_pool());
 
     VkSemaphoreCreateInfo semaphoreInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -483,12 +480,17 @@ void VulkanRenderer::destroy_texture(Texture::TextureHandle texture) {
         return;
     }
 
-    size_t erased = m_textures.erase(reinterpret_cast<VulkanTexture*>(texture));
+    VulkanTexture* tex = reinterpret_cast<VulkanTexture*>(texture);
+    size_t erased = m_textures.erase(tex);
     assert(erased ==
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
 
     for (unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
-        m_textureDescriptorSets.erase(reinterpret_cast<VulkanTexture*>(texture));
+        if(auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()){
+            free_descriptor_set(it->second);
+            m_textureDescriptorSets.erase(it);
+        }
+
         if (m_lastTextures[i] == texture) {
             m_lastTextures[i] = nullptr; // Invalidate m_lastTexture if relevant
         }
@@ -716,15 +718,18 @@ void VulkanRenderer::resize_viewport(const Vector2i&) {
 
 void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
     m_boundTexture = reinterpret_cast<VulkanTexture*>(texture);
-
     if (texture) {
+        if(!m_textures.contains(m_boundTexture)) {
+            FatalRuntimeError("VulkanRenderer: Invalid texture handle {}, perhaps an invalid texture pointer was used.", texture);
+        }
+
         VkDescriptorSet pDescriptorSets[] = {VK_NULL_HANDLE};
 
         auto tex = reinterpret_cast<VulkanTexture*>(texture);
         if (auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()) {
             pDescriptorSets[0] = it->second;
         } else {
-            VkDescriptorSet descriptorSet = AllocateDescriptorSet();
+            VkDescriptorSet descriptorSet = allocate_descriptor_set();
             m_textureDescriptorSets[tex] = descriptorSet;
             pDescriptorSets[0] = descriptorSet;
 
@@ -886,7 +891,7 @@ void VulkanRenderer::BeginFrame() {
     for(auto& buffer : m_buffersPendingDestruction) {
         vmaDestroyBuffer(m_alloc, buffer.first, buffer.second);
     }
-    
+
     BeginCommandBuffer();
 
     m_lastTextures[m_currentFrame] = nullptr;
@@ -1182,10 +1187,10 @@ void VulkanRenderer::CreateDescriptorSetLayout() {
                                         &m_descriptorSetLayout));
 }
 
-VulkanRenderer::DescriptorPool VulkanRenderer::CreateDescriptorPool() {
-    DescriptorPool pool;
+VulkanRenderer::DescriptorPool* VulkanRenderer::create_descriptor_pool() {
+    DescriptorPool* pool = new DescriptorPool;
 
-    uint32_t samplerCount = 100;
+    uint32_t samplerCount = 500;
     VkDescriptorPoolSize samplerSize = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptorCount = samplerCount, // Amount of descriptor sets
@@ -1201,20 +1206,48 @@ VulkanRenderer::DescriptorPool VulkanRenderer::CreateDescriptorPool() {
     };
 
     std::vector<VkDescriptorSetLayout> layouts(samplerCount, m_descriptorSetLayout);
-    vkCheck(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &pool.handle));
+    vkCheck(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &pool->handle));
 
     VkDescriptorSetAllocateInfo setAllocInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .pNext = nullptr,
-        .descriptorPool = pool.handle,
+        .descriptorPool = pool->handle,
         .descriptorSetCount = samplerCount,
         .pSetLayouts = layouts.data(),
     };
 
-    pool.sets.resize(samplerCount);
-    vkCheck(vkAllocateDescriptorSets(m_device, &setAllocInfo, pool.sets.data()));
+    pool->sets.resize(samplerCount);
+    vkCheck(vkAllocateDescriptorSets(m_device, &setAllocInfo, pool->sets.data()));
 
     return pool;
+}
+
+VkDescriptorSet VulkanRenderer::allocate_descriptor_set() {
+    DescriptorPool& pool = *m_descriptorPool;
+    std::lock_guard lockPool(pool.poolLock);
+
+    VkDescriptorSet set;
+    if(pool.freeSets.size()) {
+        set = pool.freeSets.top();
+        pool.freeSets.pop();
+        return set;
+    }
+
+    set = pool.sets[pool.nextSet];
+
+    if (pool.nextSet + 1 >= pool.sets.size()) {
+        Logger::Error("VulkanRenderer::AllocateDescriptorSet: Ran out of texture descriptor sets!");
+    }
+    pool.nextSet = (pool.nextSet + 1) % pool.sets.size();
+
+    return set;
+}
+
+void VulkanRenderer::free_descriptor_set(VkDescriptorSet set) {
+    DescriptorPool& pool = *m_descriptorPool;
+    std::lock_guard lockPool(pool.poolLock);
+
+    pool.freeSets.push(set);
 }
 
 void VulkanRenderer::BeginCommandBuffer() {
@@ -1382,19 +1415,6 @@ void VulkanRenderer::_create_vertex_buffer(VertexBuffer* obj, uint32_t vertexCou
 void VulkanRenderer::_destroy_vertex_buffer(VertexBuffer* obj) {
     std::scoped_lock lockBufferDestruction(m_bufferDestroyLock);
     m_buffersPendingDestruction.push_back({obj->buffer, obj->allocation});
-}
-
-VkDescriptorSet VulkanRenderer::AllocateDescriptorSet() {
-    DescriptorPool& pool = m_descriptorPools[m_currentFrame];
-
-    VkDescriptorSet set = pool.sets[pool.nextSet];
-
-    if (pool.nextSet + 1 >= pool.sets.size()) {
-        Logger::Error("VulkanRenderer::AllocateDescriptorSet: Ran out of texture descriptor sets!");
-    }
-    pool.nextSet = (pool.nextSet + 1) % pool.sets.size();
-
-    return set;
 }
 
 } // namespace Arclight::Rendering
