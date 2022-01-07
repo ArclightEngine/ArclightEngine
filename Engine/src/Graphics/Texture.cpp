@@ -22,6 +22,8 @@ Texture::Texture(const Image& image) { Load(image); }
 Texture::Texture(const uint8_t* pixelData, const Vector2u& bounds, Format format)
     : m_size(bounds), m_format(format) {
     m_handle = Rendering::Renderer::instance()->allocate_texture(m_size, format);
+
+    Rendering::Renderer::instance()->update_texture(m_handle, pixelData);
 }
 
 Texture::~Texture() {

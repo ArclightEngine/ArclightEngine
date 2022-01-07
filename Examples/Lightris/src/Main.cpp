@@ -169,7 +169,7 @@ Entity ConstructBlockSprite(World& world, int block, int x, int y) {
     Sprite spr = CreateSprite({BLOCK_SIZE}, Rectf(Vector2f{1.0f}), blockColours[block].AsFloat());
     spr.texture = blockTexture;
     spr.transform.SetPosition(BlockToPixelCoords({x, y}));
-    spr.transform.SetZIndex(1.f);
+    spr.transform.SetZIndex(0);
 
     // Add the Sprite and Block to the block as a component
     world.add_component<Sprite>(entity, spr);
@@ -307,7 +307,7 @@ void BoardInit(float, World& world) {
         CreateSprite({(BOARD_WIDTH + 2) * BLOCK_SIZE, (BOARD_HEIGHT + 1) * BLOCK_SIZE});
     boardSprite.texture = boardTexture;
     boardSprite.transform.SetPosition(boardScreenPos - Vector2f{BLOCK_SIZE, 0});
-    boardSprite.transform.SetZIndex(-10);
+    boardSprite.transform.SetZIndex(.1f);
 
     world.add_component<PieceQueue>(boardEntity, PieceQueue{GeneratePieceBag()});
     world.add_component<Board>(boardEntity, std::move(board));

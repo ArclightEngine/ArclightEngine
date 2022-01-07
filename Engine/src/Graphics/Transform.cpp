@@ -17,6 +17,7 @@ Transform::Transform(const Transform& other){
 	m_position = other.m_position;
 	m_scale = other.m_scale;
 	m_rotation = other.m_rotation;
+	m_zIndex = other.m_zIndex;
 
 	m_matrixDirty = true;
 }
@@ -25,6 +26,7 @@ Transform& Transform::operator=(const Transform& other){
 	m_position = other.m_position;
 	m_scale = other.m_scale;
 	m_rotation = other.m_rotation;
+	m_zIndex = other.m_zIndex;
 
 	std::unique_lock acq(m_matrixLock);
 	m_matrixDirty = true;

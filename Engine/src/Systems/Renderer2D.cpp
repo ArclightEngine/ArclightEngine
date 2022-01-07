@@ -10,7 +10,6 @@ namespace Arclight::Systems {
 
 void renderer_2d(float, World& world) {
     Rendering::Renderer& renderer = *Rendering::Renderer::instance();
-    renderer.clear();
 
     auto spriteView = world.registry().view<Sprite>();
     auto textView = world.registry().view<Text>();

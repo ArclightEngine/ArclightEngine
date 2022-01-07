@@ -42,6 +42,8 @@ void Application::run() {
     // A system may have queued a world or state change
     process_defer_queue();
 
+
+    Rendering::Renderer::instance()->clear();
     Rendering::Renderer::instance()->render();
 
 #ifdef ARCLIGHT_PLATFORM_WASM
