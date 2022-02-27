@@ -49,7 +49,7 @@ void renderer_2d(float, World& world) {
 
         memcpy(vertices + nextVertex, sprite.vertices, sizeof(Vertex) * 4);
 
-        renderer.draw(vbuf.handle(), nextVertex, 4, sprite.transform.Matrix(), tex, pipeline);
+        renderer.draw(vbuf.handle(), nextVertex, 4, sprite.transform.matrix(), tex, pipeline);
         nextVertex += 4;
     }
 
@@ -57,12 +57,10 @@ void renderer_2d(float, World& world) {
         Text& text = textView.get<Text>(ent);
 
         memcpy(vertices + nextVertex, text.vertices(), sizeof(Vertex) * 4);
-        renderer.draw(vbuf.handle(), nextVertex, 4, text.transform.Matrix(), text.tex().handle(),
+        renderer.draw(vbuf.handle(), nextVertex, 4, text.transform.matrix(), text.tex().handle(),
                       pipeline);
         nextVertex += 4;
     }
-
-    renderer.render();
 }
 
 } // namespace Arclight::Systems

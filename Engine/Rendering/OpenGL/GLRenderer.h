@@ -93,7 +93,7 @@ private:
     GLuint m_vbo;
 
     WindowContext* m_windowContext;
-    Transform m_viewportTransform;
+    Transform2D m_viewportTransform;
 
     SDL_GLContext m_glContext;
 

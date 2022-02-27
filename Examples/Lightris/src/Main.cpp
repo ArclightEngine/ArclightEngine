@@ -168,8 +168,8 @@ Entity ConstructBlockSprite(World& world, int block, int x, int y) {
     // Create sprite object with block texture
     Sprite spr = CreateSprite({BLOCK_SIZE}, Rectf(Vector2f{1.0f}), blockColours[block].AsFloat());
     spr.texture = blockTexture;
-    spr.transform.SetPosition(BlockToPixelCoords({x, y}));
-    spr.transform.SetZIndex(0);
+    spr.transform.set_position(BlockToPixelCoords({x, y}));
+    spr.transform.set_z_index(0);
 
     // Add the Sprite and Block to the block as a component
     world.add_component<Sprite>(entity, spr);
@@ -244,9 +244,9 @@ void MenuInit(float, World& world) {
     Text text2("Made with Arclight Engine https://arclightengine.org");
     text2.SetFontSize(20);
     text2.SetFont(font);
-    text.transform.SetPosition(
+    text.transform.set_position(
         Vector2f{window->GetSize().x / 2.f - text.Bounds().x / 2.f, window->GetSize().y / 3.f});
-    text2.transform.SetPosition(Vector2f{5.f, static_cast<float>(window->GetSize().y) - 25});
+    text2.transform.set_position(Vector2f{5.f, static_cast<float>(window->GetSize().y) - 25});
 
     Text controls("Press R to start and restart.\n"
                   "Move pieces with LEFT and RIGHT ARROW keys\n"
@@ -256,7 +256,7 @@ void MenuInit(float, World& world) {
                   "Hard drop with SPACE");
     controls.SetFontSize(20);
     controls.SetFont(font);
-    controls.transform.SetPosition({36, window->GetSize().y / 2.f});
+    controls.transform.set_position({36, window->GetSize().y / 2.f});
 
     world.add_component<Text>(titleEntity, std::move(text));
     world.add_component<Text>(footnoteEntity, std::move(text2));
@@ -306,8 +306,8 @@ void BoardInit(float, World& world) {
     Sprite boardSprite =
         CreateSprite({(BOARD_WIDTH + 2) * BLOCK_SIZE, (BOARD_HEIGHT + 1) * BLOCK_SIZE});
     boardSprite.texture = boardTexture;
-    boardSprite.transform.SetPosition(boardScreenPos - Vector2f{BLOCK_SIZE, 0});
-    boardSprite.transform.SetZIndex(.1f);
+    boardSprite.transform.set_position(boardScreenPos - Vector2f{BLOCK_SIZE, 0});
+    boardSprite.transform.set_z_index(.1f);
 
     world.add_component<PieceQueue>(boardEntity, PieceQueue{GeneratePieceBag()});
     world.add_component<Board>(boardEntity, std::move(board));
@@ -349,7 +349,7 @@ std::vector<Piece::Block> MovePieceAndCopy(std::vector<Piece::Block> blocks,
 void UpdatePieceBlocks(World& world, Piece& piece) {
     for (auto& block : piece.blocks) {
         auto& sprite = world.get_component<Sprite>(block.sprite);
-        sprite.transform.SetPosition(BlockToPixelCoords(piece.origin + block.position));
+        sprite.transform.set_position(BlockToPixelCoords(piece.origin + block.position));
     }
 }
 
@@ -535,7 +535,7 @@ void ClearLinesIfNeeded(World& world, Board& board) {
             for (int x = 0; x < BOARD_WIDTH; x++) {
                 Entity block = board[y][x];
                 if (block != entt::null)
-                    world.get_component<Sprite>(block).transform.SetPosition(
+                    world.get_component<Sprite>(block).transform.set_position(
                         BlockToPixelCoords(Vector2i{x, y}));
             }
         }

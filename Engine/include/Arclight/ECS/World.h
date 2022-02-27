@@ -44,7 +44,7 @@ public:
         assert(m_registry.valid(ent));
         // Needs to be deferred
         std::unique_lock lock(m_componentCleanupMutex);
-        assure_cleanup_function<C...>(ent);
+        assure_cleanup_function<C...>();
         m_registry.emplace<Components::ComponentRemovalTag<C>...>(ent);
     }
 
@@ -81,7 +81,7 @@ private:
     //
     // Afterwards, entities are destroyed consecutively
 
-    template <Component C> ALWAYS_INLINE void assure_cleanup_function(Entity e) {
+    template <Component C> ALWAYS_INLINE void assure_cleanup_function() {
         const auto index = entt::type_index<C>::value();
 
         if (!(index < m_componentCleanupFunctions.size())) {

@@ -12,13 +12,13 @@ template <typename T> struct Vector2 {
     constexpr Vector2(T v) : x(v), y(v) {}
     constexpr Vector2(T x, T y) : x(x), y(y) {}
 
-    ALWAYS_INLINE Vector2<T>& Scale(const Vector2<T>& scaleVector) {
+    ALWAYS_INLINE Vector2<T>& scale(const Vector2<T>& scaleVector) {
         x *= scaleVector.x;
         y *= scaleVector.y;
         return *this;
     }
 
-    static ALWAYS_INLINE Vector2<T> Scale(const Vector2<T>& l, const Vector2<T>& r) {
+    static ALWAYS_INLINE Vector2<T> scale(const Vector2<T>& l, const Vector2<T>& r) {
         return Vector2<T>{l.x * r.x, l.y * r.y};
     }
 };

@@ -115,7 +115,8 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
         Logger::Debug("Using GPU: ", p.deviceName);
 
         const VkPhysicalDeviceLimits& limits = p.limits;
-        Logger::Debug("Maximum bound descriptor sets: {}, Push constant size: {}", limits.maxBoundDescriptorSets, limits.maxPushConstantsSize);
+        Logger::Debug("Maximum bound descriptor sets: {}, Push constant size: {}",
+                      limits.maxBoundDescriptorSets, limits.maxPushConstantsSize);
     }
 
     if (CreateLogicalDevice()) {
@@ -371,7 +372,7 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
     }
 
     m_viewportTransform =
-        Transform({-1, -1}, {2.f / m_swapExtent.width, 2.f / m_swapExtent.height});
+        Transform2D({-1, -1}, {2.f / m_swapExtent.width, 2.f / m_swapExtent.height});
 
     // Pipelines use a dynamic viewport state,
     // so this data needs to be sent each time a new pipeline is bound
@@ -486,7 +487,7 @@ void VulkanRenderer::destroy_texture(Texture::TextureHandle texture) {
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
 
     for (unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
-        if(auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()){
+        if (auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()) {
             free_descriptor_set(it->second);
             m_textureDescriptorSets.erase(it);
         }
@@ -529,7 +530,7 @@ void VulkanRenderer::destroy_vertex_buffer(void* buffer) {
     assert(erased ==
            1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
 
-    if(m_boundVertexBuffer == obj) {
+    if (m_boundVertexBuffer == obj) {
         m_boundVertexBuffer = nullptr;
     }
 
@@ -673,7 +674,7 @@ void VulkanRenderer::resize_viewport(const Vector2i&) {
     }
 
     m_viewportTransform =
-        Transform({-1, -1}, {2.f / m_swapExtent.width, 2.f / m_swapExtent.height});
+        Transform2D({-1, -1}, {2.f / m_swapExtent.width, 2.f / m_swapExtent.height});
 
     VkExtent2D extent = GetScreenExtent();
     VkViewport viewport = {
@@ -706,7 +707,7 @@ void VulkanRenderer::resize_viewport(const Vector2i&) {
             // Update the viewport transform
             pipeline->UpdatePushConstant(
                 cmdBuf.Buffer(), offsetof(VulkanPipeline::PushConstant2DTransform, viewport),
-                16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
+                16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.matrix().matrix());
 
             // Our buffer will be submitted on destruction, so we don't need to do anything here
         }
@@ -719,8 +720,10 @@ void VulkanRenderer::resize_viewport(const Vector2i&) {
 void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
     m_boundTexture = reinterpret_cast<VulkanTexture*>(texture);
     if (texture) {
-        if(!m_textures.contains(m_boundTexture)) {
-            FatalRuntimeError("VulkanRenderer: Invalid texture handle {}, perhaps an invalid texture pointer was used.", texture);
+        if (!m_textures.contains(m_boundTexture)) {
+            /*FatalRuntimeError("VulkanRenderer: Invalid texture handle {}, perhaps an invalid "
+                              "te xture pointer was used.",
+                              texture);*/
         }
 
         VkDescriptorSet pDescriptorSets[] = {VK_NULL_HANDLE};
@@ -766,8 +769,9 @@ void VulkanRenderer::bind_vertex_buffer(void* buffer) {
     m_boundVertexBuffer = (VertexBuffer*)buffer;
 }
 
-void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform) {
-    if(!m_boundVertexBuffer) {
+void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount,
+                                  const Matrix4& transform) {
+    if (!m_boundVertexBuffer) {
         FatalRuntimeError("VulkanRenderer::do_draw_call: vertex buffer was not bound!");
         return;
     }
@@ -787,7 +791,7 @@ void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, co
         m_boundPipeline->UpdatePushConstant(
             m_commandBuffers[m_currentFrame],
             offsetof(VulkanPipeline::PushConstant2DTransform, viewport),
-            16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.Matrix().Matrix());
+            16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.matrix().matrix());
     }
 
     if (m_boundTexture /*&& m_boundTexture != m_lastTextures[m_currentFrame]*/) {
@@ -808,7 +812,7 @@ void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, co
     m_boundPipeline->UpdatePushConstant(
         m_commandBuffers[m_currentFrame],
         offsetof(VulkanPipeline::PushConstant2DTransform, transform),
-        16 * sizeof(float) /* 4x4 float matrix */, transform.Matrix());
+        16 * sizeof(float) /* 4x4 float matrix */, transform.matrix());
 
     vkCmdDraw(m_commandBuffers[m_currentFrame], vertexCount, 1, firstVertex, 0);
 }
@@ -888,7 +892,7 @@ void VulkanRenderer::BeginFrame() {
                                0)); // Apparently resetting the whole command pool is faster
 
     std::scoped_lock lockBufferDestruction(m_bufferDestroyLock);
-    for(auto& buffer : m_buffersPendingDestruction) {
+    for (auto& buffer : m_buffersPendingDestruction) {
         vmaDestroyBuffer(m_alloc, buffer.first, buffer.second);
     }
 
@@ -1227,7 +1231,7 @@ VkDescriptorSet VulkanRenderer::allocate_descriptor_set() {
     std::lock_guard lockPool(pool.poolLock);
 
     VkDescriptorSet set;
-    if(pool.freeSets.size()) {
+    if (pool.freeSets.size()) {
         set = pool.freeSets.top();
         pool.freeSets.pop();
         return set;

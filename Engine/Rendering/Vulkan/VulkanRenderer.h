@@ -102,8 +102,12 @@ protected:
         uint32_t size;     // How many vertexes can fit in buffer
     };
 
+    void purge_destroyed_textures();
+
     std::mutex m_bufferDestroyLock;
     std::vector<std::pair<VkBuffer, VmaAllocation>> m_buffersPendingDestruction;
+    std::mutex m_textureDestroyLock;
+    std::vector<VulkanTexture*> m_texturesPendingDestruction;
 
     inline VkDevice GetDevice() { return m_device; }
     inline VkRenderPass GetRenderPass() { return m_renderPass; }
@@ -217,7 +221,7 @@ private:
     VkColorSpaceKHR m_swapColourSpace;
     VkExtent2D m_swapExtent;
 
-    Transform m_viewportTransform;
+    Transform2D m_viewportTransform;
 
     VmaAllocator m_alloc; // VMA library allocator object
 

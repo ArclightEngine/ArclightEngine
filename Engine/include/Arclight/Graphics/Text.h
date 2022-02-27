@@ -32,7 +32,7 @@ public:
     ALWAYS_INLINE const Vertex* vertices() const { return m_vertices; }
     ALWAYS_INLINE const Vector2f Bounds() const { return m_bounds.end; }
 
-    Transform transform;
+    Transform2D transform;
 
 private:
     void render();

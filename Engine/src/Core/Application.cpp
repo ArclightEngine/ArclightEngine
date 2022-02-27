@@ -93,10 +93,26 @@ void Application::main_loop() {
     m_input.Tick();
     pollEvents();
 
-    run_system_group(m_globalSystems);
-
+    queue_system_group<Stage::PreTick>(m_globalSystems);
     if (m_currentState) {
-        run_system_group(*m_currentState);
+        queue_system_group<Stage::PreTick>(*m_currentState);
+    }
+
+    Rendering::Renderer::instance()->render();
+    process_job_queue();
+    World::s_currentWorld->cleanup();
+
+    queue_system_group<Stage::Tick>(m_globalSystems);
+    if (m_currentState) {
+        queue_system_group<Stage::Tick>(*m_currentState);
+    }
+
+    process_job_queue();
+    World::s_currentWorld->cleanup();
+
+    queue_system_group<Stage::PostTick>(m_globalSystems);
+    if (m_currentState) {
+        queue_system_group<Stage::PostTick>(*m_currentState);
     }
 
     process_job_queue();

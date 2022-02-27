@@ -28,6 +28,8 @@ void Renderer::render() {
 
             q.pop();
         }
+
+        assert(q.empty());
     }
 }
 

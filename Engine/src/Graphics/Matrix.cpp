@@ -5,7 +5,7 @@
 
 namespace Arclight {
 
-inline void CombineMatrixes(float* m1, const float* m2){
+inline void combine_matrixes(float* m1, const float* m2){
     // Multiply the first matrix's rows with the second matrix's columns
     float tempMatrix[16] = {
         m1[0] * m2[0] + m1[4] * m2[1] + m1[8] * m2[2] + m1[12] * m2[3],
@@ -53,7 +53,7 @@ Matrix4::Matrix4(float v00, float v01, float v02, float v03,
     memcpy(m_matrix, temp, 16 * sizeof(float));
 }
 
-Vector2f Matrix4::Apply(const Vector2f& vector) const {
+Vector2f Matrix4::apply(const Vector2f& vector) const {
     return {
         vector.x * m_matrix[0] + vector.x * m_matrix[4] + vector.x * m_matrix[8] + m_matrix[12],
         vector.x * m_matrix[0] + vector.x * m_matrix[4] + vector.x * m_matrix[8] + m_matrix[12],
@@ -61,7 +61,7 @@ Vector2f Matrix4::Apply(const Vector2f& vector) const {
 }
 
 // 2D translation
-void Matrix4::Translate(float x, float y){
+void Matrix4::translate(float x, float y){
     // Effectively multiply our matrix with
     // 1, 0, 0, vector.x
     // 0, 1, 0, vector.y
@@ -73,11 +73,11 @@ void Matrix4::Translate(float x, float y){
         0, 0, 1, 0,
         x, y, 0, 1
     };
-    CombineMatrixes(m_matrix, temp);
+    combine_matrixes(m_matrix, temp);
 }
 
 // 2D scale
-void Matrix4::Scale(float x, float y){
+void Matrix4::scale(float x, float y){
     // Effectively multiply our matrix with
     // vector.x, 0,         0, 0
     // 0,        vector.y,  0, 0
@@ -89,11 +89,11 @@ void Matrix4::Scale(float x, float y){
         0, 0, 1, 0,
         0, 0, 0, 1
     };
-    CombineMatrixes(m_matrix, temp);
+    combine_matrixes(m_matrix, temp);
 }
 
 // 2D rotation
-void Matrix4::Rotate(float angle){
+void Matrix4::rotate(float angle){
     float r = angle * (M_PI / 180.f); // Radians
     float c = cosf(r);
     float s = sinf(r);
@@ -109,16 +109,16 @@ void Matrix4::Rotate(float angle){
         0, 0, 1, 0,
         0, 0, 0, 1
     };
-    CombineMatrixes(m_matrix, temp);
+    combine_matrixes(m_matrix, temp);
 }
 
 Matrix4& Matrix4::operator*=(const Matrix4& r) {
-    CombineMatrixes(m_matrix, r.Matrix());
+    combine_matrixes(m_matrix, r.matrix());
     return *this;
 }
 
 Matrix4& Matrix4::operator*=(const float* otherMatrix) {
-    CombineMatrixes(m_matrix, otherMatrix);
+    combine_matrixes(m_matrix, otherMatrix);
     return *this;
 }
 

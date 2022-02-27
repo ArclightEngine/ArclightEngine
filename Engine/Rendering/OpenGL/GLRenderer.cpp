@@ -193,7 +193,7 @@ void GLRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Matrix
 
     glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STREAM_DRAW));
 
-    glUniformMatrix4fv(m_boundPipeline->ModelTransformIndex(), 1, GL_FALSE, transform.Matrix());
+    glUniformMatrix4fv(m_boundPipeline->ModelTransformIndex(), 1, GL_FALSE, transform.matrix());
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
 }
@@ -267,7 +267,7 @@ void GLRenderer::destroy_texture(Texture::TextureHandle texHandle) {
 }
 
 void GLRenderer::UpdateViewportTransform() {
-    m_viewportTransform = Transform(
+    m_viewportTransform = Transform2D(
         {-1, 1}, {2.f / m_windowContext->GetSize().x, -2.f / m_windowContext->GetSize().y});
 
     // Bind a range in the buffer to an index
@@ -279,7 +279,7 @@ void GLRenderer::UpdateViewportTransform() {
     glBindBufferRange(GL_UNIFORM_BUFFER, 1, m_transformUBO, 0, sizeof(Matrix4::s_identityMatrix));
 
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Matrix4::s_identityMatrix),
-                    m_viewportTransform.Matrix().Matrix());
+                    m_viewportTransform.matrix().matrix());
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }

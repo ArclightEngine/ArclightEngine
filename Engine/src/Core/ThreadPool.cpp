@@ -60,7 +60,7 @@ ThreadPool::ThreadPool() {
     }
 #endif
 
-    Logger::Debug("[ThreadPool] Using {} threads", " threads.");
+    Logger::Debug("[ThreadPool] Using {} threads.", cpuCount);
 
     while (cpuCount--) {
         m_threads.push_back(std::thread(ThreadMain, this));

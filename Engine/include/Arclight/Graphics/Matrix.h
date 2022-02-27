@@ -16,20 +16,20 @@ public:
                                float v02, float v12, float v22, float v32,
                                float v03, float v13, float v23, float v33);
 
-    Vector2f Apply(const Vector2f& vector) const;
+    Vector2f apply(const Vector2f& vector) const;
 
     // 2D translation
-    void Translate(float x, float y);
-    inline void Translate(const Vector2f& vector) { return Translate(vector.x, vector.y); }
+    void translate(float x, float y);
+    inline void translate(const Vector2f& vector) { return translate(vector.x, vector.y); }
 
     // 2D scale
-    void Scale(float x, float y);
-    inline void Scale(const Vector2f& vector) { return Scale(vector.x, vector.y); }
+    void scale(float x, float y);
+    inline void scale(const Vector2f& vector) { return scale(vector.x, vector.y); }
 
     // 2D rotation, we only have one axis to rotate around
-    void Rotate(float angle);
+    void rotate(float angle);
 
-    inline const float* Matrix() const { return m_matrix; }
+    inline const float* matrix() const { return m_matrix; }
 
     Matrix4& operator*=(const Matrix4& r);
     Matrix4& operator*=(const float* matrix);

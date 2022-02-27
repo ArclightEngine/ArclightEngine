@@ -5,7 +5,7 @@
 
 namespace Arclight {
 
-Transform::Transform(const Vector2f& position, const Vector2f& scale, float rotationDegrees)
+Transform2D::Transform2D(const Vector2f& position, const Vector2f& scale, float rotationDegrees)
 	: m_position(position), m_scale(scale) {
 	std::lock_guard acq(m_matrixLock);
 	m_rotation = rotationDegrees * (M_PI / 180.f);
@@ -13,7 +13,7 @@ Transform::Transform(const Vector2f& position, const Vector2f& scale, float rota
 	m_matrixDirty = true;
 }
 
-Transform::Transform(const Transform& other){
+Transform2D::Transform2D(const Transform2D& other){
 	m_position = other.m_position;
 	m_scale = other.m_scale;
 	m_rotation = other.m_rotation;
@@ -22,7 +22,7 @@ Transform::Transform(const Transform& other){
 	m_matrixDirty = true;
 }
 
-Transform& Transform::operator=(const Transform& other){
+Transform2D& Transform2D::operator=(const Transform2D& other){
 	m_position = other.m_position;
 	m_scale = other.m_scale;
 	m_rotation = other.m_rotation;
@@ -34,39 +34,39 @@ Transform& Transform::operator=(const Transform& other){
 	return *this;
 }
 
-void Transform::SetPosition(const Vector2f& position) {
+void Transform2D::set_position(const Vector2f& position) {
 	std::unique_lock acq(m_matrixLock);
 	m_position = position;
 
 	m_matrixDirty = true;
 }
 
-void Transform::SetZIndex(float z) {
+void Transform2D::set_z_index(float z) {
 	std::unique_lock acq(m_matrixLock);
 	m_zIndex = z;
 
 	m_matrixDirty = true;
 }
 
-void Transform::SetPosition(float x, float y) {
-	return SetPosition({x, y});
+void Transform2D::set_position(float x, float y) {
+	return set_position({x, y});
 }
-void Transform::SetScale(const Vector2f& scale) {
+void Transform2D::set_scale(const Vector2f& scale) {
 	std::lock_guard acq(m_matrixLock);
 	m_scale = scale;
 
 	m_matrixDirty = true;
 }
-void Transform::SetScale(float scaleX, float scaleY) {
-	return SetScale({scaleX, scaleY});
+void Transform2D::set_scale(float scaleX, float scaleY) {
+	return set_scale({scaleX, scaleY});
 }
-void Transform::SetRotation(float degrees) {
+void Transform2D::set_rotation(float degrees) {
 	m_rotation = degrees * (M_PI / 180.f);
 
 	m_matrixDirty = true;
 }
 
-const Matrix4& Transform::Matrix() {
+const Matrix4& Transform2D::matrix() {
 	std::lock_guard acq(m_matrixLock);
 
 	if(m_matrixDirty){

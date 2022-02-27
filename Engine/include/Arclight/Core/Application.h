@@ -148,7 +148,7 @@ private:
     void load_world_impl(std::shared_ptr<World> world);
 
     void init_system_group(SystemGroup& g) {
-        for (auto& sys : g.tick) {
+        for (auto& sys : g.pretick) {
             sys->Init();
         }
 
@@ -161,28 +161,21 @@ private:
         }
     }
 
-    void run_system_group(SystemGroup& g) {
-        for (auto* sys : g.pretick) {
-            m_threadPool.Schedule(*sys);
+    template<Stage stage>
+    void queue_system_group(SystemGroup& g) {
+        if constexpr(stage == Stage::PreTick) {
+            for (auto* sys : g.pretick) {
+                m_threadPool.Schedule(*sys);
+            }
+        } else if constexpr(stage == Stage::Tick) {
+            for (auto* sys : g.tick) {
+                m_threadPool.Schedule(*sys);
+            }
+        } else if constexpr(stage == Stage::PostTick) {
+            for (auto* sys : g.posttick) {
+                m_threadPool.Schedule(*sys);
+            }
         }
-
-        process_job_queue();
-        World::s_currentWorld->cleanup();
-
-        for (auto* sys : g.tick) {
-            m_threadPool.Schedule(*sys);
-        }
-
-        process_job_queue();
-        World::s_currentWorld->cleanup();
-
-        for (auto* sys : g.posttick) {
-            m_threadPool.Schedule(*sys);
-        }
-
-
-        process_job_queue();
-        World::s_currentWorld->cleanup();
     }
 
     // Frame delay in us
