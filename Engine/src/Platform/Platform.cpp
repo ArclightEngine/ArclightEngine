@@ -26,6 +26,10 @@
 #include <Rendering/OpenGL/GLRenderer.h>
 #endif
 
+#ifdef ARCLIGHT_WEBGPU
+#include <Rendering/WebGPU/WebGPURenderer.h>
+#endif
+
 namespace Arclight::Platform {
 
 std::vector<Rendering::Renderer*> renderers;
@@ -82,6 +86,13 @@ void Initialize() {
     Rendering::GLRenderer* glRenderer = new Rendering::GLRenderer();
     if (!glRenderer->initialize(windowContext)) {
         renderers.push_back(glRenderer);
+    }
+#endif
+
+#ifdef ARCLIGHT_WEBGPU
+    Rendering::WebGPURenderer* wgpuRenderer = new Rendering::WebGPURenderer();
+    if (!wgpuRenderer->initialize(windowContext)) {
+        renderers.push_back(wgpuRenderer);
     }
 #endif
 

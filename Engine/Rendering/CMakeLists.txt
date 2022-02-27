@@ -12,3 +12,8 @@ set(OGL_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/GLRenderer.cpp
     PARENT_SCOPE
 )
+
+set(WEBGPU_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/WebGPU/WebGPURenderer.cpp
+    PARENT_SCOPE
+)

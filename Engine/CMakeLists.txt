@@ -70,6 +70,22 @@ if(USE_OPENGL)
     target_sources(libarclight PRIVATE ${OGL_SRC})
 endif()
 
+if(USE_WEBGPU)
+    add_definitions(-DARCLIGHT_WEBGPU=1)
+
+    if(IS_LINUX)
+        target_link_libraries(libarclight ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-linux-x86_64/libwgpu.so)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-linux-x86_64/)
+    endif()
+
+    if(IS_WINDOWS)
+        target_link_libraries(libarclight ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-windows-x86_64/libwgpu.dll)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-windows-x86_64/)
+    endif()
+
+    target_sources(libarclight PRIVATE ${WEBGPU_SRC})
+endif()
+
 if(USE_DUMMY_RENDERER)
     add_definitions(-DARCLIGHT_DUMMY_RENDERER=1)
 endif()
