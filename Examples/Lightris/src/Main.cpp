@@ -687,7 +687,7 @@ void QueueSystem(float, World& world) {
 }
 
 extern "C" {
-void GameInit() {
+ARCLIGHT_GAME_INIT() {
     auto& app = Application::instance();
     Logger::Debug("Starting Game!");
 

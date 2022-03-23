@@ -11,7 +11,7 @@ Features:
 Platforms:
 - Linux
 - WebAssembly/Emscripten
-- Windows (WIP)
+- Windows
 
 Future goals:
 - Clean API
