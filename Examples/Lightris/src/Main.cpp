@@ -686,7 +686,6 @@ void QueueSystem(float, World& world) {
     }
 }
 
-extern "C" {
 ARCLIGHT_GAME_INIT() {
     auto& app = Application::instance();
     Logger::Debug("Starting Game!");
@@ -720,5 +719,4 @@ ARCLIGHT_GAME_INIT() {
     app.run();
 
     delete blockTexture;
-}
 }

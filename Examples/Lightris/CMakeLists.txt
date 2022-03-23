@@ -68,8 +68,6 @@ if(IS_EMSCRIPTEN)
         --embed-file=${CMAKE_SOURCE_DIR}/assets@assets)
     target_link_libraries(game ${libarclight})
 elseif(IS_WINDOWS)
-    #add_executable(game ${GAME_SOURCES} ${ARCLIGHT_ENGINE_PATH}/Main/Main.cpp)
-    #target_compile_definitions(game PRIVATE ARCLIGHT_SINGLE_EXECUTABLE=1)
     add_library(game SHARED ${GAME_SOURCES})
 
     target_link_libraries(game "${ARCLIGHT_ENGINE_PATH}/out/install/x64-Debug/lib/SDL2.lib")

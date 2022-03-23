@@ -38,9 +38,6 @@ def configure_windows():
 		icu_url = "https://github.com/unicode-org/icu/releases/download/release-69-1/icu4c-69_1-Win64-MSVC2019.zip"
 		download_and_unzip(icu_url, "thirdparty/icu")
 
-		#icu_data_url = "https://github.com/unicode-org/icu/releases/download/release-69-1/icu4c-69_1-data-bin-l.zip"
-		#download_and_unzip(icu_data_url, "thirdparty/icu")
-
 	# Check for Vulkan SDK
 	return 0
 
