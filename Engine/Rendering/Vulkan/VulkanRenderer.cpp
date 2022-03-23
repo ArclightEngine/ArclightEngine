@@ -722,9 +722,12 @@ void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
     m_boundTexture = reinterpret_cast<VulkanTexture*>(texture);
     if (texture) {
         if (!m_textures.contains(m_boundTexture)) {
-            /*FatalRuntimeError("VulkanRenderer: Invalid texture handle {}, perhaps an invalid "
-                              "te xture pointer was used.",
-                              texture);*/
+            Logger::Warning("VulkanRenderer: Invalid texture handle {}, perhaps an invalid "
+                            "texture pointer was used.",
+                            texture);
+
+            m_boundTexture = nullptr;
+            return;
         }
 
         VkDescriptorSet pDescriptorSets[] = {VK_NULL_HANDLE};
@@ -767,13 +770,19 @@ void VulkanRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
 }
 
 void VulkanRenderer::bind_vertex_buffer(void* buffer) {
+    if(!m_vertexBuffers.contains((VertexBuffer*)buffer)) {
+        Logger::Warning("VulkanRenderer: Invalid vertex buffer handle {}.", buffer);
+        m_boundVertexBuffer = nullptr;
+        return;
+    }
+
     m_boundVertexBuffer = (VertexBuffer*)buffer;
 }
 
 void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount,
                                   const Matrix4& transform) {
     if (!m_boundVertexBuffer) {
-        FatalRuntimeError("VulkanRenderer::do_draw_call: vertex buffer was not bound!");
+        Logger::Debug("VulkanRenderer::do_draw_call: vertex buffer was not bound!");
         return;
     }
 
@@ -807,8 +816,13 @@ void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount,
     }
 
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &m_boundVertexBuffer->buffer,
-                           offsets);
+    if (m_boundVertexBuffer && m_boundVertexBuffer->buffer) {
+        vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, &m_boundVertexBuffer->buffer,
+                               offsets);
+    } else {
+        const VkBuffer pBuffers[1] = {VK_NULL_HANDLE};
+        vkCmdBindVertexBuffers(m_commandBuffers[m_currentFrame], 0, 1, pBuffers, offsets);
+    }
 
     m_boundPipeline->UpdatePushConstant(
         m_commandBuffers[m_currentFrame],
