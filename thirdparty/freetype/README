@@ -1,0 +1,30 @@
+FreeType 2.11.1
+===============
+
+FreeType has been stripped of all files except src, include, license and CMake build files for use in ArclightEngine
+
+Homepage: https://www.freetype.org
+
+FreeType is a freely available software library to render fonts.
+
+It  is  written  in  C,   designed  to  be  small,  efficient,  highly
+customizable,  and portable  while capable  of producing  high-quality
+output (glyph images) of most vector and bitmap font formats.
+
+Enjoy!
+
+  The FreeType Team
+
+----------------------------------------------------------------------
+
+Copyright (C) 2006-2021 by
+David Turner, Robert Wilhelm, and Werner Lemberg.
+
+This  file is  part of  the FreeType  project, and  may only  be used,
+modified,  and distributed  under the  terms of  the  FreeType project
+license,  LICENSE.TXT.  By  continuing to  use, modify,  or distribute
+this file you  indicate that you have read  the license and understand
+and accept it fully.
+
+
+--- end of README ---
