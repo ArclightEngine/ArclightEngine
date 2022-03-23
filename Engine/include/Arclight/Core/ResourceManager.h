@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <Arclight/Core/Resource.h>
+#include <Arclight/Platform/API.h>
 
 namespace Arclight {
 
@@ -19,7 +20,7 @@ public:
     virtual std::shared_ptr<Resource> CreateResource() const = 0;
 };
 
-class ResourceManager final {
+class ARCLIGHT_API ResourceManager final {
 public:
     ResourceManager();
     ~ResourceManager();
@@ -31,7 +32,7 @@ public:
 
     void RegisterFormat(ResourceFormat* format);
 
-    const std::shared_ptr<Resource>& GetResource(const std::string& id);
+    std::shared_ptr<Resource> GetResource(const std::string& id);
     template<typename R>
     inline std::shared_ptr<R> GetResource(const std::string& id) {
         return std::move(ObjectCast<R>(GetResource(id)));

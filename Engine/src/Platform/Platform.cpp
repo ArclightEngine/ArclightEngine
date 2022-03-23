@@ -6,11 +6,11 @@
 
 #include <cassert>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_video.h>
+#include <SDL.h>
+#include <SDL_video.h>
 
 #ifdef ARCLIGHT_VULKAN
-#include <SDL2/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
 #include <Rendering/Vulkan/VulkanRenderer.h>

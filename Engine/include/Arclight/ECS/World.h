@@ -6,12 +6,13 @@
 #include <Arclight/ECS/Component.h>
 #include <Arclight/ECS/Entity.h>
 #include <Arclight/ECS/Registry.h>
+#include <Arclight/Platform/API.h>
 
 #include <mutex>
 
 namespace Arclight {
 
-class World final : NonCopyable {
+class ARCLIGHT_API World final : NonCopyable {
     friend class Application;
 
 public:
@@ -61,13 +62,13 @@ public:
     ALWAYS_INLINE ECSRegistry& registry() { return m_registry; }
 
     template <typename T, typename... Args> ALWAYS_INLINE T& ctx_set(Args&&... args) {
-        return m_registry.set<T>(std::move(args)...);
+        return m_registry.ctx().emplace<T>(std::move(args)...);
     }
 
-    template <typename T> [[nodiscard]] ALWAYS_INLINE T& ctx() { return m_registry.ctx<T>(); }
-    template <typename T> [[nodiscard]] ALWAYS_INLINE T* try_ctx() { return m_registry.try_ctx<T>(); }
+    template <typename T> [[nodiscard]] ALWAYS_INLINE T& ctx() { return m_registry.ctx().at<T>(); }
+    template <typename T> [[nodiscard]] ALWAYS_INLINE T* try_ctx() { return m_registry.ctx().find<T>(); }
 
-    template <typename T> ALWAYS_INLINE void ctx_unset() { m_registry.unset<T>(); }
+    template <typename T> ALWAYS_INLINE void ctx_unset() { m_registry.ctx().erase<T>(); }
 
 private:
     // The current world is set by the application,

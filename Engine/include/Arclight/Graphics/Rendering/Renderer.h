@@ -12,12 +12,14 @@
 #include <Arclight/Graphics/Transform.h>
 #include <Arclight/Graphics/Vertex.h>
 
+#include <Arclight/Platform/API.h>
+
 namespace Arclight {
 class WindowContext;
 
 namespace Rendering {
 
-class Renderer {
+class ARCLIGHT_API Renderer {
 public:
     virtual ~Renderer() = default;
 

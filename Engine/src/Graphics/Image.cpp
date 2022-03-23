@@ -36,14 +36,24 @@ int Image::LoadImpl() {
     int channels = 0; // We want four channels (RGBA)
 
     File* file = File::Open(m_filesystemPath, File::OpenReadOnly);
+    if (!file) {
+        Logger::Error("Failed to open {}", m_filesystemPath);
+        return 1;
+    }
+
     uint8_t* pixelData =
         stbi_load_from_callbacks(&stbi_callbacks, file, &m_size.x, &m_size.y, &channels, 4);
     delete file;
 
+    if (!pixelData) {
+        FatalRuntimeError("Image::LoadResouces: Failed to load {}.", m_filesystemPath);
+        return 1;
+    }
+
     if (channels != 4) {
         FatalRuntimeError(
-            "Image::LoadResource: Failed to load image from resource, expected 4 channels.");
-        return 1;
+            "Image::LoadResource: Failed to load image from resource, expected 4 channels. (Got {})", channels);
+        return 2;
     }
 
     m_pixelData = std::unique_ptr<uint8_t>(pixelData);

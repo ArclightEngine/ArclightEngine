@@ -7,10 +7,11 @@
 #include <Arclight/Platform/Input.h>
 
 #include <Arclight/Core/InputBinding.h>
+#include <Arclight/Platform/API.h>
 
 namespace Arclight {
 
-class Input final {
+class ARCLIGHT_API Input final {
 public:
     enum KeyState {
         KeyState_Up = 0, // Key is up

@@ -1,6 +1,7 @@
 #include <Arclight/Core/ResourceManager.h>
 
 #include <Arclight/Core/File.h>
+#include <Arclight/Core/Logger.h>
 #include <Arclight/Graphics/Image.h>
 #include <Arclight/Graphics/Font.h>
 
@@ -81,7 +82,7 @@ void ResourceManager::RegisterFormat(ResourceFormat* format){
     m_formats.push_back(format);
 }
 
-const std::shared_ptr<Resource>& ResourceManager::GetResource(const std::string& id) {
+std::shared_ptr<Resource> ResourceManager::GetResource(const std::string& id) {
     std::unique_lock lockRes(m_lock);
 
     if(m_resources.find(id) != m_resources.end()){
@@ -93,7 +94,7 @@ const std::shared_ptr<Resource>& ResourceManager::GetResource(const std::string&
 
     UnicodeString uID = UnicodeString("./").append(UnicodeString(id.c_str()));
     if(File::Access(uID)){
-        for(auto* f : m_formats){
+        for (auto* f : m_formats) {
             if(f->CanLoad(uID)){
                 auto r = f->CreateResource();
                 r->SetFilesystemPath(std::move(uID));
@@ -103,6 +104,9 @@ const std::shared_ptr<Resource>& ResourceManager::GetResource(const std::string&
                 break;
             }
         }
+    } else {
+        Logger::Debug("Could not find {}", uID);
+        return nullptr;
     }
 
     return m_resources.at(id);

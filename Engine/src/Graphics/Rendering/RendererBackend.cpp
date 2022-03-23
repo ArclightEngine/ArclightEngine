@@ -43,7 +43,7 @@ void Renderer::draw(void* vertexBuffer, unsigned firstVertex, unsigned vertexCou
     std::scoped_lock lockQueue(m_draw_queue_mutex);
 
     auto& q = m_queues[renderPipeline];
-    q.emplace(firstVertex, vertexCount, transform, vertexBuffer, texture);
+    q.emplace(DrawCall{firstVertex, vertexCount, transform, vertexBuffer, texture});
 }
 
 void Renderer::destroy_pipeline(RenderPipeline::PipelineHandle handle) {

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from os import chdir, mkdir, path
+from os import chdir, mkdir, path, environ
 import shutil
 import subprocess
 import sys
@@ -13,6 +13,8 @@ arclight_root = path.dirname(path.realpath(__file__))
 build_platform = "host"
 # Only applies to wasm platform
 webserver_port = 8001
+
+environ["ARCLIGHT_ENGINE_PATH"] = arclight_root
 
 # Get build directory for platform
 def platform_build_dir():

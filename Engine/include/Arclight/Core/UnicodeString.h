@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Arclight/Core/Util.h>
 #include <Arclight/Platform/Platform.h>
 
 #ifdef ARCLIGHT_PLATFORM_UNIX
@@ -13,6 +14,11 @@
 namespace Arclight {
 
 using UnicodeString = icu::UnicodeString;
+
+#ifdef ARCLIGHT_PLATFORM_WINDOWS
+// Windows uses UTF-16
+ALWAYS_INLINE static const wchar_t* as_wide_string(UnicodeString& s) { return (const wchar_t*)s.getTerminatedBuffer(); }
+#endif
 
 } // namespace Arclight
 

@@ -7,7 +7,7 @@
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
 
-#include <SDL2/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 #include <assert.h>
 
 namespace Arclight::Rendering {
@@ -15,6 +15,7 @@ namespace Arclight::Rendering {
 #include "DefaultShaderBytecode.h"
 
 VulkanRenderer::~VulkanRenderer() {
+    Logger::Debug("Destroying VulkanRenderer");
 
     EndRenderPass();
     EndFrame();

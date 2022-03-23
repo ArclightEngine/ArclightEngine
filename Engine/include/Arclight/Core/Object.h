@@ -45,6 +45,8 @@ private:
 };
 
 template <typename T, typename U> std::shared_ptr<T> ObjectCast(const std::shared_ptr<U>& ptr) {
+    assert(ptr);
+
     if (ptr->IsObject(T::ObjectTypeStatic())) {
         return static_pointer_cast<T>(ptr);
     }

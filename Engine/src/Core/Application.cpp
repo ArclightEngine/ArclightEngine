@@ -2,12 +2,12 @@
 
 #include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/Logger.h>
+#include <Arclight/Core/Time.h>
 #include <Arclight/Graphics/Rendering/Renderer.h>
 #include <Arclight/Platform/Platform.h>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
-#include <unistd.h>
 
 //#define ARCLIGHT_STATE_DEBUG
 
@@ -58,7 +58,7 @@ void Application::run() {
         long elapsed = m_timer.elapsed();
         long waitTime = m_frameDelay - elapsed;
         if (waitTime > 0) {
-            usleep(waitTime);
+            sleep_for_useconds(waitTime);
         }
     }
 #endif

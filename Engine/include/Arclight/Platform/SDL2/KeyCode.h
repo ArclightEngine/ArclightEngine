@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL2/SDL_keycode.h>
+#include <SDL_keycode.h>
 
 namespace Arclight {
     // It is a given that alphanumeric keycodes map to their ASCII characters e.g. a key = 'a', 0 key = '0'

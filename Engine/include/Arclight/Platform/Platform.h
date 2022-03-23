@@ -12,6 +12,17 @@
 #define ARCLIGHT_PLATFORM_LINUX
 #endif
 
+#ifdef WIN32
+#define ARCLIGHT_PLATFORM_WINDOWS
+
+#ifdef _MSC_VER
+// MSVC/Windows does not have ssize_t
+#include <BaseTsd.h>
+typedef LONG_PTR ssize_t;
+#endif
+
+#endif
+
 #ifdef __EMSCRIPTEN__
 #define ARCLIGHT_PLATFORM_WASM
 #endif

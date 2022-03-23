@@ -2,3 +2,9 @@ Build
 .vscode
 *.o
 *.a
+
+thirdparty/SDL2/
+thirdparty/icu/
+thirdparty/depot_tools/
+
+.vs/

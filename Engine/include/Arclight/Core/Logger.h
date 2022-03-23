@@ -3,13 +3,14 @@
 #include <Arclight/Core/UnicodeString.h>
 #include <Arclight/Core/Util.h>
 
+#include <Arclight/Platform/Platform.h>
+
 #include <cassert>
 
 #define FMT_EXCEPTIONS 0
 
 #include <fmt/core.h>
 #include <fmt/format.h>
-
 
 template <> struct fmt::formatter<Arclight::UnicodeString> : fmt::formatter<std::string> {
     template <typename Ctx> auto format(const Arclight::UnicodeString& s, Ctx& ctx) {

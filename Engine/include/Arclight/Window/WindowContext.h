@@ -1,15 +1,16 @@
 #pragma once
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
+#include <SDL.h>
+#include <SDL_vulkan.h>
 
 #include <Arclight/Colour.h>
 #include <Arclight/Core/UnicodeString.h>
+#include <Arclight/Platform/API.h>
 #include <Arclight/Vector.h>
 
 namespace Arclight {
 
-class WindowContext final {
+class ARCLIGHT_API WindowContext final {
 public:
     WindowContext(SDL_Window* window);
     ~WindowContext();
@@ -42,7 +43,9 @@ public:
 		std::string utf8Title;
 		title.toUTF8String(utf8Title);
 
-		SDL_SetWindowTitle(m_window, utf8Title.c_str());
+        if (!utf8Title.empty()) {
+            SDL_SetWindowTitle(m_window, utf8Title.c_str());
+        }
 	}
 
     Colour backgroundColour = {0, 0, 0, 255};

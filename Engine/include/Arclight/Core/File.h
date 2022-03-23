@@ -2,6 +2,7 @@
 
 #include <Arclight/Core/Error.h>
 #include <Arclight/Core/UnicodeString.h>
+#include <Arclight/Platform/Platform.h>
 
 #include <memory>
 

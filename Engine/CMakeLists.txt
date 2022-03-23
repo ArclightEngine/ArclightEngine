@@ -22,45 +22,62 @@ set(ENGINE_SRC
     "src/Window/WindowContext.cpp"
 )
 
-include_directories(include)
-include_directories(.)
+if(IS_WINDOWS)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+add_library(libarclight SHARED)
+target_compile_definitions(libarclight PRIVATE ARCLIGHT_API_SHOULD_EXPORT=1)
+
+find_package(fmt)
+target_link_libraries(libarclight fmt::fmt-header-only)
+
+if(NOT IS_EMSCRIPTEN)
+    set(ENGINE_SRC
+        ${ENGINE_SRC}
+        ${ICU_SOURCES}
+    )
+endif()
 
 # Platform specific
 if(IS_UNIX)
     set(ENGINE_SRC
         ${ENGINE_SRC}
         Platform/UNIX/Filesystem.cpp
+        Platform/UNIX/Time.cpp
     )
 elseif(IS_WINDOWS)
-    target_source(ENGINE_SRC
+    set(ENGINE_SRC
         ${ENGINE_SRC}
         Platform/Windows/Filesystem.cpp
+        Platform/Windows/Time.cpp
     )
 else()
     message(FATAL_ERROR "Unsupported platform!")
 endif()
 
-add_library(libarclight OBJECT ${ENGINE_SRC})
+target_sources(libarclight PRIVATE ${ENGINE_SRC})
 
-find_package(fmt)
-target_link_libraries(libarclight fmt::fmt)
+target_link_libraries(libarclight ${ENGINE_LIBS})
+
+target_include_directories(libarclight PUBLIC include)
+target_include_directories(libarclight PRIVATE .)
 
 # Process render sources afterwards
 add_subdirectory(Rendering)
 
 if(USE_VULKAN)
-    add_definitions(-DARCLIGHT_VULKAN=1)
-
     find_package(Vulkan REQUIRED)
 
-    include_directories(${Vulkan_INCLUDE_DIRS})
+    target_include_directories(libarclight PUBLIC ${Vulkan_INCLUDE_DIRS})
     target_link_libraries(libarclight ${Vulkan_LIBRARIES})
 
     target_sources(libarclight PRIVATE ${VULKAN_SRC})
+    target_compile_definitions(libarclight PUBLIC ARCLIGHT_VULKAN=1)
 endif()
 
 if(USE_OPENGL)
-    add_definitions(-DARCLIGHT_OPENGL=1)
+    target_compile_definitions(libarclight PUBLIC ARCLIGHT_OPENGL=1)
 
     if(NOT IS_EMSCRIPTEN)
         find_library(OGL_ES_LIBRARY GLESv2)
@@ -73,14 +90,16 @@ endif()
 if(USE_WEBGPU)
     add_definitions(-DARCLIGHT_WEBGPU=1)
 
-    if(IS_LINUX)
-        target_link_libraries(libarclight ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-linux-x86_64/libwgpu.so)
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-linux-x86_64/)
-    endif()
+    if(IS_EMSCRIPTEN)
 
-    if(IS_WINDOWS)
-        target_link_libraries(libarclight ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-windows-x86_64/libwgpu.dll)
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/wgpu-native-windows-x86_64/)
+    elseif(IS_LINUX)
+        target_link_libraries(libarclight ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/dawn/bin_linux_x86_64)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/dawn/include)
+    elseif(IS_WINDOWS)
+        target_link_libraries(libarclight ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/dawn/bin_windows_x86_64)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/dawn/include)
+    else()
+        
     endif()
 
     target_sources(libarclight PRIVATE ${WEBGPU_SRC})

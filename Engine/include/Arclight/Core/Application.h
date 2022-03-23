@@ -9,6 +9,7 @@
 #include <Arclight/ECS/System.h>
 #include <Arclight/ECS/World.h>
 #include <Arclight/State/StateManager.h>
+#include <Arclight/Platform/API.h>
 #include <Arclight/Window/WindowContext.h>
 
 #include <functional>
@@ -16,9 +17,15 @@
 #include <memory>
 #include <mutex>
 
+#if defined(ARCLIGHT_PLATFORM_WINDOWS)
+#define ARCLIGHT_GAME_INIT extern "C" void __declspec(dllexport) game_init
+#else 
+#define ARCLIGHT_GAME_INIT extern "C" void game_init
+#endif
+
 namespace Arclight {
 
-class Application {
+class ARCLIGHT_API Application {
 public:
     enum class Stage {
         Init,

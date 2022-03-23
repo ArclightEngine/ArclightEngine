@@ -7,7 +7,9 @@
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Graphics/Texture.h>
 
+#ifndef NO_ICU
 #include <unicode/schriter.h>
+#endif
 
 #include "Freetype.h"
 
@@ -76,6 +78,17 @@ void Text::render() {
 
     // Compose a vector of glyphs
     std::vector<unsigned int> glyphs;
+
+#ifdef NO_ICU
+    for (int codepoint : m_text) {
+        if (codepoint == '\n') {
+            texBounds.y += pixelLineHeight;
+            glyphs.push_back('\n');
+        } else if (codepoint != '\r') { // Ignore carriage returns
+            glyphs.push_back(FT_Get_Char_Index(face, codepoint));
+        }
+    }
+#else
     icu::StringCharacterIterator it(m_text);
     UChar32 codepoint = it.next32PostInc();
     while (codepoint != icu::StringCharacterIterator::DONE) {
@@ -88,6 +101,7 @@ void Text::render() {
 
         codepoint = it.next32PostInc();
     }
+#endif
 
     if (glyphs.size() == 0) {
         return;
