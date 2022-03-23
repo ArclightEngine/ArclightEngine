@@ -48,6 +48,14 @@ VulkanRenderer::~VulkanRenderer() {
         delete vBuf;
     }
 
+    {
+        std::scoped_lock lockBufferDestruction(m_bufferDestroyLock);
+        for (auto& buffer : m_buffersPendingDestruction) {
+            vmaDestroyBuffer(m_alloc, buffer.first, buffer.second);
+        }
+        m_buffersPendingDestruction.clear();
+    }
+
     vmaDestroyAllocator(m_alloc);
 
     for (VkFramebuffer& fb : m_framebuffers) {
@@ -910,6 +918,7 @@ void VulkanRenderer::BeginFrame() {
     for (auto& buffer : m_buffersPendingDestruction) {
         vmaDestroyBuffer(m_alloc, buffer.first, buffer.second);
     }
+    m_buffersPendingDestruction.clear();
 
     BeginCommandBuffer();
 
@@ -949,8 +958,6 @@ void VulkanRenderer::EndFrame() {
     };
 
     vkQueuePresentKHR(m_graphicsQueue, &presentInfo);
-
-    m_buffersPendingDestruction.clear();
 
     m_currentFrame = (m_currentFrame + 1) % RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT;
 }

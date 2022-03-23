@@ -42,8 +42,6 @@ int main(int argc, char** argv) {
     Platform::Initialize();
     Logger::Debug("Using renderer: {}", Rendering::Renderer::instance()->get_name());
 
-    Application app;
-
 #if defined(ARCLIGHT_PLATFORM_WASM)
     void (*InitFunc)(void) = game_init;
 #elif defined(ARCLIGHT_PLATFORM_UNIX)
@@ -109,7 +107,10 @@ int main(int argc, char** argv) {
 
     assert(InitFunc);
 
-    InitFunc();
+    {
+        Application app;
+        InitFunc();
+    }
 
 #if defined(ARCLIGHT_PLATFORM_WASM)
     return 0;
