@@ -49,6 +49,11 @@ Vertex* VertexBuffer::get_mapping() {
     return (Vertex*)r->get_vertex_buffer_mapping(m_handle);
 }
 
+void VertexBuffer::update(const Vertex* vertices, unsigned int offset, unsigned int size) {
+    auto* r = Rendering::Renderer::instance();
+    r->update_vertex_buffer(m_handle, offset, size, vertices);
+}
+
 void VertexBuffer::reallocate(unsigned size) {
     auto* r = Rendering::Renderer::instance();
 

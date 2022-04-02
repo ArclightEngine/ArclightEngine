@@ -63,6 +63,7 @@ GLPipeline::GLPipeline(const Shader& vertexShader, const Shader& fragmentShader)
         glCheck(glUniformBlockBinding(m_program, transformBlockIndex, 1));
     }
 
+    m_canvasTransformIndex = glGetUniformLocation(m_program, "canvas");
     m_modelTransformIndex = glGetUniformLocation(m_program, "transform");
     // WebGL does not support texture swizzle, use a uniform to indicate tex format
     m_textureFormatIndex = glGetUniformLocation(m_program, "textureFormat");

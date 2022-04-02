@@ -21,10 +21,15 @@ Camera2D* camera2d_get_current(World& world) {
     return nullptr;
 }
 
-void camera_system(float elapsed, World& world) {
-    Camera2D* current = camera2d_get_current(world);
+Transform2D camera2d_get_transformation(Camera2D* camera) {
+    Transform2D transform = camera->transform;
+    transform.set_position(camera->transform.get_position() * -1.f);
 
-    
+    return transform;
+}
+
+void camera_system(float elapsed, World& world) {
+    Camera2D* current = camera2d_get_current(world);    
 }
 
 } // namespace Arclight

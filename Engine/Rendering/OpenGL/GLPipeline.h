@@ -19,6 +19,7 @@ public:
     ALWAYS_INLINE GLuint GetGLProgram() { return m_program; }
     ALWAYS_INLINE GLuint GetVAO() { return m_vao; }
 
+    ALWAYS_INLINE GLint CanvasTransformIndex() const { return m_canvasTransformIndex; }
     ALWAYS_INLINE GLint ModelTransformIndex() const { return m_modelTransformIndex; }
     ALWAYS_INLINE GLint TextureFormatIndex() const { return m_textureFormatIndex; }
 
@@ -31,6 +32,7 @@ private:
 
     GLuint m_program;
 
+    GLint m_canvasTransformIndex;
     GLint m_modelTransformIndex;
     GLint m_textureFormatIndex;
 

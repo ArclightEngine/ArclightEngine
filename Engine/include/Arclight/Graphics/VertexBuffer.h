@@ -16,7 +16,7 @@ public:
 
     ~VertexBuffer();
 
-    Vertex* get_mapping();
+    void update(const Vertex* vertices, unsigned int offset, unsigned int size);
     void reallocate(unsigned size);
 
     ALWAYS_INLINE unsigned size() const { return m_size; }
@@ -27,6 +27,8 @@ private:
 
     // Pointer to object in the renderer
     void* m_handle = nullptr;
+
+    Vertex* get_mapping();
 };
 
 } // namespace Arclight

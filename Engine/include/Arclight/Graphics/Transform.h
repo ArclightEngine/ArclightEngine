@@ -14,12 +14,12 @@ public:
 
 	Transform2D& operator=(const Transform2D&);
 
-	void set_position(const Vector2f& position);
-	void set_position(float x, float y);
-	void set_z_index(float z);
-	void set_scale(const Vector2f& scale);
-	void set_scale(float scaleX, float scaleY);
-	void set_rotation(float degrees);
+	Transform2D& set_position(const Vector2f& position);
+	Transform2D& set_position(float x, float y);
+	Transform2D& set_z_index(float z);
+	Transform2D& set_scale(const Vector2f& scale);
+	Transform2D& set_scale(float scaleX, float scaleY);
+	Transform2D& set_rotation(float degrees);
 
 	inline const Vector2f& get_position() const { return m_position; }
 	inline float get_z_index() const { return m_zIndex; }

@@ -24,7 +24,7 @@ void Renderer::render() {
             }
 
             bind_vertex_buffer(call.vertexBuffer);
-            do_draw_call(call.firstVertex, call.vertexCount, call.transform);
+            do_draw_call(call.firstVertex, call.vertexCount, call.transform, call.view);
 
             q.pop();
         }
@@ -34,7 +34,7 @@ void Renderer::render() {
 }
 
 void Renderer::draw(void* vertexBuffer, unsigned firstVertex, unsigned vertexCount,
-                    const Matrix4& transform, Texture::TextureHandle texture,
+                    const Matrix4& transform, const Matrix4& view, Texture::TextureHandle texture,
                     RenderPipeline::PipelineHandle renderPipeline) {
     if(!renderPipeline) {
         renderPipeline = RenderPipeline::default_pipeline().handle();
@@ -43,7 +43,7 @@ void Renderer::draw(void* vertexBuffer, unsigned firstVertex, unsigned vertexCou
     std::scoped_lock lockQueue(m_draw_queue_mutex);
 
     auto& q = m_queues[renderPipeline];
-    q.emplace(DrawCall{firstVertex, vertexCount, transform, vertexBuffer, texture});
+    q.emplace(DrawCall{firstVertex, vertexCount, transform, view, vertexBuffer, texture});
 }
 
 void Renderer::destroy_pipeline(RenderPipeline::PipelineHandle handle) {

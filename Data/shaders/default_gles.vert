@@ -5,7 +5,7 @@ precision mediump float;
 uniform Transform {
     mat4 viewport;
 };
-
+uniform mat4 canvas;
 uniform mat4 transform;
 
 layout(location = 0) in vec2 position;
@@ -16,7 +16,7 @@ out vec4 fragColour;
 out vec2 fragTexCoord;
 
 void main() {
-    gl_Position = viewport * transform * vec4(position, 0.0, 1.0);
+    gl_Position = viewport * canvas * transform * vec4(position, 0.0, 1.0);
     fragColour = colour;
     fragTexCoord = texCoord;
 }

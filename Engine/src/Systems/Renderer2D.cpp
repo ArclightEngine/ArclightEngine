@@ -1,5 +1,6 @@
 #include <Arclight/Systems/Renderer2D.h>
 
+#include <Arclight/Components/Camera.h>
 #include <Arclight/Components/Sprite.h>
 #include <Arclight/Core/Application.h>
 #include <Arclight/Core/Logger.h>
@@ -36,7 +37,11 @@ void renderer_2d(float, World& world) {
         vbuf.reallocate(vertexCount + 16);
     }
 
-    Vertex* vertices = vbuf.get_mapping();
+    Camera2D* camera = camera2d_get_current(world);
+    Transform2D viewTransform;
+    if (camera) {
+        viewTransform = camera2d_get_transformation(camera);
+    }
 
     auto pipeline = renderer.default_pipeline().handle();
     unsigned nextVertex = 0;
@@ -47,18 +52,19 @@ void renderer_2d(float, World& world) {
         if (sprite.texture)
             tex = sprite.texture->handle();
 
-        memcpy(vertices + nextVertex, sprite.vertices, sizeof(Vertex) * 4);
+        vbuf.update(sprite.vertices, nextVertex, 4);
 
-        renderer.draw(vbuf.handle(), nextVertex, 4, sprite.transform.matrix(), tex, pipeline);
+        renderer.draw(vbuf.handle(), nextVertex, 4, sprite.transform.matrix(),
+                      viewTransform.matrix(), tex, pipeline);
         nextVertex += 4;
     }
 
     for (Entity ent : textView) {
         Text& text = textView.get<Text>(ent);
 
-        memcpy(vertices + nextVertex, text.vertices(), sizeof(Vertex) * 4);
-        renderer.draw(vbuf.handle(), nextVertex, 4, text.transform.matrix(), text.tex().handle(),
-                      pipeline);
+        vbuf.update(text.vertices(), nextVertex, 4);
+        renderer.draw(vbuf.handle(), nextVertex, 4, text.transform.matrix(), viewTransform.matrix(),
+                      text.tex().handle(), pipeline);
         nextVertex += 4;
     }
 }

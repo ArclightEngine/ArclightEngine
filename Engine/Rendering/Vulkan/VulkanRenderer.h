@@ -55,15 +55,16 @@ public:
 
     RenderPipeline::PipelineHandle
     create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
-                   const RenderPipeline::PipelineFixedConfig& config) override;
+                    const RenderPipeline::PipelineFixedConfig& config) override;
     void destroy_pipeline(RenderPipeline::PipelineHandle handle) override;
 
-    Texture::TextureHandle allocate_texture(const Vector2u& bounds, Texture::Format format) override;
+    Texture::TextureHandle allocate_texture(const Vector2u& bounds,
+                                            Texture::Format format) override;
     void update_texture(Texture::TextureHandle texture, const void* data) override;
     void destroy_texture(Texture::TextureHandle texture) override;
 
     void* allocate_vertex_buffer(unsigned vertexCount) override;
-    void update_vertex_buffer(void* buffer, const Vertex* data) override;
+    void update_vertex_buffer(void* buffer, unsigned int offset, unsigned int size, const Vertex* data) override;
     void* get_vertex_buffer_mapping(void* buffer) override;
     void destroy_vertex_buffer(void* buffer) override;
 
@@ -120,7 +121,8 @@ protected:
         return OneTimeCommandBuffer(*this, m_commandPools[m_currentFrame]);
     }
 
-    void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform) override;
+    void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform,
+                      const Matrix4& view) override;
 
     std::set<VulkanTexture*> m_textures;
     std::set<VulkanPipeline*> m_pipelines;

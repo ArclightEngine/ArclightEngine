@@ -35,21 +35,27 @@ public:
 
     RenderPipeline::PipelineHandle
     create_pipeline(const Shader&, const Shader&,
-                   const RenderPipeline::PipelineFixedConfig&) override;
+                    const RenderPipeline::PipelineFixedConfig&) override;
 
     void destroy_pipeline(RenderPipeline::PipelineHandle) override;
     RenderPipeline& default_pipeline() override;
 
     void bind_pipeline(RenderPipeline::PipelineHandle pipeline) override;
     void bind_texture(Texture::TextureHandle texture) override;
+    void bind_vertex_buffer(void* buffer) override;
 
-    void draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform = Matrix4()) override;
+    void* allocate_vertex_buffer(unsigned vertexCount) override;
+    void update_vertex_buffer(void* buffer, unsigned int offset, unsigned int size, const Vertex* vertices) override;
+    void* get_vertex_buffer_mapping(void* buffer) override;
+    void destroy_vertex_buffer(void* buffer) override;
+
+    void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform, const Matrix4& view) override;
     Texture::TextureHandle allocate_texture(const Vector2u& size, Texture::Format format) override;
     void update_texture(Texture::TextureHandle, const void*) override;
     void destroy_texture(Texture::TextureHandle) override;
 
     const std::string& get_name() const override { return m_name; }
-    
+
     constexpr GLenum TextureToGLFormat(Texture::Format format) {
         switch (format) {
         case Texture::Format_RGBA8_SRGB:
@@ -78,6 +84,11 @@ private:
         GLuint id;
     };
 
+    struct GLVertexBuffer {
+        GLuint id;
+        unsigned vertexCount;
+    };
+
     // Update the viewport transform,
     // called on init and resize
     void UpdateViewportTransform();
@@ -88,6 +99,7 @@ private:
 
     // Uniform Buffer Object for the viewport transform
     GLuint m_transformUBO;
+    GLuint m_boundVBO = 0;
 
     GLVBO GetVertexBufferObject(unsigned vertexCount);
     GLuint m_vbo;
@@ -107,6 +119,7 @@ private:
 
     std::unique_ptr<RenderPipeline> m_defaultPipeline;
     std::set<class GLPipeline*> m_pipelines;
+    std::set<GLVertexBuffer*> m_vbos;
 
     std::set<GLTexture*> m_textures;
 };

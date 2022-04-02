@@ -78,7 +78,7 @@ public:
     /// \param renderPipeline Render pipeline to use
     ////////////////////////////////////////
     virtual void draw(void* vertexBuffer, unsigned firstVertex, unsigned vertexCount,
-                      const Matrix4& transform, Texture::TextureHandle texture,
+                      const Matrix4& transform, const Matrix4& view, Texture::TextureHandle texture,
                       RenderPipeline::PipelineHandle renderPipeline);
 
     ////////////////////////////////////////
@@ -152,7 +152,7 @@ public:
     /// \param data Pointer to vertex data in relevant format. MUST be large enough to contain full
     /// vertex buffer data.
     ////////////////////////////////////////
-    virtual void update_vertex_buffer(void* buffer, const Vertex* vertices) = 0;
+    virtual void update_vertex_buffer(void* buffer, unsigned int offset, unsigned int size, const Vertex* vertices) = 0;
 
     virtual void* get_vertex_buffer_mapping(void* buffer) = 0;
 
@@ -172,11 +172,12 @@ protected:
         unsigned firstVertex;
         unsigned vertexCount;
         Matrix4 transform;
+        Matrix4 view;
         void* vertexBuffer;
         Texture::TextureHandle texture;
     };
 
-    virtual void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform) = 0;
+    virtual void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform, const Matrix4& view) = 0;
 
     std::mutex m_draw_queue_mutex;
 

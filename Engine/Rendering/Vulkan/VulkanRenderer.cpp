@@ -518,10 +518,11 @@ void* VulkanRenderer::allocate_vertex_buffer(unsigned vertexCount) {
     return obj;
 }
 
-void VulkanRenderer::update_vertex_buffer(void* buffer, const Vertex* data) {
+void VulkanRenderer::update_vertex_buffer(void* buffer, unsigned int offset, unsigned int size, const Vertex* data) {
     VertexBuffer* obj = (VertexBuffer*)buffer;
 
-    memcpy(obj->hostMapping, data, obj->size * sizeof(Vertex));
+    assert(offset + size < obj->size);
+    memcpy(obj->hostMapping + offset * sizeof(Vertex), data, size * sizeof(Vertex));
 }
 
 void* VulkanRenderer::get_vertex_buffer_mapping(void* buffer) {
@@ -788,7 +789,7 @@ void VulkanRenderer::bind_vertex_buffer(void* buffer) {
 }
 
 void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount,
-                                  const Matrix4& transform) {
+                                  const Matrix4& transform, const Matrix4& view) {
     if (!m_boundVertexBuffer) {
         Logger::Debug("VulkanRenderer::do_draw_call: vertex buffer was not bound!");
         return;

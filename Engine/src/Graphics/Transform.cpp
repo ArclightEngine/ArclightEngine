@@ -35,36 +35,44 @@ Transform2D& Transform2D::operator=(const Transform2D& other){
 	return *this;
 }
 
-void Transform2D::set_position(const Vector2f& position) {
+Transform2D& Transform2D::set_position(const Vector2f& position) {
 	std::unique_lock acq(m_matrixLock);
 	m_position = position;
 
 	m_matrixDirty = true;
+
+	return *this;
 }
 
-void Transform2D::set_z_index(float z) {
+Transform2D& Transform2D::set_z_index(float z) {
 	std::unique_lock acq(m_matrixLock);
 	m_zIndex = z;
 
 	m_matrixDirty = true;
+
+	return *this;
 }
 
-void Transform2D::set_position(float x, float y) {
+Transform2D& Transform2D::set_position(float x, float y) {
 	return set_position({x, y});
 }
-void Transform2D::set_scale(const Vector2f& scale) {
+Transform2D& Transform2D::set_scale(const Vector2f& scale) {
 	std::lock_guard acq(m_matrixLock);
 	m_scale = scale;
 
 	m_matrixDirty = true;
+
+	return *this;
 }
-void Transform2D::set_scale(float scaleX, float scaleY) {
+Transform2D& Transform2D::set_scale(float scaleX, float scaleY) {
 	return set_scale({scaleX, scaleY});
 }
-void Transform2D::set_rotation(float degrees) {
+Transform2D& Transform2D::set_rotation(float degrees) {
 	m_rotation = degrees * (M_PI / 180.f);
 
 	m_matrixDirty = true;
+
+	return *this;
 }
 
 const Matrix4& Transform2D::matrix() {

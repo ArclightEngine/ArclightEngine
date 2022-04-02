@@ -54,7 +54,7 @@ int GLRenderer::initialize(class WindowContext* context) {
     attr.majorVersion = 2;
     attr.minorVersion = 0;
 
-    auto glContext = emscripten_webgl_create_context("#canvas", &attr); 
+    auto glContext = emscripten_webgl_create_context("#canvas", &attr);
     assert(glContext != 0);
 #else
     // Use OpenGL ES 3.1 on native platforms
@@ -74,7 +74,7 @@ int GLRenderer::initialize(class WindowContext* context) {
     glGenBuffers(1, &m_transformUBO);
 
     glBindBuffer(GL_UNIFORM_BUFFER, m_transformUBO);
-    
+
     // Should only be updated when window is resized,
     // will be used many times
     glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4::s_identityMatrix), Matrix4::s_identityMatrix,
@@ -86,7 +86,7 @@ int GLRenderer::initialize(class WindowContext* context) {
     assert(m_vbo);
 
     // Enable alpha blending
-    glEnable(GL_BLEND);  
+    glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     s_rendererInstance = this;
@@ -102,15 +102,17 @@ int GLRenderer::initialize(class WindowContext* context) {
     auto& clearColour = context->backgroundColour;
     glClearColor(clearColour.r, clearColour.g, clearColour.b, clearColour.a);
 
-    glEnable(GL_DEPTH_TEST);  
+    glEnable(GL_DEPTH_TEST);
     return 0;
 }
 
-void GLRenderer::render() {
+void GLRenderer::render() { 
+    clear();
+    Renderer::render();
     SDL_GL_SwapWindow(m_windowContext->GetWindow());
 }
 
-void GLRenderer::clear(){
+void GLRenderer::clear() {
     // Clear screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -122,7 +124,7 @@ void GLRenderer::resize_viewport(const Vector2i& newPixelSize) {
 
 RenderPipeline::PipelineHandle
 GLRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragmentShader,
-                           const RenderPipeline::PipelineFixedConfig&) {
+                            const RenderPipeline::PipelineFixedConfig&) {
     assert(vertexShader.GetStage() == Shader::VertexShader &&
            fragmentShader.GetStage() == Shader::FragmentShader);
 
@@ -151,7 +153,7 @@ RenderPipeline& GLRenderer::default_pipeline() {
 
 void GLRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
     m_boundPipeline = reinterpret_cast<GLPipeline*>(pipeline);
-    if(m_boundPipeline->GetGLProgram() != m_lastProgram){
+    if (m_boundPipeline->GetGLProgram() != m_lastProgram) {
         glCheck(glUseProgram(m_boundPipeline->GetGLProgram()));
 
         m_lastProgram = m_boundPipeline->GetGLProgram();
@@ -164,7 +166,7 @@ void GLRenderer::bind_texture(Texture::TextureHandle texture) {
         glActiveTexture(GL_TEXTURE0);
         glCheck(glBindTexture(GL_TEXTURE_2D, tex->id));
 
-        if(tex->arclightFormat == Texture::Format_A8_SRGB){
+        if (tex->arclightFormat == Texture::Format_A8_SRGB) {
             glUniform1i(m_boundPipeline->TextureFormatIndex(), 1);
         } else {
             glUniform1i(m_boundPipeline->TextureFormatIndex(), 0);
@@ -174,28 +176,80 @@ void GLRenderer::bind_texture(Texture::TextureHandle texture) {
     }
 }
 
-void GLRenderer::draw(const Vertex* vertices, unsigned vertexCount, const Matrix4& transform) {
-    auto vbo = GetVertexBufferObject(vertexCount);
+void GLRenderer::bind_vertex_buffer(void* buffer) {
+    GLVertexBuffer* vbo = (GLVertexBuffer*)buffer;
+
+    std::unique_lock lockGL(m_glMutex);
+    m_boundVBO = vbo->id;
+}
+
+void* GLRenderer::allocate_vertex_buffer(unsigned vertexCount) {
+    std::unique_lock lockGL(m_glMutex);
+
+    GLuint id;
+    glCheck(glGenBuffers(1, &id));
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, id));
     // GL_STREAM_DRAW - "Data modified once and used a few times"
-    glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo.id));
+    glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), NULL, GL_STREAM_DRAW));
+
+    GLVertexBuffer* vbo = new GLVertexBuffer;
+    vbo->id = id;
+    vbo->vertexCount = vertexCount;
+
+    m_vbos.insert(vbo);
+
+    return (void*)vbo;
+}
+
+void GLRenderer::update_vertex_buffer(void* buffer, unsigned int offset, unsigned int size,
+                                      const Vertex* vertices) {
+    GLVertexBuffer* vbo = (GLVertexBuffer*)buffer;
+
+    std::unique_lock lockGL(m_glMutex);
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo->id));
+    glCheck(glBufferSubData(GL_ARRAY_BUFFER, offset * sizeof(Vertex), size * sizeof(Vertex), vertices));
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_boundVBO));
+}
+
+void* GLRenderer::get_vertex_buffer_mapping(void* buffer) { return nullptr; }
+
+void GLRenderer::destroy_vertex_buffer(void* buffer) {
+    std::unique_lock lockGL(m_glMutex);
+    GLVertexBuffer* vbo = (GLVertexBuffer*)buffer;
+
+    size_t erased = m_vbos.erase(vbo);
+    assert(erased ==
+           1); // Erase returns the amount of pipelines erased, ensure that this is exactly 1
+
+    glDeleteBuffers(1, &vbo->id);
+
+    delete vbo;
+}
+
+void GLRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform,
+                              const Matrix4& view) {
+    std::unique_lock lockGL(m_glMutex);
+    auto vbo = GetVertexBufferObject(vertexCount);
 
     glBindVertexArray(m_boundPipeline->GetVAO());
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_boundVBO));
 
     // Position
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), NULL);
     glEnableVertexAttribArray(0);
     // Texture Coordinates
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, texCoord));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          (const void*)offsetof(Vertex, texCoord));
     glEnableVertexAttribArray(1);
     // Vertex Colour
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, colour));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          (const void*)offsetof(Vertex, colour));
     glEnableVertexAttribArray(2);
 
-    glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STREAM_DRAW));
-
     glUniformMatrix4fv(m_boundPipeline->ModelTransformIndex(), 1, GL_FALSE, transform.matrix());
+    glUniformMatrix4fv(m_boundPipeline->CanvasTransformIndex(), 1, GL_FALSE, view.matrix());
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount);
+    glDrawArrays(GL_TRIANGLE_STRIP, firstVertex, vertexCount);
 }
 
 Texture::TextureHandle GLRenderer::allocate_texture(const Vector2u& size, Texture::Format format) {
@@ -243,8 +297,8 @@ void GLRenderer::update_texture(Texture::TextureHandle texHandle, const void* da
         FatalRuntimeError("Invalid texture format");
     }
 
-    glCheck(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex->size.x, tex->size.y, nonSizedFormat, GL_UNSIGNED_BYTE,
-                    data));
+    glCheck(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex->size.x, tex->size.y, nonSizedFormat,
+                            GL_UNSIGNED_BYTE, data));
 
     // Unbind texture
     glCheck(glBindTexture(GL_TEXTURE_2D, 0));

@@ -2,12 +2,8 @@ cmake_minimum_required(VERSION 3.13)
 
 project(Game)
 
-if(NOT MSVC)
-add_compile_options(-O0 -Wall -Wextra)
-endif()
-
 # Set by arclight-build.py
-set(ARCLIGHT_ENGINE_PATH $ENV{ARCLIGHT_ENGINE_PATH})
+option(ARCLIGHT_ENGINE_PATH "Path to Arclight Engine directory" "$ENV{ARCLIGHT_ENGINE_PATH}")
 # Currently Unsupported
 option(STANDALONE "Build game without external dependencies" OFF)
 
@@ -50,8 +46,6 @@ if(IS_WINDOWS)
     )
 endif()
 
-message(${ARCLIGHT_ENGINE_PATH}/Engine/include)
-
 # Add your game source files here
 set(GAME_SOURCES
     src/Main.cpp
@@ -74,6 +68,11 @@ elseif(IS_WINDOWS)
     target_link_libraries(game "${ARCLIGHT_ENGINE_PATH}/out/install/x64-Debug/lib/icuuc.lib")
     target_link_libraries(game "${ARCLIGHT_ENGINE_PATH}/out/install/x64-Debug/lib/libarclight.lib")
 else()
+    find_package(SDL2 REQUIRED)
+    if(SDL2_FOUND)
+        include_directories(${SDL2_INCLUDE_DIRS})
+    endif()
+
     add_library(game SHARED ${GAME_SOURCES})
 endif()
 
