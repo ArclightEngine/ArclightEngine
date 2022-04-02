@@ -18,7 +18,7 @@ class ARCLIGHT_API World final : NonCopyable {
 public:
     World() = default;
 
-    ALWAYS_INLINE static World& Current() { return *s_currentWorld; }
+    ALWAYS_INLINE static World& current() { return *s_currentWorld; }
 
     void cleanup();
 
@@ -65,10 +65,19 @@ public:
         return m_registry.ctx().emplace<T>(std::move(args)...);
     }
 
-    template <typename T> [[nodiscard]] ALWAYS_INLINE T& ctx() { return m_registry.ctx().at<T>(); }
-    template <typename T> [[nodiscard]] ALWAYS_INLINE T* try_ctx() { return m_registry.ctx().find<T>(); }
+    template <typename T>
+    [[nodiscard]] ALWAYS_INLINE T& ctx(const entt::id_type id = entt::type_id<T>().hash()) {
+        return m_registry.ctx().at<T>(id);
+    }
+    template <typename T>
+    [[nodiscard]] ALWAYS_INLINE T* try_ctx(const entt::id_type id = entt::type_id<T>().hash()) {
+        return m_registry.ctx().find<T>(id);
+    }
 
-    template <typename T> ALWAYS_INLINE void ctx_unset() { m_registry.ctx().erase<T>(); }
+    template <typename T>
+    ALWAYS_INLINE void ctx_unset(const entt::id_type id = entt::type_id<T>().hash()) {
+        m_registry.ctx().erase<T>(id);
+    }
 
 private:
     // The current world is set by the application,

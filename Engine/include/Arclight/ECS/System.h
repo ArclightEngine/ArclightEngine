@@ -33,7 +33,7 @@ public:
     void run() final override {
         m_elapsedTime = m_timer.elapsed() / 1000000.f;
 
-        Function(m_elapsedTime, World::Current());
+        Function(m_elapsedTime, World::current());
     }
 
 protected:
@@ -57,7 +57,7 @@ public:
     void run() final override {
         m_elapsedTime = m_timer.elapsed() / 1000000.f;
 
-        (m_data->*Function)(m_elapsedTime, World::Current());
+        (m_data->*Function)(m_elapsedTime, World::current());
     }
 
 protected:
