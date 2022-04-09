@@ -3,6 +3,7 @@
 #include <Arclight/Core/Input.h>
 #include <Arclight/Core/Logger.h>
 #include <Arclight/Core/ResourceManager.h>
+#include <Arclight/Components/Transform.h>
 #include <Arclight/Components/Sprite.h>
 #include <Arclight/ECS/World.h>
 #include <Arclight/Graphics/Image.h>
@@ -166,13 +167,16 @@ Entity ConstructBlockSprite(World& world, int block, int x, int y) {
     assert(block > 0 && block < 8);
 
     // Create sprite object with block texture
-    Sprite spr = CreateSprite({BLOCK_SIZE}, Rectf(Vector2f{1.0f}), blockColours[block].AsFloat());
+    Sprite spr = create_sprite({BLOCK_SIZE}, Rectf(Vector2f{1.0f}), blockColours[block].AsFloat());
+    Transform2D transform;
+
     spr.texture = blockTexture;
-    spr.transform.set_position(BlockToPixelCoords({x, y}));
-    spr.transform.set_z_index(0);
+    transform.set_position(BlockToPixelCoords({x, y}));
+    transform.set_z_index(0);
 
     // Add the Sprite and Block to the block as a component
     world.add_component<Sprite>(entity, spr);
+    world.add_component<Transform2D>(entity, transform);
     return entity;
 }
 
@@ -239,14 +243,16 @@ void MenuInit(float, World& world) {
     assert(font.get());
 
     Text text("Lightris");
+    Transform2D textTransform;
     text.SetFontSize(64);
     text.SetFont(font);
     Text text2("Made with Arclight Engine https://arclightengine.org");
+    Transform2D text2Transform;
     text2.SetFontSize(20);
     text2.SetFont(font);
-    text.transform.set_position(
+    textTransform.set_position(
         Vector2f{window->GetSize().x / 2.f - text.Bounds().x / 2.f, window->GetSize().y / 3.f});
-    text2.transform.set_position(Vector2f{5.f, static_cast<float>(window->GetSize().y) - 25});
+    text2Transform.set_position(Vector2f{5.f, static_cast<float>(window->GetSize().y) - 25});
 
     Text controls("Press R to start and restart.\n"
                   "Move pieces with LEFT and RIGHT ARROW keys\n"
@@ -254,13 +260,17 @@ void MenuInit(float, World& world) {
                   "Hold piece with LEFT SHIFT\n"
                   "Soft drop with DOWN ARROW\n"
                   "Hard drop with SPACE");
+    Transform2D controlsTransform;
     controls.SetFontSize(20);
     controls.SetFont(font);
-    controls.transform.set_position({36, window->GetSize().y / 2.f});
+    controlsTransform.set_position({36, window->GetSize().y / 2.f});
 
     world.add_component<Text>(titleEntity, std::move(text));
+    world.add_component<Transform2D>(titleEntity, std::move(textTransform));
     world.add_component<Text>(footnoteEntity, std::move(text2));
+    world.add_component<Transform2D>(footnoteEntity, std::move(text2Transform));
     world.add_component<Text>(controlsEntity, std::move(controls));
+    world.add_component<Transform2D>(controlsEntity, std::move(controlsTransform));
 }
 
 void MenuSystem(float, World& world) {
@@ -304,14 +314,16 @@ void BoardInit(float, World& world) {
     boardScreenPos.y = BLOCK_SIZE;
 
     Sprite boardSprite =
-        CreateSprite({(BOARD_WIDTH + 2) * BLOCK_SIZE, (BOARD_HEIGHT + 1) * BLOCK_SIZE});
+        create_sprite({(BOARD_WIDTH + 2) * BLOCK_SIZE, (BOARD_HEIGHT + 1) * BLOCK_SIZE});
+    Transform2D boardTransform;
     boardSprite.texture = boardTexture;
-    boardSprite.transform.set_position(boardScreenPos - Vector2f{BLOCK_SIZE, 0});
-    boardSprite.transform.set_z_index(.1f);
+    boardTransform.set_position(boardScreenPos - Vector2f{BLOCK_SIZE, 0});
+    boardTransform.set_z_index(.1f);
 
     world.add_component<PieceQueue>(boardEntity, PieceQueue{GeneratePieceBag()});
     world.add_component<Board>(boardEntity, std::move(board));
     world.add_component<Sprite>(boardEntity, std::move(boardSprite));
+    world.add_component<Transform2D>(boardEntity, std::move(boardTransform));
     world.add_component<GameState>(boardEntity);
 
     ConstructPiece(world, GetNextPiece(world), 2, 20);
@@ -348,8 +360,8 @@ std::vector<Piece::Block> MovePieceAndCopy(std::vector<Piece::Block> blocks,
 
 void UpdatePieceBlocks(World& world, Piece& piece) {
     for (auto& block : piece.blocks) {
-        auto& sprite = world.get_component<Sprite>(block.sprite);
-        sprite.transform.set_position(BlockToPixelCoords(piece.origin + block.position));
+        auto& t = world.get_component<Transform2D>(block.sprite);
+        t.set_position(BlockToPixelCoords(piece.origin + block.position));
     }
 }
 
@@ -535,7 +547,7 @@ void ClearLinesIfNeeded(World& world, Board& board) {
             for (int x = 0; x < BOARD_WIDTH; x++) {
                 Entity block = board[y][x];
                 if (block != entt::null)
-                    world.get_component<Sprite>(block).transform.set_position(
+                    world.get_component<Transform2D>(block).set_position(
                         BlockToPixelCoords(Vector2i{x, y}));
             }
         }

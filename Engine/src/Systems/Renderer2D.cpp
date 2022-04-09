@@ -12,10 +12,10 @@ namespace Arclight::Systems {
 void renderer_2d(float, World& world) {
     Rendering::Renderer& renderer = *Rendering::Renderer::instance();
 
-    auto spriteView = world.registry().view<Sprite>();
-    auto textView = world.registry().view<Text>();
+    auto sprites = world.registry().group<Sprite>(entt::get<Transform2D>);
+    auto textObjects = world.registry().group<Text>(entt::get<Transform2D>);
 
-    unsigned vertexCount = (spriteView.size() + textView.size()) * 4;
+    unsigned vertexCount = (sprites.size() + textObjects.size()) * 4;
     if (vertexCount <= 0) { // Nothing to draw
         return;
     }
@@ -45,8 +45,9 @@ void renderer_2d(float, World& world) {
 
     auto pipeline = renderer.default_pipeline().handle();
     unsigned nextVertex = 0;
-    for (Entity ent : spriteView) {
-        Sprite& sprite = spriteView.get<Sprite>(ent);
+    for (Entity ent : sprites) {
+        Sprite& sprite = sprites.get<Sprite>(ent);
+        Transform2D& t = sprites.get<Transform2D>(ent);
 
         Texture::TextureHandle tex = nullptr;
         if (sprite.texture)
@@ -54,16 +55,17 @@ void renderer_2d(float, World& world) {
 
         vbuf.update(sprite.vertices, nextVertex, 4);
 
-        renderer.draw(vbuf.handle(), nextVertex, 4, sprite.transform.matrix(),
+        renderer.draw(vbuf.handle(), nextVertex, 4, t.matrix(),
                       viewTransform.matrix(), tex, pipeline);
         nextVertex += 4;
     }
 
-    for (Entity ent : textView) {
-        Text& text = textView.get<Text>(ent);
+    for (Entity ent : textObjects) {
+        Text& text = textObjects.get<Text>(ent);
+        Transform2D& t = textObjects.get<Transform2D>(ent);
 
         vbuf.update(text.vertices(), nextVertex, 4);
-        renderer.draw(vbuf.handle(), nextVertex, 4, text.transform.matrix(), viewTransform.matrix(),
+        renderer.draw(vbuf.handle(), nextVertex, 4, t.matrix(), viewTransform.matrix(),
                       text.tex().handle(), pipeline);
         nextVertex += 4;
     }

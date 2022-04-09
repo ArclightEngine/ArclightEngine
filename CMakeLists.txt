@@ -27,7 +27,7 @@ option(USE_DUMMY_RENDERER "Use dummy renderer")
 option(USE_OPENGL "Use OpenGL ES renderer")
 option(USE_WEBGPU "Use WebGPU renderer")
 
-option(BUILD_EXAMPLES "Build example games" ON)
+option(BUILD_EXAMPLES "Build example games" OFF)
 
 if(CMAKE_SYSTEM_NAME MATCHES Emscripten)
     set(IS_EMSCRIPTEN ON)
@@ -51,6 +51,11 @@ endif()
 
 set(ENGINE_LIBS "")
 
+include_directories(thirdparty)
+include_directories(Engine/include)
+
+add_subdirectory(thirdparty/fmt)
+
 # When using emscripten, the library is linked into the game
 if(NOT IS_EMSCRIPTEN)
     # Unless on emscripten use the in-tree freetype, ICU
@@ -59,8 +64,6 @@ if(NOT IS_EMSCRIPTEN)
 
     add_executable(arclight Main/Main.cpp)
     target_link_libraries(arclight -Wl,--whole-archive libarclight -Wl,--no-whole-archive)
-    
-    include_directories(${CMAKE_SOURCE_DIR}/thirdparty/icu/common)
 
     if(IS_WINDOWS)
         include_directories(${CMAKE_SOURCE_DIR}/thirdparty/icu/include)
@@ -91,19 +94,20 @@ if(NOT IS_EMSCRIPTEN)
         target_link_libraries(arclight pthread)
     endif()
 else()
-    add_compile_options(-sUSE_SDL=2 -sUSE_ICU=1 -sUSE_FREETYPE=1)
+    add_compile_options(-sUSE_SDL=2 -sUSE_ICU=1 -sUSE_FREETYPE=1 -DARCLIGHT_SINGLE_EXECUTABLE=1)
+
     add_link_options(-sMAX_WEBGL_VERSION=2)
     add_library(arclight STATIC Main/Main.cpp)
+
+    find_package(fmt)
+    target_link_libraries(arclight fmt::fmt-header-only)
     target_link_libraries(arclight libarclight)
 endif()
 
-include_directories(thirdparty)
-include_directories(Engine/include)
-
-add_subdirectory(thirdparty/fmt)
 add_subdirectory(Engine)
 
 if(BUILD_EXAMPLES)
+    set(ARCLIGHT_ENGINE_PATH ${CMAKE_SOURCE_DIR})
     add_subdirectory(Examples/Lightris)
 endif()
 

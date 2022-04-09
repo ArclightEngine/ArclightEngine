@@ -4,8 +4,6 @@ project(Game)
 
 # Set by arclight-build.py
 option(ARCLIGHT_ENGINE_PATH "Path to Arclight Engine directory" "$ENV{ARCLIGHT_ENGINE_PATH}")
-# Currently Unsupported
-option(STANDALONE "Build game without external dependencies" OFF)
 
 # Don't use a prefix to build game.so
 unset(CMAKE_SHARED_LIBRARY_PREFIX)
