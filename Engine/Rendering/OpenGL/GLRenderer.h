@@ -89,6 +89,11 @@ private:
         unsigned vertexCount;
     };
 
+    // Returns true if the thread is the owner of the GL context
+    bool is_gl_thread();
+    void die_if_not_gl_thread();
+    void acquire_stream_context_if_necessary();
+
     // Update the viewport transform,
     // called on init and resize
     void UpdateViewportTransform();
@@ -101,6 +106,8 @@ private:
     GLuint m_transformUBO;
     GLuint m_boundVBO = 0;
 
+    GLTexture* m_boundTexture = nullptr;
+
     GLVBO GetVertexBufferObject(unsigned vertexCount);
     GLuint m_vbo;
 
@@ -108,6 +115,7 @@ private:
     Transform2D m_viewportTransform;
 
     SDL_GLContext m_glContext;
+    SDL_GLContext m_glStreamContext;
 
     std::mutex m_glMutex;
 
@@ -122,6 +130,8 @@ private:
     std::set<GLVertexBuffer*> m_vbos;
 
     std::set<GLTexture*> m_textures;
+
+    unsigned long long m_debugFrameCounter = 0;
 };
 
 } // namespace Arclight::Rendering

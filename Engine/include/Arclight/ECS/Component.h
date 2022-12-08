@@ -1,13 +1,15 @@
 #pragma once
 
-#include <Arclight/Core/Object.h>
 #include <Arclight/Core/Concepts.h>
+#include <Arclight/Core/Object.h>
+
+#include <entt/core/type_traits.hpp>
 
 #include <concepts>
 
 namespace Arclight {
 
-template<typename T>
+template <typename T>
 concept Component = requires(T t) {
     // Components CANNOT be pointers
     // TODO: Future requirements will involve serailizable
@@ -16,7 +18,7 @@ concept Component = requires(T t) {
 #ifndef __clang__
     std::move_constructible<T>; // Must have move constructor
 #else
-    std::destructible<T> && std::is_constructible_v<T, T> && std::convertible_to<T, T>;
+    std::destructible<T>&& std::is_constructible_v<T, T>&& std::convertible_to<T, T>;
 #endif
 };
 

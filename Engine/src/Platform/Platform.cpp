@@ -5,6 +5,7 @@
 #include <Arclight/Window/WindowContext.h>
 
 #include <cassert>
+#include <thread>
 
 #include <SDL.h>
 #include <SDL_video.h>
@@ -59,7 +60,7 @@ void Initialize() {
         exit(1);
     }
 
-    sdlWindow = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480,
+    sdlWindow = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720,
                                  platformSDLWindowFlags);
     if (!sdlWindow) {
         Logger::Error("Error \"{}\" creating SDL window!", SDL_GetError());
@@ -109,6 +110,27 @@ void Cleanup() {
         delete renderer;
     }
     renderers.clear();
+}
+
+bool multithreading_enabled() {
+#ifndef ARCLIGHT_PLATFORM_WASM
+
+#ifdef ARCLIGHT_PLATFORM_UNIX
+    // Allow runtime disabling of threads
+    // Check if the first character of ARCLIGHT_DISABLE_THREADING is 1
+    const char* env = getenv("ARCLIGHT_DISABLE_THREADING");
+    if (env && *env == '1') {
+        Logger::Debug("[Platform] Environment variable ARCLIGHT_DISABLE_THREADING is 1, disabling threading.");
+        return false;
+    }
+#endif
+
+    if(std::thread::hardware_concurrency() - 1 > 0) {
+        return true;
+    }
+#endif
+
+    return false;
 }
 
 } // namespace Arclight::Platform

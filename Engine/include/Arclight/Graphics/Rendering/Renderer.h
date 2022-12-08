@@ -177,12 +177,19 @@ protected:
         Texture::TextureHandle texture;
     };
 
+    struct DrawQueue {
+        DrawCall* calls = nullptr;
+        unsigned callCount = 0;
+
+        unsigned size = 0;
+    };
+
     virtual void do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform, const Matrix4& view) = 0;
 
     std::mutex m_draw_queue_mutex;
 
     // Do NOT preserve queue order, use stack
-    std::unordered_map<void*, std::stack<DrawCall>> m_queues;
+    std::unordered_map<void*, DrawQueue> m_queues;
 
     static Renderer* s_rendererInstance;
 };

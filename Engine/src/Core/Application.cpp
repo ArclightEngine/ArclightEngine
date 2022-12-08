@@ -42,7 +42,6 @@ void Application::run() {
     // A system may have queued a world or state change
     process_defer_queue();
 
-    Rendering::Renderer::instance()->clear();
     Rendering::Renderer::instance()->render();
 
 #ifdef ARCLIGHT_PLATFORM_WASM
@@ -98,6 +97,7 @@ void Application::main_loop() {
     }
 
     Rendering::Renderer::instance()->render();
+
     process_job_queue();
     World::s_currentWorld->cleanup();
 
@@ -173,7 +173,7 @@ void Application::run_state_exit_systems() {
 void Application::process_job_queue() {
     m_threadPool.run();
 
-    while (!m_threadPool.Idle())
+    while (m_threadPool.job_count())
         ; // We shouldn't really busy wait
 }
 

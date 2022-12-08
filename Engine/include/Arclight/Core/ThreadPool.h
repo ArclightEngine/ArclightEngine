@@ -34,6 +34,9 @@ public:
     ////////////////////////////////////////
     bool Idle() const;
 
+    unsigned thread_count() const { return m_threads.size(); }
+    unsigned job_count() const { return m_jobCount; }
+
     inline static ThreadPool* instance() { return m_instance; }
 
 private:

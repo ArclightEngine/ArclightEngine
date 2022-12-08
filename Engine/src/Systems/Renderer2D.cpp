@@ -33,13 +33,13 @@ void renderer_2d(float, World& world) {
 
     // Check if the vertices required take up less than 50% of the vertex buffer
     // If so reallocate to save memory
-    if (vertexCount < vbuf.size() / 2) {
+    if (vbuf.size() > 32 && vertexCount < vbuf.size() / 2) {
         vbuf.reallocate(vertexCount + 16);
     }
 
-    Camera2D* camera = camera2d_get_current(world);
+    Entity camera = camera2d_get_current(world);
     Transform2D viewTransform;
-    if (camera) {
+    if (camera != NullEntity) {
         viewTransform = camera2d_get_transformation(camera);
     }
 

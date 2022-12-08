@@ -1,5 +1,6 @@
 #include <Rendering/OpenGL/GLRenderer.h>
 
+#include <Arclight/Core/ThreadPool.h>
 #include <Arclight/Core/Fatal.h>
 #include <Arclight/Graphics/Transform.h>
 #include <Arclight/Platform/Platform.h>
@@ -59,10 +60,27 @@ int GLRenderer::initialize(class WindowContext* context) {
 #else
     // Use OpenGL ES 3.1 on native platforms
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    m_glContext = SDL_GL_CreateContext(context->GetWindow());
+    // When multithreading is enabled, create a second context that can be used
+    // to update vertex buffers, textures, etc.
+    if(Platform::multithreading_enabled()) {
+        SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+
+        m_glContext = SDL_GL_CreateContext(context->GetWindow());
+        m_glStreamContext = SDL_GL_CreateContext(context->GetWindow());
+
+        SDL_GL_MakeCurrent(m_windowContext->GetWindow(), m_glContext);
+    } else {
+        m_glContext = SDL_GL_CreateContext(context->GetWindow());
+    }
+
     if (!m_glContext) {
         FatalRuntimeError("Failed to get OpenGL context from SDL: {}", SDL_GetError());
+    }
+
+    if(SDL_GL_SetSwapInterval(1)) {
+        FatalRuntimeError("Failed to enable VSync: {}", SDL_GetError());
     }
 
     const GLubyte* versionString = glGetString(GL_VERSION);
@@ -103,21 +121,35 @@ int GLRenderer::initialize(class WindowContext* context) {
     glClearColor(clearColour.r, clearColour.g, clearColour.b, clearColour.a);
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     return 0;
 }
 
-void GLRenderer::render() { 
+void GLRenderer::render() {
+    std::unique_lock lockGL(m_glMutex);
+    die_if_not_gl_thread();
+
     clear();
+
+    m_boundVBO = 0;
     Renderer::render();
+
     SDL_GL_SwapWindow(m_windowContext->GetWindow());
+
+    m_debugFrameCounter++;
 }
 
 void GLRenderer::clear() {
+    auto& clearColour = WindowContext::instance()->backgroundColour;
+    glClearColor(clearColour.r, clearColour.g, clearColour.b, clearColour.a);
+
     // Clear screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void GLRenderer::resize_viewport(const Vector2i& newPixelSize) {
+    die_if_not_gl_thread();
+
     glViewport(0, 0, newPixelSize.x, newPixelSize.y);
     UpdateViewportTransform();
 }
@@ -129,6 +161,7 @@ GLRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragmentSh
            fragmentShader.GetStage() == Shader::FragmentShader);
 
     std::unique_lock lockGL(m_glMutex);
+    die_if_not_gl_thread();
 
     GLPipeline* pipeline = new GLPipeline(vertexShader, fragmentShader);
 
@@ -138,6 +171,7 @@ GLRenderer::create_pipeline(const Shader& vertexShader, const Shader& fragmentSh
 
 void GLRenderer::destroy_pipeline(RenderPipeline::PipelineHandle pipelineHandle) {
     std::unique_lock lockGL(m_glMutex);
+    die_if_not_gl_thread();
 
     size_t erased = m_pipelines.erase(reinterpret_cast<GLPipeline*>(pipelineHandle));
     assert(erased ==
@@ -161,6 +195,10 @@ void GLRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
 }
 
 void GLRenderer::bind_texture(Texture::TextureHandle texture) {
+    if(texture == m_boundTexture) {
+        return;
+    }
+
     if (texture) {
         GLTexture* tex = reinterpret_cast<GLTexture*>(texture);
         glActiveTexture(GL_TEXTURE0);
@@ -174,23 +212,26 @@ void GLRenderer::bind_texture(Texture::TextureHandle texture) {
     } else {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+
+    m_boundTexture = (GLTexture*)texture;
 }
 
 void GLRenderer::bind_vertex_buffer(void* buffer) {
     GLVertexBuffer* vbo = (GLVertexBuffer*)buffer;
 
-    std::unique_lock lockGL(m_glMutex);
     m_boundVBO = vbo->id;
 }
 
 void* GLRenderer::allocate_vertex_buffer(unsigned vertexCount) {
     std::unique_lock lockGL(m_glMutex);
+    acquire_stream_context_if_necessary();
 
     GLuint id;
     glCheck(glGenBuffers(1, &id));
     glCheck(glBindBuffer(GL_ARRAY_BUFFER, id));
     // GL_STREAM_DRAW - "Data modified once and used a few times"
-    glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), NULL, GL_STREAM_DRAW));
+    // GL_DYNAMIC_DRAW - "contents will be modified repeatedly and used many times"
+    glCheck(glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), NULL, GL_DYNAMIC_DRAW));
 
     GLVertexBuffer* vbo = new GLVertexBuffer;
     vbo->id = id;
@@ -206,15 +247,19 @@ void GLRenderer::update_vertex_buffer(void* buffer, unsigned int offset, unsigne
     GLVertexBuffer* vbo = (GLVertexBuffer*)buffer;
 
     std::unique_lock lockGL(m_glMutex);
+    acquire_stream_context_if_necessary();
+
     glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo->id));
     glCheck(glBufferSubData(GL_ARRAY_BUFFER, offset * sizeof(Vertex), size * sizeof(Vertex), vertices));
-    glCheck(glBindBuffer(GL_ARRAY_BUFFER, m_boundVBO));
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
 }
 
 void* GLRenderer::get_vertex_buffer_mapping(void* buffer) { return nullptr; }
 
 void GLRenderer::destroy_vertex_buffer(void* buffer) {
     std::unique_lock lockGL(m_glMutex);
+    acquire_stream_context_if_necessary();
+
     GLVertexBuffer* vbo = (GLVertexBuffer*)buffer;
 
     size_t erased = m_vbos.erase(vbo);
@@ -228,7 +273,6 @@ void GLRenderer::destroy_vertex_buffer(void* buffer) {
 
 void GLRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, const Matrix4& transform,
                               const Matrix4& view) {
-    std::unique_lock lockGL(m_glMutex);
     auto vbo = GetVertexBufferObject(vertexCount);
 
     glBindVertexArray(m_boundPipeline->GetVAO());
@@ -254,6 +298,7 @@ void GLRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount, const 
 
 Texture::TextureHandle GLRenderer::allocate_texture(const Vector2u& size, Texture::Format format) {
     std::unique_lock lockGL(m_glMutex);
+    acquire_stream_context_if_necessary();
 
     GLuint texID;
     glCheck(glGenTextures(1, &texID));
@@ -277,6 +322,7 @@ Texture::TextureHandle GLRenderer::allocate_texture(const Vector2u& size, Textur
 
 void GLRenderer::update_texture(Texture::TextureHandle texHandle, const void* data) {
     std::unique_lock lockGL(m_glMutex);
+    acquire_stream_context_if_necessary();
 
     GLTexture* tex = reinterpret_cast<GLTexture*>(texHandle);
     assert(m_textures.contains(tex));
@@ -306,6 +352,7 @@ void GLRenderer::update_texture(Texture::TextureHandle texHandle, const void* da
 
 void GLRenderer::destroy_texture(Texture::TextureHandle texHandle) {
     std::unique_lock lockGL(m_glMutex);
+    acquire_stream_context_if_necessary();
 
     GLTexture* tex = reinterpret_cast<GLTexture*>(texHandle);
 
@@ -318,6 +365,24 @@ void GLRenderer::destroy_texture(Texture::TextureHandle texHandle) {
 
     // Delete our texture object
     delete tex;
+}
+
+bool GLRenderer::is_gl_thread() {
+    return SDL_GL_GetCurrentContext() == m_glContext;
+}
+
+void GLRenderer::die_if_not_gl_thread() {
+    if(SDL_GL_GetCurrentContext() != m_glContext) {
+        FatalRuntimeError("Current thread does not hold the OpenGL context ({}): {}", (void*)SDL_GL_GetCurrentContext(), SDL_GetError());
+    }
+}
+
+void GLRenderer::acquire_stream_context_if_necessary() {
+    if(!is_gl_thread()) {
+        if(SDL_GL_MakeCurrent(m_windowContext->GetWindow(), m_glStreamContext)) {
+            FatalRuntimeError("Failed to acquire secondary GL context!");
+        }
+    }
 }
 
 void GLRenderer::UpdateViewportTransform() {

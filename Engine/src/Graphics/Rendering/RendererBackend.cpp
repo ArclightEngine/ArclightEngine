@@ -1,5 +1,6 @@
 #include <Arclight/Graphics/Rendering/Renderer.h>
 
+#include <Arclight/Core/Fatal.h>
 #include <Arclight/Core/Job.h>
 #include <Arclight/Core/ThreadPool.h>
 
@@ -16,20 +17,21 @@ void Renderer::render() {
         bind_pipeline(bucket.first);
 
         auto& q = bucket.second;
-        while (!q.empty()) {
-            auto& call = q.top();
 
-            if (call.texture) {
-                bind_texture(call.texture);
+        DrawCall* call = q.calls;
+        while (q.callCount) {
+            if (call->texture) {
+                bind_texture(call->texture);
             }
 
-            bind_vertex_buffer(call.vertexBuffer);
-            do_draw_call(call.firstVertex, call.vertexCount, call.transform, call.view);
+            bind_vertex_buffer(call->vertexBuffer);
+            do_draw_call(call->firstVertex, call->vertexCount, call->transform, call->view);
 
-            q.pop();
+            call++;
+            q.callCount--;
         }
 
-        assert(q.empty());
+        assert(!q.callCount);
     }
 }
 
@@ -43,7 +45,22 @@ void Renderer::draw(void* vertexBuffer, unsigned firstVertex, unsigned vertexCou
     std::scoped_lock lockQueue(m_draw_queue_mutex);
 
     auto& q = m_queues[renderPipeline];
-    q.emplace(DrawCall{firstVertex, vertexCount, transform, view, vertexBuffer, texture});
+    if(q.callCount >= q.size) {
+        if(q.calls) {
+            q.size += 1000;
+            q.calls = (DrawCall*)realloc(q.calls, q.size * sizeof(DrawCall));
+            if(q.calls == nullptr) {
+                FatalRuntimeError("realloc failed!");
+            }
+        } else {
+            q.size = 8000;
+            q.calls = (DrawCall*)malloc(q.size * sizeof(DrawCall));
+            assert(q.calls);
+        }
+    }
+
+    assert(q.callCount < q.size);
+    q.calls[q.callCount++] = DrawCall{firstVertex, vertexCount, transform, view, vertexBuffer, texture};
 }
 
 void Renderer::destroy_pipeline(RenderPipeline::PipelineHandle handle) {

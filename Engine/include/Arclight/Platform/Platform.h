@@ -32,4 +32,6 @@ namespace Arclight::Platform {
 void Initialize();
 void Cleanup();
 
+bool multithreading_enabled();
+
 } // namespace Arclight::Platform

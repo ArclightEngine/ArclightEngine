@@ -1,4 +1,5 @@
 set(ENGINE_SRC
+    ${ENGINE_SRC}
     "src/Core/Application.cpp"
     "src/Core/File.cpp"
     "src/Core/Input.cpp"
@@ -27,7 +28,7 @@ if(IS_WINDOWS)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-add_library(libarclight SHARED)
+add_library(libarclight OBJECT)
 target_compile_definitions(libarclight PRIVATE ARCLIGHT_API_SHOULD_EXPORT=1)
 
 find_package(fmt)

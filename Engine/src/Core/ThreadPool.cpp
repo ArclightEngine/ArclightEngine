@@ -41,24 +41,13 @@ ThreadPool::ThreadPool() {
 
     long cpuCount = 0;
 
-    // Force 0 threads in WebAssembly
-#ifndef ARCLIGHT_PLATFORM_WASM
-#ifdef ARCLIGHT_PLATFORM_UNIX
-    // Allow runtime disabling of threads
-    // Check if the first character of ARCLIGHT_DISABLE_THREADING is 1
-    const char* env = getenv("ARCLIGHT_DISABLE_THREADING");
-    if (env && *env == '1') {
-        Logger::Debug("[ThreadPool] ARCLIGHT_DISABLE_THREADING is 1, disabling threading.");
-    } else
-#endif
-    {
+    if(Platform::multithreading_enabled()){
         // Hint of hardware threads
         cpuCount = static_cast<long>(std::thread::hardware_concurrency()) - 1; // Prevent overflow
         if (cpuCount < 1) { // Failed to query hardware thread count
-            cpuCount = 1;
+            cpuCount = 0;
         }
     }
-#endif
 
     Logger::Debug("[ThreadPool] Using {} threads.", cpuCount);
 
