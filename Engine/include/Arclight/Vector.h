@@ -2,15 +2,13 @@
 
 #include <Arclight/Core/Util.h>
 
+#include <cmath>
+
 namespace Arclight {
 
 template <typename T> struct Vector2 {
     T x;
     T y;
-
-    constexpr Vector2() = default;
-    constexpr Vector2(T v) : x(v), y(v) {}
-    constexpr Vector2(T x, T y) : x(x), y(y) {}
 
     ALWAYS_INLINE Vector2<T>& scale(const Vector2<T>& scaleVector) {
         x *= scaleVector.x;
@@ -21,6 +19,21 @@ template <typename T> struct Vector2 {
     static ALWAYS_INLINE Vector2<T> scale(const Vector2<T>& l, const Vector2<T>& r) {
         return Vector2<T>{l.x * r.x, l.y * r.y};
     }
+
+    ALWAYS_INLINE Vector2<T> normalize() {
+        return (*this) * (1 / sqrt((x * x) + (y * y)));
+    }
+
+    ALWAYS_INLINE T magnitude() {
+        return sqrt((x * x) + (y * y));
+    }
+
+    ALWAYS_INLINE Vector2<T> rotate(float angle) {
+        float c = cosf(angle);
+        float s = sinf(angle);
+
+        return Vector2<T>{c * x - s * y, s * x + c * y};
+    }
 };
 
 template<typename T, typename F>
@@ -29,6 +42,10 @@ constexpr Vector2<T> vector_static_cast(const Vector2<F>& from){
 }
 
 template <typename T> inline Vector2<T> operator*(const Vector2<T>& vector, T magnitude) {
+    return Vector2<T>{vector.x * magnitude, vector.y * magnitude};
+}
+
+template <typename T> inline Vector2<T> operator*(T magnitude, const Vector2<T>& vector) {
     return Vector2<T>{vector.x * magnitude, vector.y * magnitude};
 }
 
