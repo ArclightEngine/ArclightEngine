@@ -65,6 +65,10 @@ public:
         return m_registry.ctx().emplace<T>(std::move(args)...);
     }
 
+    template <typename T, typename... Args> ALWAYS_INLINE T& ctx_set_named(const entt::id_type id, Args&&... args) {
+        return m_registry.ctx().emplace_hint<T>(id, std::move(args)...);
+    }
+
     template <typename T>
     [[nodiscard]] ALWAYS_INLINE T& ctx(const entt::id_type id = entt::type_id<T>().hash()) {
         return m_registry.ctx().at<T>(id);
