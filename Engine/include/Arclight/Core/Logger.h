@@ -5,6 +5,8 @@
 
 #include <Arclight/Platform/Platform.h>
 
+#include <Arclight/Vector.h>
+
 #include <cassert>
 
 #define FMT_EXCEPTIONS 0
@@ -17,6 +19,18 @@ template <> struct fmt::formatter<Arclight::UnicodeString> : fmt::formatter<std:
         std::string utf8String;
         s.toUTF8String(utf8String);
         return formatter<std::string>::format(utf8String, ctx);
+    }
+};
+
+template <typename T> struct fmt::formatter<Arclight::Vector2<T>>{
+    constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator {
+        assert(ctx.end() == ctx.begin());
+        
+        return ctx.end();
+    }
+    
+    auto format(const Arclight::Vector2<T>& v, format_context& ctx) const -> format_context::iterator {
+        return fmt::format_to(ctx.out(), "({}, {})", v.x, v.y);
     }
 };
 
