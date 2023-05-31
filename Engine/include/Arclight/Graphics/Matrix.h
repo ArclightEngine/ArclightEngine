@@ -30,6 +30,7 @@ public:
     void rotate(float angle);
 
     inline const float* matrix() const { return m_matrix; }
+    inline float* mut_matrix() { return m_matrix; }
 
     Matrix4& operator*=(const Matrix4& r);
     Matrix4& operator*=(const float* matrix);

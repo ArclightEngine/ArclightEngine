@@ -26,14 +26,24 @@ struct Rect {
 	Rect(const Vector2<T>& size)
 		: origin(0, 0), end(size) {}
 
-	inline T Width() { return right - left; }
-	inline T Height() { return bottom - top; }
+	inline T width() { return right - left; }
+	inline T height() { return bottom - top; }
 
 	// Returns whether a point intersects
-	inline bool Intersect(Vector2<T> point){
+	inline bool intersect(const Vector2<T>& point){
 		return (point.x >= left && point.x < right && point.y >= top && point.y < bottom);
 	}
 };
+
+template<typename T>
+ALWAYS_INLINE Rect<T> operator+(const Vector2<T>& l, const Rect<T>& r) {
+	return Rect(l + r.origin, l + r.end);
+}
+
+template<typename T>
+ALWAYS_INLINE Rect<T> operator+(const Rect<T>& r, const Vector2<T>& l) {
+	return Rect(l + r.origin, l + r.end);
+}
 
 using Rectf = Rect<float>;
 
