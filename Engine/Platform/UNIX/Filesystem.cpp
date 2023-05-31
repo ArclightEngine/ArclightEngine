@@ -51,7 +51,7 @@ public:
 
     ssize_t Tell() const override { return ftello(m_file); }
 
-    ssize_t GetSize() const override {
+    ssize_t get_size() const override {
         assert(IsOpen());
 
         ssize_t pos = Tell();

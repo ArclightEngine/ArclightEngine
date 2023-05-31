@@ -30,12 +30,12 @@ public:
         return *s_instance;
     }
 
-    void RegisterFormat(ResourceFormat* format);
+    void register_format(ResourceFormat* format);
 
-    std::shared_ptr<Resource> GetResource(const std::string& id);
+    std::shared_ptr<Resource> get_resource(const std::string& id);
     template<typename R>
-    inline std::shared_ptr<R> GetResource(const std::string& id) {
-        return std::move(ObjectCast<R>(GetResource(id)));
+    inline std::shared_ptr<R> get_resource(const std::string& id) {
+        return std::move(ObjectCast<R>(get_resource(id)));
     }
 
 private:

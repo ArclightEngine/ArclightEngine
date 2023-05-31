@@ -28,7 +28,7 @@ public:
 
     virtual int Seek(size_t offset) = 0;
     virtual ssize_t Tell() const = 0;
-    virtual ssize_t GetSize() const = 0;
+    virtual ssize_t get_size() const = 0;
 
     virtual ssize_t Read(void* buffer, size_t size, Error* e = nullptr) = 0;
     template <typename T> inline size_t ReadObjects(T* buffer, size_t count) {

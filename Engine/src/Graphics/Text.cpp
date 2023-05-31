@@ -31,7 +31,7 @@ FT_Error FreeType::NewFace(Arclight::File* file, FT_Long index, FT_Face* outFace
                            std::vector<uint8_t>& outData) {
     std::unique_lock lockFT(m_lock);
 
-    size_t fSize = file->GetSize();
+    size_t fSize = file->get_size();
     outData.resize(fSize);
 
     if (file->Read(outData.data(), fSize) < 0) {
@@ -199,13 +199,13 @@ void Text::render() {
     m_texture.Update(pixelBuffer);
     delete pixelBuffer;
 
-    m_vertices[0].position = Vector2f{0, m_bounds.Height()};
+    m_vertices[0].position = Vector2f{0, m_bounds.height()};
     m_vertices[0].texCoord = Vector2f{0, 1.f};
     m_vertices[1].position = Vector2f{0, 0};
     m_vertices[1].texCoord = Vector2f{0, 0};
-    m_vertices[2].position = Vector2f{m_bounds.Width(), m_bounds.Height()};
+    m_vertices[2].position = Vector2f{m_bounds.width(), m_bounds.height()};
     m_vertices[2].texCoord = Vector2f{1.f, 1.f};
-    m_vertices[3].position = Vector2f{m_bounds.Width(), 0};
+    m_vertices[3].position = Vector2f{m_bounds.width(), 0};
     m_vertices[3].texCoord = Vector2f{1.f, 0};
 }
 
