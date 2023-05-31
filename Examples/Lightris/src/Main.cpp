@@ -167,7 +167,7 @@ Entity ConstructBlockSprite(World& world, int block, int x, int y) {
     assert(block > 0 && block < 8);
 
     // Create sprite object with block texture
-    Sprite spr = create_sprite({BLOCK_SIZE}, Rectf(Vector2f{1.0f}), blockColours[block].AsFloat());
+    Sprite spr = create_sprite({BLOCK_SIZE, BLOCK_SIZE}, Rectf(Vector2f{1.0f, 1.0f}), blockColours[block].AsFloat());
     Transform2D transform;
 
     spr.texture = blockTexture;
@@ -239,7 +239,7 @@ void MenuInit(float, World& world) {
     WindowContext* window = WindowContext::instance();
 
     std::shared_ptr<Font> font =
-        ResourceManager::instance().GetResource<Font>("assets/inconsolata.ttf");
+        ResourceManager::instance().get_resource<Font>("assets/inconsolata.ttf");
     assert(font.get());
 
     Text text("Lightris");
@@ -251,8 +251,8 @@ void MenuInit(float, World& world) {
     text2.SetFontSize(20);
     text2.SetFont(font);
     textTransform.set_position(
-        Vector2f{window->GetSize().x / 2.f - text.Bounds().x / 2.f, window->GetSize().y / 3.f});
-    text2Transform.set_position(Vector2f{5.f, static_cast<float>(window->GetSize().y) - 25});
+        Vector2f{window->get_size().x / 2.f - text.Bounds().x / 2.f, window->get_size().y / 3.f});
+    text2Transform.set_position(Vector2f{5.f, static_cast<float>(window->get_size().y) - 25});
 
     Text controls("Press R to start and restart.\n"
                   "Move pieces with LEFT and RIGHT ARROW keys\n"
@@ -263,7 +263,7 @@ void MenuInit(float, World& world) {
     Transform2D controlsTransform;
     controls.SetFontSize(20);
     controls.SetFont(font);
-    controlsTransform.set_position({36, window->GetSize().y / 2.f});
+    controlsTransform.set_position({36, window->get_size().y / 2.f});
 
     world.add_component<Text>(titleEntity, std::move(text));
     world.add_component<Transform2D>(titleEntity, std::move(textTransform));
@@ -310,7 +310,7 @@ void BoardInit(float, World& world) {
     srand(time(NULL));
 
     WindowContext& window = *WindowContext::instance();
-    boardScreenPos.x = window.GetSize().x / 2 - (BOARD_WIDTH / 2 * BLOCK_SIZE);
+    boardScreenPos.x = window.get_size().x / 2 - (BOARD_WIDTH / 2 * BLOCK_SIZE);
     boardScreenPos.y = BLOCK_SIZE;
 
     Sprite boardSprite =
@@ -702,11 +702,11 @@ ARCLIGHT_GAME_INIT() {
     auto& app = Application::instance();
     Logger::Debug("Starting Game!");
 
-    app.window().SetTitle("Lightris");
-    app.window().SetSize({704, 704});
+    app.window().set_title("Lightris");
+    app.window().set_size({704, 704});
 
-    auto blockImage = ResourceManager::instance().GetResource<Image>("assets/block.png");
-    auto boardImage = ResourceManager::instance().GetResource<Image>("assets/board.png");
+    auto blockImage = ResourceManager::instance().get_resource<Image>("assets/block.png");
+    auto boardImage = ResourceManager::instance().get_resource<Image>("assets/board.png");
     assert(blockImage.get());
     assert(boardImage.get());
 

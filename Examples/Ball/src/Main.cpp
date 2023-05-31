@@ -83,19 +83,19 @@ public:
             spr.transform.SetPosition(spr.transform.GetPosition() + data.velocity);
 
             Arclight::Rect bounds = SpriteBounds(spr);
-            if (bounds.right >= app.window().GetWindowRenderSize().x) {
+            if (bounds.right >= app.window().get_render_size().x) {
                 data.velocity.x = -ballSpeed;
-                spr.transform.SetPosition(app.window().GetWindowRenderSize().x - bounds.Width(),
+                spr.transform.SetPosition(app.window().get_render_size().x - bounds.width(),
                                           bounds.top);
             } else if (bounds.left <= 0) {
                 data.velocity.x = ballSpeed;
                 spr.transform.SetPosition(0, bounds.top);
             }
 
-            if (bounds.bottom >= app.window().GetWindowRenderSize().y) {
+            if (bounds.bottom >= app.window().get_render_size().y) {
                 data.velocity.y = -ballSpeed;
                 spr.transform.SetPosition(bounds.left,
-                                          app.window().GetWindowRenderSize().y - bounds.Height());
+                                          app.window().get_render_size().y - bounds.height());
             } else if (bounds.top <= 0) {
                 data.velocity.y = ballSpeed;
                 spr.transform.SetPosition(bounds.left, 0);
