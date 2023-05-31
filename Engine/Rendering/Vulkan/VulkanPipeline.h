@@ -11,6 +11,7 @@ class VulkanPipeline final {
 public:
     struct PushConstant2DTransform {
         float viewport[16];  // mat4 viewport
+        float canvas[16];
         float transform[16]; // mat4 transform
     };
 

@@ -13,6 +13,8 @@ out vec4 outColour; // Output colour
 void main() {
     if(textureFormat == 0){
         outColour = fragColour * texture(texSampler, fragTexCoord);
+        if(outColour.a < 0)
+            discard;
     } else {
         outColour = fragColour;
         outColour.a = texture(texSampler, fragTexCoord).x;

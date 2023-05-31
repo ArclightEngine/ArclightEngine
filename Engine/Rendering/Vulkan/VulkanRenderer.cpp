@@ -24,7 +24,7 @@ VulkanRenderer::~VulkanRenderer() {
 
     DestroyDepthBuffer();
 
-    vkDestroyDescriptorPool(m_device, m_descriptorPool->handle, nullptr);
+    vkDestroyDescriptorPool(m_device, m_textureDescriptorPool->handle, nullptr);
 
     for (int i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
         Frame& frame = m_frames[i];
@@ -35,9 +35,12 @@ VulkanRenderer::~VulkanRenderer() {
         vkDestroySemaphore(m_device, frame.imageAvailableSemaphore, nullptr);
         vkDestroySemaphore(m_device, frame.renderFinishedSemaphore, nullptr);
         vkDestroyFence(m_device, frame.fence, nullptr);
+
+        vkDestroyDescriptorPool(m_device, frame.uboDescriptorPool->handle, nullptr);
     }
 
-    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayouts[0], nullptr);
+    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayouts[1], nullptr);
 
     for (VulkanTexture* texture : m_textures) {
         delete texture;
@@ -406,8 +409,19 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
 
     s_rendererInstance = this;
 
-    CreateDescriptorSetLayout();
-    m_descriptorPool = std::unique_ptr<DescriptorPool>(create_descriptor_pool());
+    create_descriptor_set_layouts();
+
+    VkDescriptorPoolSize poolSizes[2] = {
+        {
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+            .descriptorCount = 200,
+        },
+        {
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 200, // Amount of descriptor sets
+        }
+    };
+    m_textureDescriptorPool = std::unique_ptr<DescriptorPool>(create_descriptor_pool(&poolSizes[1], 1, 200, m_descriptorSetLayouts[1]));
 
     VkSemaphoreCreateInfo semaphoreInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -438,6 +452,8 @@ int VulkanRenderer::initialize(WindowContext* windowContext) {
             vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &frame.renderFinishedSemaphore));
 
         vkCheck(vkCreateFence(m_device, &fenceInfo, nullptr, &frame.fence));
+
+        frame.uboDescriptorPool = std::unique_ptr<DescriptorPool>(create_descriptor_pool(&poolSizes[0], 1, 200, m_descriptorSetLayouts[0]));
 
         m_lastTextures[i] = nullptr;
     }
@@ -497,7 +513,7 @@ void VulkanRenderer::destroy_texture(Texture::TextureHandle texture) {
 
     for (unsigned i = 0; i < RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT; i++) {
         if (auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()) {
-            free_descriptor_set(it->second);
+            free_descriptor_set(m_textureDescriptorPool.get(), it->second);
             m_textureDescriptorSets.erase(it);
         }
 
@@ -745,7 +761,7 @@ void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
         if (auto it = m_textureDescriptorSets.find(tex); it != m_textureDescriptorSets.end()) {
             pDescriptorSets[0] = it->second;
         } else {
-            VkDescriptorSet descriptorSet = allocate_descriptor_set();
+            VkDescriptorSet descriptorSet = allocate_descriptor_set(m_textureDescriptorPool.get());
             m_textureDescriptorSets[tex] = descriptorSet;
             pDescriptorSets[0] = descriptorSet;
 
@@ -762,8 +778,6 @@ void VulkanRenderer::bind_texture(Texture::TextureHandle texture) {
                 .pTexelBufferView = nullptr,
             };
 
-            Logger::Debug("Using VkImageView {}", (void*)tex->DescriptorImageInfo().imageView);
-
             vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0,
                                    nullptr); // Update sampler descriptor
         }
@@ -779,7 +793,7 @@ void VulkanRenderer::bind_pipeline(RenderPipeline::PipelineHandle pipeline) {
 }
 
 void VulkanRenderer::bind_vertex_buffer(void* buffer) {
-    if(!m_vertexBuffers.contains((VertexBuffer*)buffer)) {
+    if (!m_vertexBuffers.contains((VertexBuffer*)buffer)) {
         Logger::Warning("VulkanRenderer: Invalid vertex buffer handle {}.", buffer);
         m_boundVertexBuffer = nullptr;
         return;
@@ -812,6 +826,10 @@ void VulkanRenderer::do_draw_call(unsigned firstVertex, unsigned vertexCount,
             offsetof(VulkanPipeline::PushConstant2DTransform, viewport),
             16 * sizeof(float) /* 4x4 float matrix */, m_viewportTransform.matrix().matrix());
     }
+
+    m_boundPipeline->UpdatePushConstant(m_commandBuffers[m_currentFrame],
+                                        offsetof(VulkanPipeline::PushConstant2DTransform, canvas),
+                                        16 * sizeof(float) /* 4x4 float matrix */, view.matrix());
 
     if (m_boundTexture /*&& m_boundTexture != m_lastTextures[m_currentFrame]*/) {
         VkDescriptorSet pDescriptorSets[] = {m_textureDescriptorSets.at(m_boundTexture)};
@@ -1193,88 +1211,98 @@ void VulkanRenderer::CreateCommandPools() {
     }
 }
 
-void VulkanRenderer::CreateDescriptorSetLayout() {
-    VkDescriptorSetLayoutBinding samplerLayoutBinding = {
-        .binding = RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR,
-        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // Combined image sampler
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // Use in fragment shader
-        .pImmutableSamplers = nullptr,
-    };
+void VulkanRenderer::create_descriptor_set_layouts() {
+    VkDescriptorSetLayoutBinding bindings[2] = {
+        {
+            .binding = RENDERING_VULKANRENDERER_UBO_DESCRIPTOR,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, // Combined image sampler
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT, // Use in vertex shader
+            .pImmutableSamplers = nullptr,
+        },
+        {
+            .binding = RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // Combined image sampler
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // Use in fragment shader
+            .pImmutableSamplers = nullptr,
+        }};
 
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+    VkDescriptorSetLayoutCreateInfo uboDescriptorSetLayoutCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .bindingCount = 1,
-        .pBindings = &samplerLayoutBinding,
+        .pBindings = &bindings[0],
     };
 
-    vkCheck(vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr,
-                                        &m_descriptorSetLayout));
+    VkDescriptorSetLayoutCreateInfo texDescriptorSetLayoutCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .bindingCount = 1,
+        .pBindings = &bindings[1],
+    };
+
+    vkCheck(vkCreateDescriptorSetLayout(m_device, &uboDescriptorSetLayoutCreateInfo, nullptr,
+                                        &m_descriptorSetLayouts[0]));
+    vkCheck(vkCreateDescriptorSetLayout(m_device, &texDescriptorSetLayoutCreateInfo, nullptr,
+                                        &m_descriptorSetLayouts[1]));
 }
 
-VulkanRenderer::DescriptorPool* VulkanRenderer::create_descriptor_pool() {
+VulkanRenderer::DescriptorPool* VulkanRenderer::create_descriptor_pool(VkDescriptorPoolSize* poolSizes, int poolSizeCount, int maxSets, VkDescriptorSetLayout layout) {
     DescriptorPool* pool = new DescriptorPool;
-
-    uint32_t samplerCount = 500;
-    VkDescriptorPoolSize samplerSize = {
-        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .descriptorCount = samplerCount, // Amount of descriptor sets
-    };
 
     VkDescriptorPoolCreateInfo poolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .maxSets = samplerCount,
-        .poolSizeCount = 1,
-        .pPoolSizes = &samplerSize,
+        .maxSets = maxSets,
+        .poolSizeCount = poolSizeCount,
+        .pPoolSizes = poolSizes,
     };
 
-    std::vector<VkDescriptorSetLayout> layouts(samplerCount, m_descriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(maxSets, m_descriptorSetLayouts[1]);
     vkCheck(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &pool->handle));
 
     VkDescriptorSetAllocateInfo setAllocInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .pNext = nullptr,
         .descriptorPool = pool->handle,
-        .descriptorSetCount = samplerCount,
+        .descriptorSetCount = maxSets,
         .pSetLayouts = layouts.data(),
     };
 
-    pool->sets.resize(samplerCount);
+    pool->sets.resize(maxSets);
     vkCheck(vkAllocateDescriptorSets(m_device, &setAllocInfo, pool->sets.data()));
 
     return pool;
 }
 
-VkDescriptorSet VulkanRenderer::allocate_descriptor_set() {
-    DescriptorPool& pool = *m_descriptorPool;
-    std::lock_guard lockPool(pool.poolLock);
+VkDescriptorSet VulkanRenderer::allocate_descriptor_set(DescriptorPool* pool) {
+    std::lock_guard lockPool(pool->poolLock);
 
     VkDescriptorSet set;
-    if (pool.freeSets.size()) {
-        set = pool.freeSets.top();
-        pool.freeSets.pop();
+    if (pool->freeSets.size()) {
+        set = pool->freeSets.top();
+        pool->freeSets.pop();
         return set;
     }
 
-    set = pool.sets[pool.nextSet];
+    set = pool->sets[pool->nextSet];
 
-    if (pool.nextSet + 1 >= pool.sets.size()) {
+    if (pool->nextSet + 1 >= pool->sets.size()) {
         Logger::Error("VulkanRenderer::AllocateDescriptorSet: Ran out of texture descriptor sets!");
     }
-    pool.nextSet = (pool.nextSet + 1) % pool.sets.size();
+    pool->nextSet = (pool->nextSet + 1) % pool->sets.size();
 
     return set;
 }
 
-void VulkanRenderer::free_descriptor_set(VkDescriptorSet set) {
-    DescriptorPool& pool = *m_descriptorPool;
-    std::lock_guard lockPool(pool.poolLock);
+void VulkanRenderer::free_descriptor_set(DescriptorPool* pool, VkDescriptorSet set) {
+    std::lock_guard lockPool(pool->poolLock);
 
-    pool.freeSets.push(set);
+    pool->freeSets.push(set);
 }
 
 void VulkanRenderer::BeginCommandBuffer() {

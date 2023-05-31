@@ -21,7 +21,8 @@
 #include <vector>
 
 #define RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT 2
-#define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 0
+#define RENDERING_VULKANRENDERER_UBO_DESCRIPTOR 0
+#define RENDERING_VULKANRENDERER_TEXTURE_SAMPLER_DESCRIPTOR 1
 
 #define RENDERING_VULKANRENDERER_ENABLE_VALIDATION_LAYERS
 
@@ -131,22 +132,13 @@ protected:
 
     // For now all pipelines are required to have the same descriptor set layout
     // TODO: More configurable pipelines
-    VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout m_descriptorSetLayouts[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
 
 private:
     struct SwapChainInfo {
         VkSurfaceCapabilitiesKHR surfaceCapabilites;
         std::vector<VkSurfaceFormatKHR> surfaceFormats;
         std::vector<VkPresentModeKHR> presentModes;
-    };
-
-    struct Frame {
-        VkSemaphore imageAvailableSemaphore;
-        VkSemaphore renderFinishedSemaphore;
-        VkFence fence;
-
-        VkCommandPool commandPool;
-        VkCommandBuffer commandBuffer;
     };
 
     struct PipelineViewportInfo {
@@ -173,6 +165,17 @@ private:
         VkImageView depthImageView;
     } m_depthBuffer;
 
+    struct Frame {
+        VkSemaphore imageAvailableSemaphore;
+        VkSemaphore renderFinishedSemaphore;
+        VkFence fence;
+
+        VkCommandPool commandPool;
+        VkCommandBuffer commandBuffer;
+
+        std::unique_ptr<DescriptorPool> uboDescriptorPool;
+    };
+
     // Ready frame for drawing
     void BeginFrame();
     // Finish drawing frame
@@ -190,10 +193,16 @@ private:
     int CreateLogicalDevice();
     void CreateCommandPools();
 
-    void CreateDescriptorSetLayout();
-    DescriptorPool* create_descriptor_pool();
-    VkDescriptorSet allocate_descriptor_set();
-    void free_descriptor_set(VkDescriptorSet set);
+    struct UniformBufferObject {
+        // One set per frame
+        VkDescriptorSet descriptorSets[RENDERING_VULKANRENDERER_MAX_FRAMES_IN_FLIGHT];
+    };
+
+    void create_descriptor_set_layouts();
+    DescriptorPool* create_descriptor_pool(VkDescriptorPoolSize* poolSizes, int poolSizeCount,
+                                           int maxSets, VkDescriptorSetLayout layout);
+    VkDescriptorSet allocate_descriptor_set(DescriptorPool* pool);
+    void free_descriptor_set(DescriptorPool* pool, VkDescriptorSet set);
 
     // Begin recording command buffer
     void BeginCommandBuffer();
@@ -208,7 +217,6 @@ private:
 
     void _create_vertex_buffer(VertexBuffer* buffer, uint32_t vertexCount);
     void _destroy_vertex_buffer(VertexBuffer* buffer);
-
 
     const std::string m_rendererName = "Vulkan";
 
@@ -252,7 +260,7 @@ private:
 
     VertexBuffer* m_boundVertexBuffer = nullptr;
 
-    std::unique_ptr<DescriptorPool> m_descriptorPool;
+    std::unique_ptr<DescriptorPool> m_textureDescriptorPool;
 
     std::vector<VkImage> m_images; // Swapchain image handles
     std::vector<VkImageView> m_imageViews;
