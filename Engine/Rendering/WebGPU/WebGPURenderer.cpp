@@ -47,8 +47,8 @@ int WebGPURenderer::initialize(class WindowContext* context) {
         .label = {},
         .usage = WGPUTextureUsage_RenderAttachment,
         .format = WGPUTextureFormat_BGRA8UnormSrgb,
-        .width = context->GetSize().x,
-        .height = context->GetSize().y,
+        .width = context->get_size().x,
+        .height = context->get_size().y,
         .presentMode = WGPUPresentMode_Fifo,
     };
 

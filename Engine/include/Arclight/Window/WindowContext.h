@@ -19,7 +19,7 @@ public:
     inline SDL_Window* GetWindow() { return m_window; }
 
     // Returns a Vector2i containing the window size
-    inline Vector2i GetSize() const {
+    inline Vector2i get_size() const {
         Vector2i ret;
 
         SDL_GetWindowSize(m_window, &ret.x, &ret.y);
@@ -29,7 +29,7 @@ public:
 
     // Returns a Vector2i containing the window render size in pixels.
     // With some compositors, window size may not be in pixels
-    inline Vector2i GetWindowRenderSize() const {
+    inline Vector2i get_render_size() const {
         Vector2i ret;
 
         SDL_Vulkan_GetDrawableSize(m_window, &ret.x, &ret.y);
@@ -37,9 +37,9 @@ public:
         return ret;
     }
 
-    void SetSize(const Vector2i& size);
+    void set_size(const Vector2i& size);
 
-    void SetTitle(const UnicodeString& title){
+    void set_title(const UnicodeString& title){
 		std::string utf8Title;
 		title.toUTF8String(utf8Title);
 

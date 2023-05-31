@@ -1,5 +1,7 @@
 #include <Arclight/Graphics/Transform.h>
 
+#include <assert.h>
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdio.h>
@@ -46,6 +48,8 @@ Transform2D& Transform2D::set_position(const Vector2f& position) {
 
 Transform2D& Transform2D::set_z_index(float z) {
 	std::unique_lock acq(m_matrixLock);
+	//assert(z <= 1.f && z >= 0.f);
+
 	m_zIndex = z;
 
 	m_matrixDirty = true;
@@ -69,6 +73,14 @@ Transform2D& Transform2D::set_scale(float scaleX, float scaleY) {
 }
 Transform2D& Transform2D::set_rotation(float degrees) {
 	m_rotation = degrees * (M_PI / 180.f);
+
+	m_matrixDirty = true;
+
+	return *this;
+}
+
+Transform2D& Transform2D::translate(const Vector2f& delta) {
+	m_position += delta;
 
 	m_matrixDirty = true;
 

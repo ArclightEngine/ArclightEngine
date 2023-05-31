@@ -387,7 +387,7 @@ void GLRenderer::acquire_stream_context_if_necessary() {
 
 void GLRenderer::UpdateViewportTransform() {
     m_viewportTransform = Transform2D(
-        {-1, 1}, {2.f / m_windowContext->GetSize().x, -2.f / m_windowContext->GetSize().y});
+        {-1, 1}, {2.f / m_windowContext->get_size().x, -2.f / m_windowContext->get_size().y});
 
     // Bind a range in the buffer to an index
     // We have a uniform buffer,

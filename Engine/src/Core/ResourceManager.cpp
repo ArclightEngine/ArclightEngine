@@ -68,8 +68,8 @@ ResourceManager::ResourceManager() {
     assert(!s_instance);
     s_instance = this;
 
-    RegisterFormat(new ImageFormat());
-    RegisterFormat(new FontFormat());
+    register_format(new ImageFormat());
+    register_format(new FontFormat());
 }
 
 ResourceManager::~ResourceManager() {
@@ -78,11 +78,11 @@ ResourceManager::~ResourceManager() {
     }
 }
 
-void ResourceManager::RegisterFormat(ResourceFormat* format){
+void ResourceManager::register_format(ResourceFormat* format){
     m_formats.push_back(format);
 }
 
-std::shared_ptr<Resource> ResourceManager::GetResource(const std::string& id) {
+std::shared_ptr<Resource> ResourceManager::get_resource(const std::string& id) {
     std::unique_lock lockRes(m_lock);
 
     if(m_resources.find(id) != m_resources.end()){
